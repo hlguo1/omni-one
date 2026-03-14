@@ -65,9 +65,37 @@
                         </div>
                     </div>
 
+                    <!-- Synthesis Mode Selection -->
+                    <div class="bg-white p-6 rounded-xl container-shadow">
+                        <h2 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">2. Synthesis Mode</h2>
+                        <p class="text-sm text-gray-500 mb-4">Choose how Omni should analyze your data:</p>
+                        <div class="space-y-3">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="radio" name="synthesisMode" value="STRATEGIC_SUMMARY" checked class="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
+                                <span class="ml-3 text-sm font-medium text-gray-700">Strategic Summary</span>
+                                <span class="ml-2 text-xs text-gray-500">(Executive-level insights & priorities)</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer">
+                                <input type="radio" name="synthesisMode" value="DETAILED_ANALYSIS" class="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
+                                <span class="ml-3 text-sm font-medium text-gray-700">Detailed Analysis</span>
+                                <span class="ml-2 text-xs text-gray-500">(Comprehensive breakdown with evidence)</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer">
+                                <input type="radio" name="synthesisMode" value="ACTION_ITEMS" class="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
+                                <span class="ml-3 text-sm font-medium text-gray-700">Action Items</span>
+                                <span class="ml-2 text-xs text-gray-500">(Prioritized recommendations)</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer">
+                                <input type="radio" name="synthesisMode" value="COMPARATIVE" class="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
+                                <span class="ml-3 text-sm font-medium text-gray-700">Comparative Analysis</span>
+                                <span class="ml-2 text-xs text-gray-500">(Compare & contrast sources)</span>
+                            </label>
+                        </div>
+                    </div>
+
                     <!-- Synthesis Prompt Area -->
                     <div class="bg-white p-6 rounded-xl container-shadow">
-                        <h2 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">2. Synthesis Question</h2>
+                        <h2 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">3. Synthesis Question</h2>
                         <label for="synthesisPrompt" class="block text-sm font-medium text-gray-700">Ask Omni a complex question that requires synthesizing the sources:</label>
                         <textarea id="synthesisPrompt" rows="4" placeholder="Example: Based on the internal review and external analysis, what are the top 3 product gaps we must address next quarter to win market share?"
                             class="mt-1 block w-full rounded-lg shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
@@ -86,8 +114,19 @@
                 <!-- Output Panel -->
                 <div class="lg:col-span-1">
                     <div class="bg-white p-6 rounded-xl container-shadow h-full">
-                        <h2 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">3. Omni Insight</h2>
-                        
+                        <h2 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">4. Omni Insight</h2>
+
+                        <!-- Progress Bar -->
+                        <div id="progressBar" class="hidden mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="text-sm font-medium text-blue-700">⏱ Synthesizing...</span>
+                            </div>
+                            <div class="w-full bg-blue-200 rounded-full h-2">
+                                <div id="progressFill" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                            <div id="progressText" class="text-xs text-blue-600 mt-2">Estimating completion time...</div>
+                        </div>
+
                         <div id="outputContainer" class="min-h-[200px] text-gray-600">
                             <p class="text-center text-gray-400 mt-20">Your synthesized insight will appear here.</p>
                         </div>
@@ -106,8 +145,9 @@
 
     <script>
         // The frontend communicates with the Flask server running locally
-        const BACKEND_URL = "http://127.0.0.1:5003/synthesize"; 
-        
+        const BACKEND_URL_STREAM = "http://127.0.0.1:5003/synthesize-stream";
+        const BACKEND_URL_SYNC = "http://127.0.0.1:5003/synthesize";
+
         // DOM Elements
         const internalDataEl = document.getElementById('internalData');
         const externalDataEl = document.getElementById('externalData');
@@ -116,37 +156,70 @@
         const outputContainer = document.getElementById('outputContainer');
         const messageBox = document.getElementById('messageBox');
         const errorMessageEl = document.getElementById('errorMessage');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
 
         // State function to show/hide loading and button state
         function setLoading(isLoading) {
             synthesizeBtn.disabled = isLoading;
-            
+
             if (isLoading) {
-                // Show spinner and update text
                 synthesizeBtn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Synthesizing...';
             } else {
-                 // Restore default button text
-                 synthesizeBtn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Synthesize Knowledge';
+                synthesizeBtn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Synthesize Knowledge';
             }
         }
 
-        // Function to display errors using the custom message box
+        // Function to display errors
         function displayError(message) {
             errorMessageEl.textContent = message;
             messageBox.classList.remove('hidden');
             outputContainer.innerHTML = '<p class="text-center text-red-500 mt-20">Synthesis failed. See error box above.</p>';
         }
 
-        // Main Synthesis Logic - calls the backend server
-        async function runSynthesis() {
+        // Function to show progress bar
+        function showProgressBar(estimatedSeconds) {
+            progressBar.classList.remove('hidden');
+            progressFill.style.width = '0%';
+            progressText.textContent = `⏱ Estimated ~${estimatedSeconds}s | 0%`;
+        }
+
+        // Function to hide progress bar
+        function hideProgressBar() {
+            progressBar.classList.add('hidden');
+        }
+
+        // Function to update progress
+        function updateProgress(elapsed, estimated) {
+            const percent = Math.min(95, Math.round((elapsed / estimated) * 100));
+            const remaining = Math.max(0, estimated - elapsed);
+            progressFill.style.width = percent + '%';
+            progressText.textContent = `⏱ ~${remaining}s remaining | [${percent}%]`;
+        }
+
+        // Format markdown text to HTML
+        function formatMarkdown(text) {
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br>');
+        }
+
+        // Main Streaming Synthesis Logic
+        async function runSynthesisStream() {
             messageBox.classList.add('hidden');
             setLoading(true);
             outputContainer.innerHTML = '';
+            hideProgressBar();
+
+            const modeSelector = document.querySelector('input[name="synthesisMode"]:checked');
+            const mode = modeSelector ? modeSelector.value : 'STRATEGIC_SUMMARY';
 
             const dataToSend = {
                 internalData: internalDataEl.value.trim(),
                 externalData: externalDataEl.value.trim(),
-                userPrompt: synthesisPromptEl.value.trim()
+                userPrompt: synthesisPromptEl.value.trim(),
+                mode: mode
             };
 
             if (!dataToSend.userPrompt) {
@@ -160,10 +233,9 @@
                 setLoading(false);
                 return;
             }
-            
+
             try {
-                // Fetch call to the running Python server
-                const response = await fetch(BACKEND_URL, {
+                const response = await fetch(BACKEND_URL_STREAM, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -171,33 +243,77 @@
                     body: JSON.stringify(dataToSend)
                 });
 
-                const result = await response.json();
-
                 if (!response.ok) {
-                    // Handle HTTP errors or errors returned by the server
-                    const errorMsg = result.error || "An unknown error occurred during synthesis.";
-                    throw new Error(errorMsg);
+                    const error = await response.json();
+                    throw new Error(error.error || "Stream request failed");
                 }
 
-                // Success
-                const generatedText = result.insight;
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let fullResponse = "";
+                let estimatedTime = 0;
+                let startTime = Date.now();
 
-                if (generatedText) {
-                    // Format the output for display (Markdown to HTML conversion)
-                    const formattedHtml = generatedText
-                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold text
-                        .replace(/\n/g, '<br>'); // Newlines to breaks
+                outputContainer.innerHTML = '<div id="streamContent" class="text-base leading-relaxed"></div>';
+                const streamContent = document.getElementById('streamContent');
 
-                    outputContainer.innerHTML = `<div class="p-4 bg-gray-50 rounded-lg border border-indigo-200">
-                                                    <p class="text-base leading-relaxed">${formattedHtml}</p>
-                                                 </div>`;
-                } else {
-                    throw new Error("Received an empty insight from the backend server.");
+                // Update progress periodically
+                const progressInterval = setInterval(() => {
+                    if (estimatedTime > 0) {
+                        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                        updateProgress(elapsed, estimatedTime);
+                    }
+                }, 200);
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) {
+                        clearInterval(progressInterval);
+                        hideProgressBar();
+                        break;
+                    }
+
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+
+                                if (data.type === 'metadata') {
+                                    estimatedTime = data.estimated_time_seconds;
+                                    showProgressBar(estimatedTime);
+                                } else if (data.type === 'content') {
+                                    fullResponse += data.text;
+                                    const formattedText = formatMarkdown(data.text);
+                                    streamContent.innerHTML += formattedText;
+                                    // Auto-scroll to bottom
+                                    outputContainer.scrollTop = outputContainer.scrollHeight;
+                                } else if (data.type === 'done') {
+                                    clearInterval(progressInterval);
+                                    hideProgressBar();
+                                    // Add quality indicator if available
+                                    if (data.quality && !data.quality.passed) {
+                                        const issuesText = data.quality.issues.join(', ');
+                                        streamContent.innerHTML += `<div class="mt-4 p-3 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded text-sm"><strong>⚠️ Quality Note:</strong> ${issuesText}</div>`;
+                                    }
+                                } else if (data.type === 'error') {
+                                    clearInterval(progressInterval);
+                                    throw new Error(data.message);
+                                }
+                            } catch (e) {
+                                // JSON parsing error, skip this line
+                                if (!line.includes('data: {}')) {
+                                    console.error('Parse error:', e);
+                                }
+                            }
+                        }
+                    }
                 }
 
             } catch (error) {
-                console.error('Frontend Fetch Error:', error);
-                // Provide a helpful error message if the server is unreachable
+                console.error('Streaming Error:', error);
                 if (error.message.includes("Failed to fetch")) {
                     displayError("Could not connect to the backend server. Please ensure the Python server (`server.py`) is running on http://127.0.0.1:5003.");
                 } else {
@@ -209,7 +325,7 @@
         }
 
         // Event Listener
-        synthesizeBtn.addEventListener('click', runSynthesis);
+        synthesizeBtn.addEventListener('click', runSynthesisStream);
 
     </script>
 </body>
