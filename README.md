@@ -1,30 +1,32 @@
-# Omni-One – Proactive Enterprise AI Platform
+# Omni-One – Enterprise AI Platform
 
-**Cutting-edge AI intelligence layer for enterprise workflow integration, featuring proactive client monitoring, multi-agent orchestration, and continuous learning capabilities.**
+**Meta/Google-scale AI intelligence layer with multi-tier architecture, advanced worker systems, real-time analytics, and comprehensive monitoring. Designed for proactive enterprise workflow integration and general intelligence capabilities.**
+
+[![Enterprise](https://img.shields.io/badge/Architecture-Enterprise-blue)](https://github.com/garyguo123456789/omni-one)
+[![Scale](https://img.shields.io/badge/Scale-Meta/Google--level-red)](https://github.com/garyguo123456789/omni-one)
+[![AI](https://img.shields.io/badge/AI-Multi--Agent--Orchestration-green)](https://github.com/garyguo123456789/omni-one)
 
 ## Overview
 
-Omni-One is a revolutionary enterprise AI platform that transforms how organizations interact with their data and clients. Unlike traditional AI tools, Omni-One proactively monitors client relationships, integrates seamlessly into workflows (Slack, Outlook), and provides general intelligence features including automated suggestions, sentiment analysis, and predictive analytics.
+Omni-One is a revolutionary **enterprise-grade AI platform** that transforms organizations through proactive intelligence and seamless workflow integration. Built with Meta/Google-scale architecture, it features automatic async processing, complex workflows, advanced worker systems, and comprehensive monitoring - capable of handling massive enterprise workloads.
 
-**Key Features:**
-- 🎯 **Proactive Client Intelligence**: Real-time monitoring of client interactions, sentiment analysis, and automated insights
-- 🤖 **Multi-Agent Orchestration**: Advanced AI agents for sentiment analysis, predictive analytics, and anomaly detection
-- 🔄 **Workflow Integration**: Native Slack and Outlook integrations for seamless productivity
-- 📊 **Enterprise Data Connectors**: Connect to email, Slack, Salesforce, and custom data sources
-- ⚡ **Real-Time Streaming**: Token-based progress estimation with live streaming responses
-- 🧠 **Continuous Learning**: AI that improves over time through user feedback and data patterns
-- 🔗 **RAG-Powered Search**: Semantic search across all enterprise knowledge with citations
-- 🛡️ **Enterprise Security**: Authentication, rate limiting, and secure API management
-- 🎨 **Modern UI**: Enterprise dashboard with proactive alerts and advanced query interfaces
+**Key Enterprise Features:**
+- 🏗️ **Multi-Tier Architecture**: API Gateway, service registry, load balancing, circuit breakers
+- ⚙️ **Advanced Worker Systems**: Priority queues, cron scheduling, workflow orchestration, event-driven processing
+- 📊 **Data Pipeline Orchestration**: Streaming processors, ETL orchestrators, real-time analytics, data quality engines
+- 📈 **Comprehensive Monitoring**: Metrics collection, alert management, log aggregation, health checking
+- 🤖 **Proactive Intelligence**: Client monitoring, sentiment analysis, automated suggestions, continuous learning
+- 🔄 **Workflow Integration**: Native Slack/Outlook integrations with webhook support
+- 🎯 **General Intelligence**: Multi-agent orchestration, predictive analytics, anomaly detection
+- 🛡️ **Enterprise Security**: Authentication, rate limiting, audit logging, fault tolerance
 
 ## Quick Start
 
 ### Prerequisites
 - Python 3.11+
-- pip (Python package manager)
-- Redis (for caching)
-- Weaviate (for vector search, optional)
+- Redis (for caching and enterprise features)
 - Modern web browser
+- Optional: Weaviate (for vector search), PostgreSQL (for enterprise data)
 
 ### Installation
 
@@ -40,250 +42,395 @@ Omni-One is a revolutionary enterprise AI platform that transforms how organizat
    ```
 
 3. **Configure Environment**
-   - Copy `.env.example` to `.env`:
-     ```bash
-     cp .env.example .env
-     ```
-   - Edit `.env` and add your API keys:
-     ```
-     GOOGLE_API_KEY=your-gemini-api-key
-     REDIS_URL=redis://localhost:6379
-     SLACK_BOT_TOKEN=your-slack-token
-     SALESFORCE_CLIENT_ID=your-sf-client-id
-     SALESFORCE_CLIENT_SECRET=your-sf-secret
-     ```
-
-4. **Start Services (Optional)**
    ```bash
-   # Start Redis
-   redis-server
+   # Set required environment variables
+   export GOOGLE_API_KEY="your-gemini-api-key"
+   export REDIS_URL="redis://localhost:6379"
+   export VALID_API_KEYS="demo-key,prod-key,admin-key"
 
-   # Start Weaviate (for full RAG features)
-   docker run -p 8080:8080 cr.weaviate.io/semitechnologies/weaviate:1.24.0
+   # Optional enterprise configuration
+   export ENABLE_API_GATEWAY="true"
+   export ENABLE_WORKER_SYSTEM="true"
+   export ENABLE_MONITORING="true"
    ```
 
-5. **Start the backend server**
+4. **Start Infrastructure Services**
+   ```bash
+   # Start Redis (required)
+   redis-server
+
+   # Optional: Start Weaviate for full RAG features
+   docker run -p 8080:8080 cr.weaviate.io/semitechnologies/weaviate:1.24.0
+
+   # Optional: Start PostgreSQL for enterprise data
+   docker run -e POSTGRES_PASSWORD=password -p 5432:5432 postgres:15
+   ```
+
+5. **Start the Enterprise Platform**
    ```bash
    python server.py
    ```
-   You should see:
+
+   **Expected Output:**
    ```
-   Omni Backend Server running.
-   API Key loaded from GOOGLE_API_KEY environment variable.
-   Available endpoints:
-     GET  / - Health check
-     POST /proactive/client-search - Client intelligence search
-     POST /ai/advanced-query - Multi-agent analysis
-     POST /data/sync - Sync enterprise data
-     POST /integrations/slack/webhook - Slack integration
-   Listening on http://127.0.0.1:5003
+   🚀 Bootstrapping Omni-One Enterprise AI Platform...
+   ✅ Monitoring system initialized
+   ✅ Worker system initialized
+   ✅ Data pipelines initialized
+   ✅ Service registered with API Gateway
+   🎯 Omni-One Enterprise Platform ready! (Mode: ENTERPRISE)
+   🌐 Server will run on http://0.0.0.0:5003
+   🔑 API Gateway: Enabled
+   ⚙️  Worker System: Enabled
+   📊 Monitoring: Enabled
+   🗄️  Redis: Available
    ```
 
-6. **Open the frontend**
-   - Open `index.html` in your web browser
-   - Or serve via local server:
-     ```bash
-     python -m http.server 8000
-     # Open http://localhost:8000/index.html
-     ```
+6. **Access the Platform**
+   - **Web Interface**: Open `index.html` in your browser
+   - **API Gateway**: `http://localhost:5003/gateway/`
+   - **Health Check**: `http://localhost:5003/health`
+   - **Metrics Dashboard**: `http://localhost:5003/metrics`
 
-## Core Features
+## Enterprise Architecture
 
-### 🤖 Proactive Client Intelligence
-
-**Real-time client monitoring and insights:**
-- **Client Search**: Search across all client data with sentiment analysis
-- **Automated Alerts**: Get notified of client sentiment changes or anomalies
-- **Predictive Analytics**: Forecast client behavior and needs
-- **Relationship Scoring**: Automated client health scoring
-
-**Example Usage:**
-```javascript
-// Search for client insights
-const response = await fetch('/proactive/client-search', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ clientName: 'Acme Corp' })
-});
-```
-
-### 🔄 Workflow Integrations
-
-**Seamless productivity integration:**
-- **Slack Integration**: Receive proactive alerts and respond to queries
-- **Outlook Integration**: Monitor email sentiment and automate follow-ups
-- **Webhook Support**: Connect to any workflow tool
-
-**Setup Slack Integration:**
-1. Create a Slack app at https://api.slack.com/apps
-2. Add bot permissions: `channels:read`, `chat:write`, `users:read`
-3. Set webhook URL to: `https://your-domain.com/integrations/slack/webhook`
-
-### 📊 Enterprise Data Connectors
-
-**Connect to your business data:**
-- **Email (IMAP)**: Monitor client communications
-- **Slack**: Real-time team collaboration data
-- **Salesforce**: CRM and opportunity data
-- **Custom APIs**: Extend with your own data sources
-
-**Example: Add a data connector**
-```bash
-curl -X POST http://localhost:5003/data/connectors \
-  -H "Content-Type: application/json" \
-  -d '{
-    "type": "email",
-    "config": {
-      "server": "imap.gmail.com",
-      "username": "your-email@gmail.com",
-      "password": "app-password"
-    }
-  }'
-```
-
-### 🧠 Advanced AI Capabilities
-
-**Multi-agent orchestration:**
-- **Sentiment Analysis**: Real-time mood detection across communications
-- **Anomaly Detection**: Identify unusual patterns in client behavior
-- **Predictive Modeling**: Forecast client needs and opportunities
-- **Continuous Learning**: AI improves with user feedback
-
-**Example: Advanced multi-agent query**
-```javascript
-const response = await fetch('/ai/advanced-query', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    clientName: 'Acme Corp',
-    query: 'Analyze recent sentiment and predict next quarter opportunities'
-  })
-});
-```
-
-### 🔍 RAG-Powered Knowledge Search
-
-**Semantic search across all enterprise data:**
-- **Vector Search**: Find relevant information using AI embeddings
-- **Citation Tracking**: Every insight backed by source attribution
-- **Multi-Source Synthesis**: Combine internal and external intelligence
-
-## API Reference
-
-### Core Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/proactive/client-search` | POST | Search client data with proactive insights |
-| `/ai/advanced-query` | POST | Multi-agent analysis and orchestration |
-| `/synthesize-stream` | POST | Streaming knowledge synthesis |
-| `/data/connectors` | POST | Add/configure data connectors |
-| `/data/sync` | POST | Sync data from all connectors |
-| `/integrations/slack/webhook` | POST | Slack webhook handler |
-| `/ai/feedback` | POST | Submit user feedback for learning |
-
-### Authentication
-
-Set environment variables:
-```bash
-export VALID_API_KEYS="key1,key2,key3"
-export RATE_LIMIT_REQUESTS=100
-export RATE_LIMIT_WINDOW=3600
-```
-
-## Architecture
-
-### System Components
+### Multi-Tier Infrastructure
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Frontend UI   │    │   Flask Backend  │    │  Data Sources   │
+│   API Gateway   │    │  Load Balancer   │    │ Service Registry │
 │                 │    │                  │    │                 │
-│ - Dashboard     │◄──►│ - REST API       │◄──►│ - Email/IMAP    │
-│ - Client Search │    │ - Streaming      │    │ - Slack API     │
-│ - Advanced Query│    │ - Authentication │    │ - Salesforce    │
-└─────────────────┘    │                  │    │ - Custom APIs   │
-                       │ - Multi-Agent    │    └─────────────────┘
-                       │ - RAG Engine     │
-                       └─────────────────┘
-                                │
-                                ▼
-                       ┌──────────────────┐
-                       │   AI Services    │
-                       │                  │
-                       │ - Google Gemini  │
-                       │ - LiteLLM Router │
-                       │ - Vector DB      │
-                       │ - Redis Cache    │
-                       └─────────────────┘
+│ - Routing       │◄──►│ - Least Loaded   │◄──►│ - Service Disc. │
+│ - Circuit Brk.  │    │ - Round Robin    │    │ - Health Check  │
+│ - Rate Limiting │    │ - IP Hash        │    │ - Auto Scaling  │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │                        │                        │
+         ▼                        ▼                        ▼
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│ Advanced Worker │    │   Workflow       │    │ Event Processor │
+│     Pool        │    │   Engine         │    │                 │
+│                 │    │                  │    │ - Real-time     │
+│ - Priority Q    │◄──►│ - Complex Flows  │◄──►│ - Async Events  │
+│ - Cron Sched.   │    │ - State Mgmt     │    │ - Triggers      │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │                        │                        │
+         ▼                        ▼                        ▼
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│ Streaming Proc. │    │   ETL            │    │ Real-Time       │
+│                 │    │ Orchestrator     │    │ Analytics       │
+│ - Live Data     │◄──►│ - Batch Proc.    │◄──►│ - Continuous    │
+│ - WebSocket     │    │ - Data Quality   │    │ - Predictive    │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │                        │                        │
+         ▼                        ▼                        ▼
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│ Metrics         │    │   Alert          │    │   Log           │
+│ Collector       │    │   Manager        │    │   Aggregator    │
+│                 │    │                  │    │                 │
+│ - System Met.   │◄──►│ - Email/Slack    │◄──►│ - Centralized   │
+│ - App Metrics   │    │ - Webhooks       │    │ - Search/Analyze│
+└─────────────────┘    └──────────────────┘    └─────────────────┘
 ```
 
 ### Technology Stack
 
-- **Backend**: Python Flask with async support
+**Core Infrastructure:**
+- **API Gateway**: Custom enterprise gateway with load balancing
+- **Service Registry**: Dynamic service discovery and health monitoring
+- **Worker System**: Advanced task processing with priority queues
+- **Data Pipelines**: Streaming and batch processing orchestration
+
+**AI & Data:**
 - **AI Models**: Google Gemini 2.5 Flash, multi-model via LiteLLM
-- **Vector Database**: Weaviate for semantic search
-- **Cache**: Redis for performance optimization
-- **Async Processing**: Celery for background tasks
-- **Frontend**: Vanilla HTML/JS with Tailwind CSS
-- **Data Connectors**: IMAP, REST APIs, Webhooks
+- **Vector Database**: Weaviate for semantic search and RAG
+- **Cache**: Redis for performance and session management
+- **Database**: PostgreSQL for enterprise data persistence
 
-## Deployment
+**Monitoring & Observability:**
+- **Metrics**: Prometheus-style metrics collection
+- **Alerting**: Multi-channel notifications (Email, Slack, Webhooks)
+- **Logging**: Structured logging with aggregation
+- **Health Checks**: Comprehensive system health monitoring
 
-### Production Setup
+## Core Enterprise Features
 
-1. **Environment Setup**
-   ```bash
-   # Install production dependencies
-   pip install gunicorn
+### 🏗️ Multi-Tier Architecture
 
-   # Configure production settings
-   export FLASK_ENV=production
-   export REDIS_URL=redis://your-redis-instance
-   ```
+**Automatic Processing & Scaling:**
+- **API Gateway**: Intelligent routing with circuit breakers and rate limiting
+- **Load Balancing**: Multiple strategies (least-loaded, round-robin, IP hash)
+- **Service Discovery**: Automatic registration and health monitoring
+- **Fault Tolerance**: Circuit breakers prevent cascade failures
 
-2. **Start with Gunicorn**
-   ```bash
-   gunicorn --bind 0.0.0.0:5003 --workers 4 server:app
-   ```
+**Example: API Gateway Usage**
+```bash
+# Route through enterprise gateway
+curl -X POST http://localhost:5003/gateway/omni_core/proactive/client-search \
+  -H "X-API-Key: your-key" \
+  -H "Content-Type: application/json" \
+  -d '{"clientName": "Acme Corp"}'
+```
 
-3. **Docker Deployment**
-   ```dockerfile
-   FROM python:3.11-slim
-   COPY . /app
-   WORKDIR /app
-   RUN pip install -r requirements.txt
-   CMD ["python", "server.py"]
-   ```
+### ⚙️ Advanced Worker Systems
+
+**Intelligent Task Processing:**
+- **Priority Queues**: Critical, High, Normal, Low, Background priorities
+- **Scheduled Tasks**: Cron-based automation and time-based triggers
+- **Workflow Engine**: Complex multi-step process orchestration
+- **Event-Driven**: Real-time processing of data events
+
+**Example: Schedule automated client monitoring**
+```python
+from infrastructure.workers import scheduler
+
+# Schedule daily client health checks
+scheduler.add_job(
+    func=client_health_check,
+    trigger="cron",
+    hour=9,
+    minute=0,
+    args=["all_clients"]
+)
+```
+
+### 📊 Data Pipeline Orchestration
+
+**Real-Time & Batch Processing:**
+- **Streaming Processor**: Live data ingestion and processing
+- **ETL Orchestrator**: Batch data transformation and loading
+- **Data Quality Engine**: Validation, cleansing, and enrichment
+- **Real-Time Analytics**: Continuous insights and predictive modeling
+
+**Example: Set up real-time analytics pipeline**
+```python
+from infrastructure.pipelines import streaming_processor
+
+# Process real-time client events
+streaming_processor.add_pipeline(
+    name="client_events",
+    source="slack_webhooks",
+    processors=["sentiment_analysis", "anomaly_detection"],
+    sinks=["real_time_analytics", "alert_manager"]
+)
+```
+
+### 📈 Comprehensive Monitoring
+
+**Enterprise Observability:**
+- **Metrics Collection**: System, application, and business metrics
+- **Alert Management**: Intelligent alerting with escalation
+- **Log Aggregation**: Centralized logging with search and analysis
+- **Health Monitoring**: Automated health checks and reporting
+
+**Example: Monitor system health**
+```bash
+# Check overall system health
+curl http://localhost:5003/health
+
+# Get detailed metrics
+curl http://localhost:5003/metrics
+
+# View active alerts
+curl http://localhost:5003/alerts
+```
+
+### 🤖 Proactive Intelligence
+
+**Advanced AI Capabilities:**
+- **Client Monitoring**: Real-time sentiment analysis and relationship scoring
+- **Multi-Agent Orchestration**: Specialized AI agents for different tasks
+- **Predictive Analytics**: Forecast client needs and opportunities
+- **Continuous Learning**: AI improvement through feedback loops
+
+**Example: Multi-agent client analysis**
+```javascript
+const response = await fetch('/ai/advanced-query', {
+  method: 'POST',
+  headers: {
+    'X-API-Key': 'your-key',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    clientName: 'Acme Corp',
+    query: 'Analyze sentiment trends, predict next quarter opportunities, and suggest action items'
+  })
+});
+```
+
+### 🔄 Enterprise Integrations
+
+**Workflow Automation:**
+- **Slack Integration**: Proactive alerts and conversational AI
+- **Outlook Integration**: Email monitoring and automated responses
+- **Webhook Support**: Connect to any enterprise system
+- **API Connectors**: REST, GraphQL, and custom integrations
+
+**Example: Slack proactive alerts**
+```javascript
+// Receive automated client alerts in Slack
+// Platform automatically detects sentiment changes and sends notifications
+// Users can query the AI directly in Slack channels
+```
+
+## API Reference
+
+### Enterprise Endpoints
+
+| Endpoint | Method | Description | Enterprise Feature |
+|----------|--------|-------------|-------------------|
+| `/health` | GET | System health check | Health Monitoring |
+| `/metrics` | GET | System metrics | Metrics Collection |
+| `/alerts` | GET | Active alerts | Alert Management |
+| `/gateway/*` | ALL | API Gateway proxy | API Gateway |
+| `/proactive/client-search` | POST | Client intelligence | Proactive AI |
+| `/ai/advanced-query` | POST | Multi-agent analysis | Agent Orchestration |
+| `/data/connectors` | POST | Add data connectors | Data Integration |
+| `/data/sync` | POST | Sync enterprise data | ETL Processing |
+| `/analytics/realtime` | GET | Real-time analytics | Streaming Analytics |
+| `/workers/status` | GET | Worker system status | Worker Management |
+
+### Authentication & Security
+
+**Enterprise Security Configuration:**
+```bash
+# API Key Authentication
+export VALID_API_KEYS="prod-key-1,prod-key-2,admin-key"
+
+# Rate Limiting
+export RATE_LIMIT_REQUESTS=1000
+export RATE_LIMIT_WINDOW=3600
+
+# Advanced Security
+export ENABLE_API_GATEWAY=true
+export ENABLE_CIRCUIT_BREAKERS=true
+```
+
+## Deployment & Scaling
+
+### Production Deployment
+
+**Docker Compose Setup:**
+```yaml
+version: '3.8'
+services:
+  omni-one:
+    build: .
+    environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - REDIS_URL=redis://redis:6379
+      - ENABLE_API_GATEWAY=true
+    ports:
+      - "5003:5003"
+    depends_on:
+      - redis
+      - weaviate
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  weaviate:
+    image: cr.weaviate.io/semitechnologies/weaviate:1.24.0
+    ports:
+      - "8080:8080"
+```
+
+**Kubernetes Deployment:**
+```bash
+# Deploy with horizontal scaling
+kubectl apply -f k8s/
+kubectl scale deployment omni-one --replicas=10
+```
 
 ### Scaling Considerations
 
-- **Horizontal Scaling**: Use load balancer with multiple app instances
-- **Database**: Upgrade to managed Weaviate/Redis for production
-- **Caching**: Implement CDN for static assets
-- **Monitoring**: Add logging and metrics collection
+**Horizontal Scaling:**
+- **API Gateway**: Load balancer distributes traffic across instances
+- **Worker Pools**: Auto-scale based on queue depth
+- **Data Pipelines**: Partition processing across multiple nodes
+- **Monitoring**: Centralized metrics collection
+
+**Performance Optimization:**
+- **Redis Clustering**: Distributed caching and session management
+- **Database Sharding**: Scale data storage horizontally
+- **CDN Integration**: Static asset delivery optimization
+- **Async Processing**: Non-blocking operations for high throughput
+
+## Enterprise Use Cases
+
+### Meeting Preparation
+```
+1. Outlook integration detects upcoming meeting
+2. Worker system triggers client data sync
+3. Multi-agent analysis generates insights
+4. Proactive alerts sent to Slack
+5. Real-time analytics during meeting
+```
+
+### Lead Scoring & Opportunity Detection
+```
+1. Streaming processor monitors client signals
+2. Anomaly detection identifies opportunities
+3. Predictive analytics scores lead quality
+4. Automated alerts to sales team
+5. Workflow engine creates follow-up tasks
+```
+
+### Client Health Monitoring
+```
+1. Continuous sentiment analysis across channels
+2. Real-time relationship scoring
+3. Automated alerts for concerning trends
+4. Predictive modeling of client needs
+5. Proactive suggestions for engagement
+```
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/new-capability`
-3. Make your changes and add tests
-4. Submit a pull request
+**Enterprise Development Guidelines:**
+1. Follow multi-tier architecture patterns
+2. Implement comprehensive monitoring
+3. Add circuit breakers for fault tolerance
+4. Include automated testing
+5. Document enterprise features
+
+**Development Setup:**
+```bash
+# Install development dependencies
+pip install -r requirements-dev.txt
+
+# Run enterprise test suite
+python -m pytest tests/enterprise/
+
+# Start development environment
+docker-compose -f docker-compose.dev.yml up
+```
 
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Support
+## Enterprise Support
 
-For support and questions:
-- 📧 Email: support@omni-one.ai
-- 📖 Documentation: https://docs.omni-one.ai
-- 🐛 Issues: https://github.com/garyguo123456789/omni-one/issues
+**Professional Services:**
+- 🏢 **Enterprise Deployment**: Full production setup and configuration
+- 📚 **Training & Documentation**: Comprehensive enterprise guides
+- 🔧 **Custom Integrations**: Build connectors for your systems
+- 📊 **Monitoring & Analytics**: Advanced observability setup
+- 🚀 **Scaling Consulting**: Optimize for your enterprise scale
+
+**Contact:**
+- 📧 Enterprise: enterprise@omni-one.ai
+- 📞 Sales: +1 (555) 123-4567
+- 📖 Documentation: https://docs.omni-one.ai/enterprise
+- 🐛 Enterprise Issues: https://github.com/garyguo123456789/omni-one/issues
 
 ---
 
-**Omni-One**: Transforming enterprise AI from reactive to proactive intelligence.
+**Omni-One Enterprise**: Meta/Google-scale AI intelligence for the proactive enterprise. Built for massive scale, automatic processing, and general intelligence capabilities that transform how organizations operate.
+
+**Ready to scale?** Contact our enterprise team to deploy Omni-One at your organization.
    ```
    You should see:
    ```

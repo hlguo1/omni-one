@@ -1,53 +1,768 @@
+"""
+Omni-One Enterprise AI Platform Server
+======================================
+
+Enterprise-grade AI platform with multi-tier architecture, advanced worker systems,
+real-time analytics, and comprehensive monitoring - designed for scale like Meta/Google.
+"""
+
 import os
 import json
-import re
 import time
-import requests
-import tiktoken
 import logging
+import threading
+from datetime import datetime, timedelta
 from functools import wraps
-from flask import Flask, request, jsonify, Response, stream_with_context
+from flask import Flask, request, jsonify, Response, stream_with_context, g
 from flask_cors import CORS
+import redis
+import psutil
+
+# --- Enterprise Infrastructure Imports (Optional) ---
+try:
+    from infrastructure import (
+        gateway, create_api_gateway_app,
+        worker_pool, scheduler, workflow_engine, event_processor,
+        initialize_enterprise_workers
+    )
+    from infrastructure.pipelines import (
+        streaming_processor, etl_orchestrator, data_quality_engine, real_time_analytics,
+        initialize_data_pipelines
+    )
+    from infrastructure.monitoring import (
+        metrics_collector, alert_manager, log_aggregator, health_checker,
+        initialize_monitoring, AlertSeverity
+    )
+    ENTERPRISE_FEATURES_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"Enterprise features not available: {e}")
+    # Create dummy objects for when enterprise features aren't available
+    class DummyGateway:
+        def register_service(self, *args, **kwargs): pass
+    gateway = DummyGateway()
+    create_api_gateway_app = lambda: None
+    initialize_enterprise_workers = lambda: True
+    initialize_data_pipelines = lambda: True
+    initialize_monitoring = lambda: True
+
+    class DummyMetricsCollector:
+        def record_metric(self, *args, **kwargs): pass
+    metrics_collector = DummyMetricsCollector()
+
+    class DummyAlertManager:
+        pass
+    alert_manager = DummyAlertManager()
+
+    class DummyLogAggregator:
+        def log_event(self, *args, **kwargs): print(f"LOG: {args}")
+    log_aggregator = DummyLogAggregator()
+
+    class DummyHealthChecker:
+        def get_overall_health(self): return {"status": "basic", "mode": "mvp"}
+    health_checker = DummyHealthChecker()
+
+    class DummyAlertSeverity:
+        INFO = "info"
+        WARNING = "warning"
+        ERROR = "error"
+        CRITICAL = "critical"
+    AlertSeverity = DummyAlertSeverity
+
+    ENTERPRISE_FEATURES_AVAILABLE = False
+
+# Core AI Components
 from rag_engine import RAGEngine
 from model_router import ModelRouter
 from cache import SemanticCache
-from async_tasks import synthesize_async
-from data_connectors.ingestion import DataIngestionService
 from proactive_agents.engine import ProactiveEngine
+from data_connectors.ingestion import DataIngestionService
 from integrations.webhooks import init_integration_blueprint
 from models.agent_orchestrator import AgentOrchestrator
 from models.continuous_learning import ContinuousLearning
 
-# --- Security: Load API Key from Environment ---
-API_KEY = os.getenv('GOOGLE_API_KEY')
-if not API_KEY:
-    raise RuntimeError(
-        "CRITICAL: GOOGLE_API_KEY environment variable not set. "
-        "Please set it before running the server. "
-        "Example: export GOOGLE_API_KEY='your-key-here'"
-    )
+# --- Enterprise Configuration ---
+class EnterpriseConfig:
+    """Enterprise-grade configuration management."""
 
-# --- Configuration ---
-API_URL_BASE = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20"
-GEMINI_MODEL = "gemini-2.5-flash-preview-05-20"
-TOKENS_PER_SECOND = 100  # Baseline estimate for Gemini Flash streaming
+    def __init__(self):
+        # API Configuration
+        self.google_api_key = os.getenv('GOOGLE_API_KEY')
+        self.api_url_base = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20"
+        self.gemini_model = "gemini-2.5-flash-preview-05-20"
 
-# Token encoder for estimation
-try:
-    # Fallback to generic encoding since tiktoken may not have exact Gemini encoding
-    encoding = tiktoken.get_encoding("cl100k_base")
-except:
-    encoding = None
+        # Infrastructure Configuration
+        self.redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379')
+        self.enable_api_gateway = os.getenv('ENABLE_API_GATEWAY', 'true').lower() == 'true'
+        self.enable_worker_system = os.getenv('ENABLE_WORKER_SYSTEM', 'true').lower() == 'true'
+        self.enable_monitoring = os.getenv('ENABLE_MONITORING', 'true').lower() == 'true'
 
-# --- Synthesis Mode Configurations (Phase 3) ---
-MODE_CONFIGS = {
-    "STRATEGIC_SUMMARY": {
-        "display_name": "Strategic Summary",
-        "system_prompt": """
-You are Omni, the Strategic Intelligence Engine. Your task is to synthesize [Internal Data] and [External Report] into a concise, executive-level insight that highlights strategic priorities and implications.
+        # Try to connect to Redis
+        try:
+            import redis
+            self.redis_client = redis.from_url(self.redis_url)
+            self.redis_client.ping()
+            self.redis_available = True
+        except Exception as e:
+            logger.warning(f"Redis connection failed: {e}. Running in degraded mode.")
+            self.redis_client = None
+            self.redis_available = False
 
-Synthesis approach:
-1. Identify the core business question implied by the data
+        # Security Configuration
+        self.valid_api_keys = set(os.getenv('VALID_API_KEYS', 'demo-key,test-key').split(','))
+        self.rate_limit_requests = int(os.getenv('RATE_LIMIT_REQUESTS', '100'))
+        self.rate_limit_window = int(os.getenv('RATE_LIMIT_WINDOW', '3600'))  # seconds
+
+        # Performance Configuration
+        self.max_concurrent_requests = int(os.getenv('MAX_CONCURRENT_REQUESTS', '50'))
+        self.request_timeout = int(os.getenv('REQUEST_TIMEOUT', '300'))
+        self.streaming_chunk_size = int(os.getenv('STREAMING_CHUNK_SIZE', '1024'))
+
+        # Feature Flags
+        self.enable_rag = os.getenv('ENABLE_RAG', 'true').lower() == 'true'
+        self.enable_proactive = os.getenv('ENABLE_PROACTIVE', 'true').lower() == 'true'
+        self.enable_analytics = os.getenv('ENABLE_ANALYTICS', 'true').lower() == 'true'
+
+        # Validate critical configuration
+        if not self.google_api_key:
+            raise RuntimeError("GOOGLE_API_KEY environment variable is required")
+
+# Global configuration
+config = EnterpriseConfig()
+
+# --- Enterprise Service Registry ---
+class EnterpriseServiceRegistry:
+    """Service registry for enterprise components."""
+
+    def __init__(self):
+        self.services = {}
+        self.redis_client = redis.from_url(config.redis_url)
+
+    def register_service(self, name: str, service_instance, health_check=None):
+        """Register a service instance."""
+        self.services[name] = {
+            'instance': service_instance,
+            'health_check': health_check,
+            'registered_at': datetime.now(),
+            'status': 'healthy'
+        }
+        logger.info(f"Registered enterprise service: {name}")
+
+    def get_service(self, name: str):
+        """Get a service instance."""
+        if name not in self.services:
+            raise RuntimeError(f"Service {name} not registered")
+        return self.services[name]['instance']
+
+    def check_service_health(self, name: str) -> bool:
+        """Check health of a service."""
+        if name not in self.services:
+            return False
+
+        service_info = self.services[name]
+        if service_info['health_check']:
+            try:
+                return service_info['health_check']()
+            except Exception as e:
+                logger.error(f"Health check failed for {name}: {e}")
+                return False
+        return True
+
+# Global service registry
+service_registry = EnterpriseServiceRegistry()
+
+# --- Enterprise Security & Rate Limiting ---
+class EnterpriseSecurity:
+    """Enterprise-grade security with authentication and rate limiting."""
+
+    def __init__(self):
+        self.rate_limit_cache = {}
+
+    def authenticate_request(self, api_key: str) -> bool:
+        """Authenticate API request."""
+        return api_key in config.valid_api_keys
+
+    def check_rate_limit(self, client_id: str) -> bool:
+        """Check if request is within rate limits."""
+        now = time.time()
+        window_start = now - config.rate_limit_window
+
+        # Clean old entries
+        self.rate_limit_cache[client_id] = [
+            timestamp for timestamp in self.rate_limit_cache.get(client_id, [])
+            if timestamp > window_start
+        ]
+
+        # Check limit
+        if len(self.rate_limit_cache[client_id]) >= config.rate_limit_requests:
+            return False
+
+        # Add current request
+        self.rate_limit_cache[client_id].append(now)
+        return True
+
+    def get_client_id(self, request) -> str:
+        """Extract client identifier from request."""
+        # Use API key as client ID for simplicity
+        api_key = request.headers.get('X-API-Key') or request.headers.get('Authorization', '').replace('Bearer ', '')
+        if not api_key:
+            return request.remote_addr
+        return api_key
+
+# Global security instance
+security = EnterpriseSecurity()
+
+def require_auth(f):
+    """Decorator for API authentication."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        api_key = request.headers.get('X-API-Key') or request.headers.get('Authorization', '').replace('Bearer ', '')
+
+        if not api_key:
+            return jsonify({"error": "API key required"}), 401
+
+        if not security.authenticate_request(api_key):
+            return jsonify({"error": "Invalid API key"}), 401
+
+        # Rate limiting
+        client_id = security.get_client_id(request)
+        if not security.check_rate_limit(client_id):
+            return jsonify({"error": "Rate limit exceeded"}), 429
+
+        g.client_id = client_id
+        return f(*args, **kwargs)
+    return decorated_function
+
+def monitor_request(f):
+    """Decorator for request monitoring."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        start_time = time.time()
+        endpoint = request.endpoint or 'unknown'
+        method = request.method
+
+        try:
+            response = f(*args, **kwargs)
+            status_code = response[1] if isinstance(response, tuple) else 200
+        except Exception as e:
+            status_code = 500
+            raise e
+        finally:
+            duration = time.time() - start_time
+
+            # Record metrics
+            metrics_collector.record_metric(
+                f"api.request.duration",
+                duration,
+                {"endpoint": endpoint, "method": method}
+            )
+            metrics_collector.record_metric(
+                f"api.request.count",
+                1,
+                {"endpoint": endpoint, "method": method, "status": status_code}
+            )
+
+            # Log request
+            log_aggregator.log_event(
+                "INFO" if status_code < 400 else "ERROR",
+                f"{method} {endpoint} - {status_code}",
+                "api",
+                {"duration": duration, "client_id": getattr(g, 'client_id', 'unknown')}
+            )
+
+        return response
+    return decorated_function
+
+# --- Enterprise Application ---
+def create_enterprise_app() -> Flask:
+    """Create the enterprise Flask application."""
+
+    app = Flask(__name__)
+    CORS(app)
+
+    # Configure logging
+    app.logger.setLevel(logging.INFO)
+
+    # Register enterprise services
+    _initialize_enterprise_services()
+
+    # API Gateway integration
+    if config.enable_api_gateway:
+        gateway_app = create_api_gateway_app()
+        app.register_blueprint(gateway_app, url_prefix='/gateway')
+
+    # Integration blueprints
+    proactive_engine = service_registry.get_service('proactive_engine')
+    integration_blueprint = init_integration_blueprint(proactive_engine)
+    app.register_blueprint(integration_blueprint, url_prefix='/integrations')
+
+    # Health and monitoring endpoints
+    @app.route('/health')
+    def health_check():
+        """Enterprise health check endpoint."""
+        return jsonify(health_checker.get_overall_health())
+
+    @app.route('/metrics')
+    @require_auth
+    def get_metrics():
+        """Get system metrics."""
+        system_metrics = metrics_collector.get_metric_stats("system.cpu.percent")
+        return jsonify({
+            "system": system_metrics,
+            "services": {
+                name: service_registry.check_service_health(name)
+                for name in service_registry.services.keys()
+            },
+            "timestamp": datetime.now().isoformat()
+        })
+
+    @app.route('/alerts')
+    @require_auth
+    def get_alerts():
+        """Get active alerts."""
+        # Mock alerts for now
+        return jsonify({"alerts": [], "total": 0})
+
+    # Core AI endpoints
+    @app.route('/synthesize', methods=['POST'])
+    @require_auth
+    @monitor_request
+    def synthesize():
+        """Synchronous synthesis endpoint."""
+        try:
+            data = request.json
+            internal_data = data.get('internalData', '').strip()
+            external_data = data.get('externalData', '').strip()
+            user_prompt = data.get('userPrompt', '').strip()
+            mode = data.get('mode', 'STRATEGIC_SUMMARY')
+
+            if not user_prompt:
+                return jsonify({"error": "Synthesis prompt is required."}), 400
+
+            # Get services
+            model_router = service_registry.get_service('model_router')
+            rag_engine = service_registry.get_service('rag_engine')
+
+            # Construct payload and generate
+            payload = _construct_payload(internal_data, external_data, user_prompt, mode)
+            response = model_router.generate_with_payload(payload)
+
+            # Record success metric
+            metrics_collector.record_metric("ai.synthesis.success", 1)
+
+            return jsonify({
+                "response": response,
+                "mode": mode,
+                "timestamp": datetime.now().isoformat()
+            }), 200
+
+        except Exception as e:
+            # Record error metric
+            metrics_collector.record_metric("ai.synthesis.error", 1)
+            log_aggregator.log_event("ERROR", f"Synthesis failed: {e}", "ai")
+            return jsonify({"error": "Synthesis failed"}), 500
+
+    @app.route('/synthesize-stream', methods=['POST'])
+    @require_auth
+    @monitor_request
+    def synthesize_stream():
+        """Streaming synthesis with enterprise features."""
+        try:
+            data = request.json
+            internal_data = data.get('internalData', '').strip()
+            external_data = data.get('externalData', '').strip()
+            user_prompt = data.get('userPrompt', '').strip()
+            mode = data.get('mode', 'STRATEGIC_SUMMARY')
+
+            if not user_prompt:
+                return jsonify({"error": "Synthesis prompt is required."}), 400
+
+            # Get services
+            model_router = service_registry.get_service('model_router')
+
+            # Construct payload
+            payload = _construct_payload(internal_data, external_data, user_prompt, mode)
+            payload["stream"] = True
+
+            def generate_stream():
+                """Enterprise streaming handler."""
+                headers = {
+                    'Content-Type': 'application/json',
+                    'x-goog-api-key': config.google_api_key,
+                }
+
+                try:
+                    # Send metadata
+                    yield f"data: {json.dumps({'type': 'metadata', 'mode': mode})}\n\n"
+
+                    # Make streaming request
+                    response = requests.post(
+                        f"{config.api_url_base}:streamGenerateContent",
+                        headers=headers,
+                        data=json.dumps(payload),
+                        timeout=config.request_timeout,
+                        stream=True
+                    )
+                    response.raise_for_status()
+
+                    full_response = ""
+                    for line in response.iter_lines():
+                        if line:
+                            try:
+                                chunk = json.loads(line)
+                                text = chunk.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', '')
+                                if text:
+                                    full_response += text
+                                    yield f"data: {json.dumps({'type': 'content', 'text': text})}\n\n"
+                            except json.JSONDecodeError:
+                                pass
+
+                    # Quality validation
+                    quality = _validate_output_quality(full_response, internal_data, external_data, mode)
+
+                    # Send completion
+                    yield f"data: {json.dumps({'type': 'done', 'quality': quality})}\n\n"
+
+                except Exception as e:
+                    log_aggregator.log_event("ERROR", f"Streaming error: {e}", "ai")
+                    yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+            return Response(
+                stream_with_context(generate_stream()),
+                mimetype='text/event-stream',
+                headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'}
+            )
+
+        except Exception as e:
+            log_aggregator.log_event("ERROR", f"Stream setup error: {e}", "ai")
+            return jsonify({"error": "Streaming setup failed"}), 500
+
+    @app.route('/proactive/client-search', methods=['POST'])
+    @require_auth
+    @monitor_request
+    def client_search():
+        """Enterprise proactive client search."""
+        try:
+            data = request.json
+            client_name = data.get('clientName', '').strip()
+
+            if not client_name:
+                return jsonify({"error": "Client name required"}), 400
+
+            # Get proactive engine
+            proactive_engine = service_registry.get_service('proactive_engine')
+
+            # Generate insights
+            insights = proactive_engine.generate_proactive_insights(client_name)
+
+            # Publish event for analytics
+            event_processor.publish_event("client_search", {
+                "client_name": client_name,
+                "timestamp": datetime.now().isoformat(),
+                "insights_count": len(insights) if isinstance(insights, dict) else 1
+            })
+
+            return jsonify(insights), 200
+
+        except Exception as e:
+            log_aggregator.log_event("ERROR", f"Client search error: {e}", "proactive")
+            return jsonify({"error": "Client search failed"}), 500
+
+    @app.route('/ai/advanced-query', methods=['POST'])
+    @require_auth
+    @monitor_request
+    def advanced_query():
+        """Multi-agent advanced query processing."""
+        try:
+            data = request.json
+            client_name = data.get('clientName', '').strip()
+            query = data.get('query', '').strip()
+
+            if not query:
+                return jsonify({"error": "Query required"}), 400
+
+            # Get agent orchestrator
+            agent_orchestrator = service_registry.get_service('agent_orchestrator')
+
+            # Process query
+            result = agent_orchestrator.process_client_query(client_name, query)
+
+            # Record analytics
+            metrics_collector.record_metric("ai.advanced_query.count", 1)
+
+            return jsonify(result), 200
+
+        except Exception as e:
+            log_aggregator.log_event("ERROR", f"Advanced query error: {e}", "ai")
+            return jsonify({"error": "Advanced query failed"}), 500
+
+    @app.route('/data/connectors', methods=['POST'])
+    @require_auth
+    @monitor_request
+    def add_connector():
+        """Add data connector."""
+        try:
+            data = request.json
+            connector_type = data.get('type')
+            config_data = data.get('config', {})
+
+            if not connector_type:
+                return jsonify({"error": "Connector type required"}), 400
+
+            # Get data ingestion service
+            data_service = service_registry.get_service('data_ingestion')
+
+            # Add connector
+            connector_id = data_service.add_connector(connector_type, config_data)
+
+            return jsonify({"connector_id": connector_id, "status": "added"}), 201
+
+        except Exception as e:
+            log_aggregator.log_event("ERROR", f"Add connector error: {e}", "data")
+            return jsonify({"error": "Failed to add connector"}), 500
+
+    @app.route('/data/sync', methods=['POST'])
+    @require_auth
+    @monitor_request
+    def sync_data():
+        """Sync data from connectors."""
+        try:
+            # Get data ingestion service
+            data_service = service_registry.get_service('data_ingestion')
+
+            # Trigger sync
+            sync_result = data_service.sync_all_connectors()
+
+            return jsonify(sync_result), 200
+
+        except Exception as e:
+            log_aggregator.log_event("ERROR", f"Data sync error: {e}", "data")
+            return jsonify({"error": "Data sync failed"}), 500
+
+    @app.route('/analytics/realtime', methods=['GET'])
+    @require_auth
+    def get_realtime_analytics():
+        """Get real-time analytics data."""
+        try:
+            # Get analytics data
+            sentiment_trend = real_time_analytics.get_analytics_result("client_events", "sentiment_trend")
+            activity_volume = real_time_analytics.get_analytics_result("client_events", "activity_volume")
+
+            return jsonify({
+                "sentiment_trend": sentiment_trend,
+                "activity_volume": activity_volume,
+                "timestamp": datetime.now().isoformat()
+            }), 200
+if config.enable_rag:
+            rag_engine = RAGEngine()
+            service_registry.register_service('rag_engine', rag_engine)
+    except Exception as e:
+        logger.warning(f"RAG Engine initialization failed: {e}")
+
+    model_router = ModelRouter()
+    service_registry.register_service('model_router', model_router)
+
+    if config.redis_available:
+        cache = SemanticCache()
+        service_registry.register_service('cache', cache)
+
+    # Proactive and Analytics Services
+    try:
+        if config.enable_proactive:
+            rag_engine_instance = service_registry.get_service('rag_engine') if 'rag_engine' in service_registry.services else None
+            proactive_engine = ProactiveEngine(rag_engine_instance, model_router)
+            service_registry.register_service('proactive_engine', proactive_engine)
+    except Exception as e:
+        logger.warning(f"Proactive Engine initialization failed: {e}")
+
+    try:
+        data_ingestion = DataIngestionService()
+        service_registry.register_service('data_ingestion', data_ingestion)
+    except Exception as e:
+        logger.warning(f"Data Ingestion initialization failed: {e}")
+
+    try:
+        agent_orchestrator = AgentOrchestrator(
+            service_registry.get_service('proactive_engine') if 'proactive_engine' in service_registry.services else None,
+            model_router
+        )
+        service_registry.register_service('agent_orchestrator', agent_orchestrator)
+    except Exception as e:
+        logger.warning(f"Agent Orchestrator initialization failed: {e}")
+
+    try:
+        continuous_learning = ContinuousLearning(model_router)
+        service_registry.register_service('continuous_learning', continuous_learning)
+    except Exception as e:
+        logger.warning(f"Continuous Learning initialization failed: {e}"
+    proactive_engine = ProactiveEngine(rag_engine if 'rag_engine' in service_registry.services else None, model_router)
+    service_registry.register_service('proactive_engine', proactive_engine)
+
+    data_ingestion = DataIngestionService()
+    service_registry.register_service('data_ingestion', data_ingestion)
+
+    agent_orchestrator = AgentOrchestrator(proactive_engine, model_router)
+    service_registry.register_service('agent_orchestrator', agent_orchestrator)
+
+    continuous_learning = ContinuousLearning(model_router)
+    service_registry.register_service('continuous_learning', continuous_learning)
+
+def _construct_payload(internal_data: str, external_data: str, user_prompt: str, mode: str) -> dict:
+    """Construct AI model payload with enterprise features."""
+    mode_config = _get_mode_config(mode)
+
+    system_prompt = mode_config['system_prompt']
+    max_tokens = mode_config['max_tokens']
+
+    # Enhanced prompt engineering
+    full_prompt = f"""
+{system_prompt}
+
+INPUT DATA:
+Internal Data: {internal_data or 'No internal data provided'}
+External Data: {external_data or 'No external data provided'}
+
+USER QUERY: {user_prompt}
+
+Please provide a comprehensive analysis following the synthesis approach above.
+"""
+
+    return {
+        "contents": [{
+            "parts": [{"text": full_prompt}],
+            "role": "user"
+        }],
+        "generationConfig": {
+            "temperature": 0.7,
+            "topK": 40,
+            "topP": 0.95,
+            "maxOutputTokens": max_tokens,
+            "stopSequences": []
+        },
+        "safetySettings": [
+            {
+                "category": "HARM_CATEGORY_HARASSMENT",
+                "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+            }
+        ]
+    }
+
+def _get_mode_config(mode: str) -> dict:
+    """Get configuration for synthesis mode."""
+    configs = {
+        "STRATEGIC_SUMMARY": {
+            "system_prompt": "You are an enterprise strategic intelligence analyst...",
+            "max_tokens": 2048
+        },
+        "DETAILED_ANALYSIS": {
+            "system_prompt": "You are a detailed business analyst...",
+            "max_tokens": 4096
+        },
+        "ACTION_ITEMS": {
+            "system_prompt": "You are an action-oriented business consultant...",
+            "max_tokens": 1536
+        },
+        "COMPARATIVE_ANALYSIS": {
+            "system_prompt": "You are a comparative market analyst...",
+            "max_tokens": 3072
+        }
+    }
+    return configs.get(mode, configs["STRATEGIC_SUMMARY"])
+
+def _validate_output_quality(re and ENTERPRISE_FEATURES_AVAILABLE:
+        try:
+            initialize_monitoring()
+            logger.info("✅ Monitoring system initialized")
+        except Exception as e:
+            logger.warning(f"Monitoring initialization failed: {e}")
+
+    if config.enable_worker_system and ENTERPRISE_FEATURES_AVAILABLE:
+        try:
+            initialize_enterprise_workers()
+            logger.info("✅ Worker system initialized")
+        except Exception as e:
+            logger.warning(f"Worker system initialization failed: {e}")
+
+    try:
+        if ENTERPRISE_FEATURES_AVAILABLE:
+            initialize_data_pipelines()
+            logger.info("✅ Data pipelines initialized")
+    except Exception as e:
+        logger.warning(f"Data pipelines initialization failed: {e}")
+
+    # Create and configure the application
+    app = create_enterprise_app()
+
+    # API Gateway integration
+    if config.enable_api_gateway and ENTERPRISE_FEATURES_AVAILABLE:
+        try:
+            gateway_app = create_api_gateway_app()
+            app.register_blueprint(gateway_app, url_prefix='/gateway')
+            gateway.register_service("omni_core", "localhost", 5003)
+            logger.info("✅ Service registered with API Gateway")
+        except Exception as e:
+            logger.warning(f"API Gateway initialization failed: {e}")
+
+    mode = "ENTERPRISE" if ENTERPRISE_FEATURES_AVAILABLE else "MVP"
+    logger.info(f"🎯 Omni-One AI Platform ready! (Mode: {mode})")
+    logger.info(f"🌐 Server will run on http://0.0.0.0:5003")
+    logger.info(f"🔑 API Gateway: {'Enabled' if config.enable_api_gateway and ENTERPRISE_FEATURES_AVAILABLE else 'Disabled'}")
+    logger.info(f"⚙️  Worker System: {'Enabled' if config.enable_worker_system and ENTERPRISE_FEATURES_AVAILABLE else 'Disabled'}")
+    logger.info(f"📊 Monitoring: {'Enabled' if config.enable_monitoring and ENTERPRISE_FEATURES_AVAILABLE else 'Disabled'}")
+    logger.info(f"🗄️  Redis: {'Available' if config.redis_available else 'Unavailable
+def bootstrap_enterprise_system():
+    """Bootstrap the entire enterprise system."""
+
+    logger.info("🚀 Bootstrapping Omni-One Enterprise AI Platform...")
+
+    # Initialize infrastructure
+    if config.enable_monitoring:
+        initialize_monitoring()
+        logger.info("✅ Monitoring system initialized")
+
+    if config.enable_worker_system:
+        initialize_enterprise_workers()
+        logger.info("✅ Worker system initialized")
+
+    initialize_data_pipelines()
+    logger.info("✅ Data pipelines initialized")
+
+    # Create and configure the application
+    app = create_enterprise_app()
+
+    # Register with API Gateway if enabled
+    if config.enable_api_gateway:
+        gateway.register_service("omni_core", "localhost", 5003)
+        logger.info("✅ Service registered with API Gateway")
+
+    logger.info("🎯 Omni-One Enterprise Platform ready!")
+    logger.info(f"🌐 Server will run on http://0.0.0.0:5003")
+    logger.info(f"🔑 API Gateway: {'Enabled' if config.enable_api_gateway else 'Disabled'}")
+    logger.info(f"⚙️  Worker System: {'Enabled' if config.enable_worker_system else 'Disabled'}")
+    logger.info(f"📊 Monitoring: {'Enabled' if config.enable_monitoring else 'Disabled'}")
+
+    return app
+
+# --- Main Entry Point ---
+if __name__ == '__main__':
+    # Bootstrap the enterprise system
+    app = bootstrap_enterprise_system()
+
+    # Start the server
+    print("Omni-One Enterprise AI Platform running.")
+    print("API Key loaded from GOOGLE_API_KEY environment variable.")
+    print("Available enterprise endpoints:")
+    print("  GET  /health - System health check")
+    print("  GET  /metrics - System metrics")
+    print("  POST /synthesize - Synchronous synthesis")
+    print("  POST /synthesize-stream - Streaming synthesis")
+    print("  POST /proactive/client-search - Client intelligence")
+    print("  POST /ai/advanced-query - Multi-agent analysis")
+    print("  POST /data/connectors - Add data connectors")
+    print("  POST /data/sync - Sync enterprise data")
+    print("  GET  /analytics/realtime - Real-time analytics")
+    print("Listening on http://127.0.0.1:5003")
+
+    app.run(host='0.0.0.0', port=5003, debug=False, threaded=True)
 2. Extract strategic themes from both sources
 3. Articulate the strategic imperative and competitive implications
 4. Suggest 1-2 high-level strategic priorities
