@@ -32,9 +32,9 @@
         <div class="w-full max-w-6xl">
             <header class="text-center mb-10">
                 <h1 class="text-4xl font-extrabold text-gray-900">
-                    <span class="text-indigo-600">Omni</span> – The Knowledge Synthesis Engine
+                    <span class="text-indigo-600">Omni</span> – Enterprise AI Intelligence Platform
                 </h1>
-                <p class="text-gray-500 mt-2 text-lg">MVP: Synthesize strategy from multiple data sources.</p>
+                <p class="text-gray-500 mt-2 text-lg">Proactive insights, automated workflows, and general intelligence for enterprise success.</p>
                 <p class="text-sm text-red-500 mt-2 font-medium">NOTE: You must run the Python server (`server.py`) before clicking 'Synthesize Knowledge'.</p>
             </header>
 
@@ -140,8 +140,68 @@
                 </div>
 
             </div>
-        </div>
-    </div>
+
+            <!-- Enterprise Dashboard -->
+            <div class="mt-10 grid grid-cols-1 lg:grid-cols-4 gap-6 mb-10">
+                <div class="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-lg font-semibold">Active Clients</h3>
+                    <p class="text-3xl font-bold" id="activeClients">0</p>
+                    <p class="text-sm opacity-80">Monitored this week</p>
+                </div>
+                <div class="bg-gradient-to-r from-green-500 to-teal-600 text-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-lg font-semibold">Alerts Generated</h3>
+                    <p class="text-3xl font-bold" id="alertsGenerated">0</p>
+                    <p class="text-sm opacity-80">This month</p>
+                </div>
+                <div class="bg-gradient-to-r from-yellow-500 to-orange-600 text-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-lg font-semibold">Insights Delivered</h3>
+                    <p class="text-3xl font-bold" id="insightsDelivered">0</p>
+                    <p class="text-sm opacity-80">Today</p>
+                </div>
+                <div class="bg-gradient-to-r from-red-500 to-pink-600 text-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-lg font-semibold">Risk Mitigation</h3>
+                    <p class="text-3xl font-bold" id="riskMitigation">0</p>
+                    <p class="text-sm opacity-80">Actions taken</p>
+                </div>
+            </div>
+            <div class="mt-10 bg-white p-6 rounded-xl container-shadow">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">Proactive Enterprise Features</h2>
+                
+                <!-- Client Search -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-medium text-gray-700 mb-2">Client Information Search</h3>
+                    <div class="flex gap-4">
+                        <input id="clientName" type="text" placeholder="Enter client name..." 
+                               class="flex-1 rounded-lg border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        <button id="clientSearchBtn" 
+                                class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                            Search Client
+                        </button>
+                    </div>
+                    <div id="clientResults" class="mt-4 p-4 bg-gray-50 rounded-lg hidden">
+                        <h4 class="font-medium text-gray-800">Client Summary</h4>
+                        <p id="clientSummary" class="text-gray-600 mt-2"></p>
+                        <p id="clientSentiment" class="text-sm text-gray-500 mt-1"></p>
+                        <ul id="clientSuggestions" class="list-disc list-inside text-sm text-blue-600 mt-2"></ul>
+                    </div>
+                <!-- Advanced AI Query -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-medium text-gray-700 mb-2">Advanced AI Query</h3>
+                    <div class="flex gap-4 mb-4">
+                        <input id="advancedClientName" type="text" placeholder="Client name..." 
+                               class="flex-1 rounded-lg border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        <input id="advancedQuery" type="text" placeholder="Complex query..." 
+                               class="flex-1 rounded-lg border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        <button id="advancedQueryBtn" 
+                                class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                            AI Analysis
+                        </button>
+                    </div>
+                    <div id="advancedResults" class="p-4 bg-purple-50 rounded-lg hidden">
+                        <h4 class="font-medium text-gray-800">Multi-Agent Analysis</h4>
+                        <div id="advancedContent" class="text-gray-600 mt-2"></div>
+                    </div>
+                </div>
 
     <script>
         // The frontend communicates with the Flask server running locally
@@ -159,6 +219,17 @@
         const progressBar = document.getElementById('progressBar');
         const progressFill = document.getElementById('progressFill');
         const progressText = document.getElementById('progressText');
+        const clientNameEl = document.getElementById('clientName');
+        const clientSearchBtn = document.getElementById('clientSearchBtn');
+        const clientResults = document.getElementById('clientResults');
+        const clientSummary = document.getElementById('clientSummary');
+        const clientSentiment = document.getElementById('clientSentiment');
+        const clientSuggestions = document.getElementById('clientSuggestions');
+        const advancedClientNameEl = document.getElementById('advancedClientName');
+        const advancedQueryEl = document.getElementById('advancedQuery');
+        const advancedQueryBtn = document.getElementById('advancedQueryBtn');
+        const advancedResults = document.getElementById('advancedResults');
+        const advancedContent = document.getElementById('advancedContent');
 
         // State function to show/hide loading and button state
         function setLoading(isLoading) {
@@ -324,8 +395,102 @@
             }
         }
 
+        // Client Search Function
+        async function runClientSearch() {
+            const clientName = clientNameEl.value.trim();
+            if (!clientName) {
+                alert("Please enter a client name.");
+                return;
+            }
+
+            clientSearchBtn.disabled = true;
+            clientSearchBtn.textContent = "Searching...";
+
+            try {
+                const response = await fetch("http://127.0.0.1:5003/proactive/client-search", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ clientName })
+                });
+
+                if (!response.ok) {
+                    throw new Error("Client search failed");
+                }
+
+                const data = await response.json();
+                clientSummary.textContent = data.summary;
+                clientSentiment.textContent = `Sentiment: ${data.sentiment}`;
+                clientSuggestions.innerHTML = data.suggestions.map(s => `<li>${s}</li>`).join('');
+                clientResults.classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Client search error:', error);
+                alert("Failed to search client data. Ensure server is running and data is available.");
+            } finally {
+                clientSearchBtn.disabled = false;
+                clientSearchBtn.textContent = "Search Client";
+            }
+        }
+
+        // Advanced Query Function
+        async function runAdvancedQuery() {
+            const clientName = advancedClientNameEl.value.trim();
+            const query = advancedQueryEl.value.trim();
+            if (!clientName || !query) {
+                alert("Please enter both client name and query.");
+                return;
+            }
+
+            advancedQueryBtn.disabled = true;
+            advancedQueryBtn.textContent = "Analyzing...";
+
+            try {
+                const response = await fetch("http://127.0.0.1:5003/ai/advanced-query", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ clientName, query })
+                });
+
+                if (!response.ok) {
+                    throw new Error("Advanced query failed");
+                }
+
+                const data = await response.json();
+                advancedContent.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <h5 class="font-medium">Sentiment Analysis</h5>
+                            <p>Sentiment: ${data.sentiment_analysis.sentiment} (${(data.sentiment_analysis.confidence * 100).toFixed(1)}%)</p>
+                        </div>
+                        <div>
+                            <h5 class="font-medium">Predictive Analysis</h5>
+                            <p>Risk: ${data.predictive_analysis ? data.predictive_analysis.risk_assessment.risk : 'N/A'}</p>
+                        </div>
+                        <div class="md:col-span-2">
+                            <h5 class="font-medium">AI Insights</h5>
+                            <p class="text-sm">${data.final_insights.substring(0, 500)}...</p>
+                        </div>
+                    </div>
+                `;
+                advancedResults.classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Advanced query error:', error);
+                alert("Failed to process advanced query. Ensure server is running.");
+            } finally {
+                advancedQueryBtn.disabled = false;
+                advancedQueryBtn.textContent = "AI Analysis";
+            }
+        }
+
         // Event Listener
         synthesizeBtn.addEventListener('click', runSynthesisStream);
+        clientSearchBtn.addEventListener('click', runClientSearch);
+        advancedQueryBtn.addEventListener('click', runAdvancedQuery);
 
     </script>
 </body>
