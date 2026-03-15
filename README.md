@@ -1,31 +1,36 @@
-# Omni – The AI-Native Knowledge Synthesis Engine
+# Omni-One – Proactive Enterprise AI Platform
 
-**Production-grade AI intelligence layer for corporate knowledge synthesis with streaming responses, multi-mode analysis, and citation-driven insights.**
+**Cutting-edge AI intelligence layer for enterprise workflow integration, featuring proactive client monitoring, multi-agent orchestration, and continuous learning capabilities.**
 
 ## Overview
 
-Omni is an advanced knowledge synthesis engine that analyzes multiple data sources (internal reports, external market intelligence, competitive analysis) and synthesizes actionable insights with enforced citations. Unlike traditional document analysis tools, Omni uses specialized AI prompts for different analysis modes and streams responses in real-time with progress indicators.
+Omni-One is a revolutionary enterprise AI platform that transforms how organizations interact with their data and clients. Unlike traditional AI tools, Omni-One proactively monitors client relationships, integrates seamlessly into workflows (Slack, Outlook), and provides general intelligence features including automated suggestions, sentiment analysis, and predictive analytics.
 
 **Key Features:**
-- 🎯 **4 Synthesis Modes**: Strategic Summary, Detailed Analysis, Action Items, Comparative Analysis
+- 🎯 **Proactive Client Intelligence**: Real-time monitoring of client interactions, sentiment analysis, and automated insights
+- 🤖 **Multi-Agent Orchestration**: Advanced AI agents for sentiment analysis, predictive analytics, and anomaly detection
+- 🔄 **Workflow Integration**: Native Slack and Outlook integrations for seamless productivity
+- 📊 **Enterprise Data Connectors**: Connect to email, Slack, Salesforce, and custom data sources
 - ⚡ **Real-Time Streaming**: Token-based progress estimation with live streaming responses
-- 🔗 **Citation Enforcement**: Every insight is backed by source attribution (`[Internal Data]` or `[External Report]`)
-- 🛡️ **Enterprise Ready**: Secure API key management, quality validation, robust error handling
-- 🔀 **Multi-Source Intelligence**: Bridge internal metrics with external market data seamlessly
-- 🎨 **Modern UI**: Clean, responsive interface with progress visualization
+- 🧠 **Continuous Learning**: AI that improves over time through user feedback and data patterns
+- 🔗 **RAG-Powered Search**: Semantic search across all enterprise knowledge with citations
+- 🛡️ **Enterprise Security**: Authentication, rate limiting, and secure API management
+- 🎨 **Modern UI**: Enterprise dashboard with proactive alerts and advanced query interfaces
 
 ## Quick Start
 
 ### Prerequisites
-- Python 3.8+
+- Python 3.11+
 - pip (Python package manager)
-- Node.js or a modern web browser (frontend only)
+- Redis (for caching)
+- Weaviate (for vector search, optional)
+- Modern web browser
 
 ### Installation
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/omni-one.git
+   git clone https://github.com/garyguo123456789/omni-one.git
    cd omni-one
    ```
 
@@ -34,20 +39,251 @@ Omni is an advanced knowledge synthesis engine that analyzes multiple data sourc
    pip install -r requirements.txt
    ```
 
-3. **Configure API Key**
+3. **Configure Environment**
    - Copy `.env.example` to `.env`:
      ```bash
      cp .env.example .env
      ```
-   - Edit `.env` and add your Google Gemini API key:
+   - Edit `.env` and add your API keys:
      ```
-     GOOGLE_API_KEY=your-actual-api-key-here
+     GOOGLE_API_KEY=your-gemini-api-key
+     REDIS_URL=redis://localhost:6379
+     SLACK_BOT_TOKEN=your-slack-token
+     SALESFORCE_CLIENT_ID=your-sf-client-id
+     SALESFORCE_CLIENT_SECRET=your-sf-secret
      ```
-   - Get a free API key from [Google AI Studio](https://aistudio.google.com/app/apikeys)
 
-4. **Start the backend server**
+4. **Start Services (Optional)**
+   ```bash
+   # Start Redis
+   redis-server
+
+   # Start Weaviate (for full RAG features)
+   docker run -p 8080:8080 cr.weaviate.io/semitechnologies/weaviate:1.24.0
+   ```
+
+5. **Start the backend server**
    ```bash
    python server.py
+   ```
+   You should see:
+   ```
+   Omni Backend Server running.
+   API Key loaded from GOOGLE_API_KEY environment variable.
+   Available endpoints:
+     GET  / - Health check
+     POST /proactive/client-search - Client intelligence search
+     POST /ai/advanced-query - Multi-agent analysis
+     POST /data/sync - Sync enterprise data
+     POST /integrations/slack/webhook - Slack integration
+   Listening on http://127.0.0.1:5003
+   ```
+
+6. **Open the frontend**
+   - Open `index.html` in your web browser
+   - Or serve via local server:
+     ```bash
+     python -m http.server 8000
+     # Open http://localhost:8000/index.html
+     ```
+
+## Core Features
+
+### 🤖 Proactive Client Intelligence
+
+**Real-time client monitoring and insights:**
+- **Client Search**: Search across all client data with sentiment analysis
+- **Automated Alerts**: Get notified of client sentiment changes or anomalies
+- **Predictive Analytics**: Forecast client behavior and needs
+- **Relationship Scoring**: Automated client health scoring
+
+**Example Usage:**
+```javascript
+// Search for client insights
+const response = await fetch('/proactive/client-search', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ clientName: 'Acme Corp' })
+});
+```
+
+### 🔄 Workflow Integrations
+
+**Seamless productivity integration:**
+- **Slack Integration**: Receive proactive alerts and respond to queries
+- **Outlook Integration**: Monitor email sentiment and automate follow-ups
+- **Webhook Support**: Connect to any workflow tool
+
+**Setup Slack Integration:**
+1. Create a Slack app at https://api.slack.com/apps
+2. Add bot permissions: `channels:read`, `chat:write`, `users:read`
+3. Set webhook URL to: `https://your-domain.com/integrations/slack/webhook`
+
+### 📊 Enterprise Data Connectors
+
+**Connect to your business data:**
+- **Email (IMAP)**: Monitor client communications
+- **Slack**: Real-time team collaboration data
+- **Salesforce**: CRM and opportunity data
+- **Custom APIs**: Extend with your own data sources
+
+**Example: Add a data connector**
+```bash
+curl -X POST http://localhost:5003/data/connectors \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "email",
+    "config": {
+      "server": "imap.gmail.com",
+      "username": "your-email@gmail.com",
+      "password": "app-password"
+    }
+  }'
+```
+
+### 🧠 Advanced AI Capabilities
+
+**Multi-agent orchestration:**
+- **Sentiment Analysis**: Real-time mood detection across communications
+- **Anomaly Detection**: Identify unusual patterns in client behavior
+- **Predictive Modeling**: Forecast client needs and opportunities
+- **Continuous Learning**: AI improves with user feedback
+
+**Example: Advanced multi-agent query**
+```javascript
+const response = await fetch('/ai/advanced-query', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    clientName: 'Acme Corp',
+    query: 'Analyze recent sentiment and predict next quarter opportunities'
+  })
+});
+```
+
+### 🔍 RAG-Powered Knowledge Search
+
+**Semantic search across all enterprise data:**
+- **Vector Search**: Find relevant information using AI embeddings
+- **Citation Tracking**: Every insight backed by source attribution
+- **Multi-Source Synthesis**: Combine internal and external intelligence
+
+## API Reference
+
+### Core Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/proactive/client-search` | POST | Search client data with proactive insights |
+| `/ai/advanced-query` | POST | Multi-agent analysis and orchestration |
+| `/synthesize-stream` | POST | Streaming knowledge synthesis |
+| `/data/connectors` | POST | Add/configure data connectors |
+| `/data/sync` | POST | Sync data from all connectors |
+| `/integrations/slack/webhook` | POST | Slack webhook handler |
+| `/ai/feedback` | POST | Submit user feedback for learning |
+
+### Authentication
+
+Set environment variables:
+```bash
+export VALID_API_KEYS="key1,key2,key3"
+export RATE_LIMIT_REQUESTS=100
+export RATE_LIMIT_WINDOW=3600
+```
+
+## Architecture
+
+### System Components
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Frontend UI   │    │   Flask Backend  │    │  Data Sources   │
+│                 │    │                  │    │                 │
+│ - Dashboard     │◄──►│ - REST API       │◄──►│ - Email/IMAP    │
+│ - Client Search │    │ - Streaming      │    │ - Slack API     │
+│ - Advanced Query│    │ - Authentication │    │ - Salesforce    │
+└─────────────────┘    │                  │    │ - Custom APIs   │
+                       │ - Multi-Agent    │    └─────────────────┘
+                       │ - RAG Engine     │
+                       └─────────────────┘
+                                │
+                                ▼
+                       ┌──────────────────┐
+                       │   AI Services    │
+                       │                  │
+                       │ - Google Gemini  │
+                       │ - LiteLLM Router │
+                       │ - Vector DB      │
+                       │ - Redis Cache    │
+                       └─────────────────┘
+```
+
+### Technology Stack
+
+- **Backend**: Python Flask with async support
+- **AI Models**: Google Gemini 2.5 Flash, multi-model via LiteLLM
+- **Vector Database**: Weaviate for semantic search
+- **Cache**: Redis for performance optimization
+- **Async Processing**: Celery for background tasks
+- **Frontend**: Vanilla HTML/JS with Tailwind CSS
+- **Data Connectors**: IMAP, REST APIs, Webhooks
+
+## Deployment
+
+### Production Setup
+
+1. **Environment Setup**
+   ```bash
+   # Install production dependencies
+   pip install gunicorn
+
+   # Configure production settings
+   export FLASK_ENV=production
+   export REDIS_URL=redis://your-redis-instance
+   ```
+
+2. **Start with Gunicorn**
+   ```bash
+   gunicorn --bind 0.0.0.0:5003 --workers 4 server:app
+   ```
+
+3. **Docker Deployment**
+   ```dockerfile
+   FROM python:3.11-slim
+   COPY . /app
+   WORKDIR /app
+   RUN pip install -r requirements.txt
+   CMD ["python", "server.py"]
+   ```
+
+### Scaling Considerations
+
+- **Horizontal Scaling**: Use load balancer with multiple app instances
+- **Database**: Upgrade to managed Weaviate/Redis for production
+- **Caching**: Implement CDN for static assets
+- **Monitoring**: Add logging and metrics collection
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/new-capability`
+3. Make your changes and add tests
+4. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Support
+
+For support and questions:
+- 📧 Email: support@omni-one.ai
+- 📖 Documentation: https://docs.omni-one.ai
+- 🐛 Issues: https://github.com/garyguo123456789/omni-one/issues
+
+---
+
+**Omni-One**: Transforming enterprise AI from reactive to proactive intelligence.
    ```
    You should see:
    ```
@@ -399,19 +635,11 @@ MIT License - see LICENSE file for details
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/omni-one/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/omni-one/discussions)
-- **Email**: contact@example.com
-
-## Citation
-
-If you use Omni in research or production, please cite:
-
-```
-Guo, H. et al. "Omni: AI-Native Knowledge Synthesis Engine" (2024)
-```
+For support and questions:
+- 📧 Email: support@omni-one.ai
+- 📖 Documentation: https://docs.omni-one.ai
+- 🐛 Issues: https://github.com/garyguo123456789/omni-one/issues
 
 ---
 
-**Built with:** Flask, Tailwind CSS, Google Gemini API, tiktoken
-**Status:** Active Development (Pre-release)
+**Omni-One**: Transforming enterprise AI from reactive to proactive intelligence.
