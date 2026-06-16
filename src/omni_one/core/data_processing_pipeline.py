@@ -64,6 +64,7 @@ class ProcessingResult:
     # Metrics
     llm_bypassed: bool = False
     confidence_score: float = 0.0
+    llm_decision_audit: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -203,6 +204,34 @@ class MultiLayerDataPipeline:
         entity_id = record.get("entity_id", "unknown")
         timestamp = record.get("timestamp", "")
         return f"{entity_id}_{timestamp}"
+
+    def _build_llm_decision_audit(self,
+                                  decision: str,
+                                  llm_bypassed: bool,
+                                  priority_score: float = 0.0,
+                                  anomaly_severity: Optional[str] = None,
+                                  batch_context: Optional[Dict[str, Any]] = None,
+                                  gate_reason: str = "",
+                                  layer3_skipped: bool = False,
+                                  skip_reason: Optional[str] = None,
+                                  cache_status: str = "not_checked",
+                                  prompt: Optional[str] = None) -> Dict[str, Any]:
+        """Create a structured audit trail for LLM routing decisions."""
+        audit = {
+            "decision": decision,
+            "llm_bypassed": llm_bypassed,
+            "layer3_skipped": layer3_skipped,
+            "batch_context": batch_context,
+            "gate_reason": gate_reason,
+            "priority_score": float(priority_score),
+            "anomaly_severity": anomaly_severity,
+            "cache_status": cache_status
+        }
+        if skip_reason is not None:
+            audit["skip_reason"] = skip_reason
+        if prompt is not None:
+            audit["prompt_preview"] = prompt[:200]
+        return audit
     
     def process_record(self, record: Dict[str, Any]) -> ProcessingResult:
         """
@@ -229,6 +258,13 @@ class MultiLayerDataPipeline:
             result.processing_stage = ProcessingStage.INGESTION_ERROR
             result.layer1_result = {"errors": layer1_errors}
             result.llm_bypassed = True
+            result.llm_decision_audit = self._build_llm_decision_audit(
+                decision="not_required",
+                llm_bypassed=True,
+                gate_reason="Layer 1 validation failed",
+                layer3_skipped=False,
+                batch_context=None
+            )
             self.metrics.records_resolved_at_layer1 += 1
             return result
         
@@ -269,22 +305,53 @@ class MultiLayerDataPipeline:
         result.confidence_score = confidence_score
         
         # LAYER 4: Intelligent LLM Gating
-        if not requires_llm or not self.model_router:
+        anomaly_severity = (
+            result.layer2_result.get("anomalies", [{}])[0].get("severity")
+            if result.layer2_result.get("anomalies")
+            else None
+        )
+
+        if not requires_llm:
             result.processing_stage = ProcessingStage.ML_FEATURE
             result.llm_bypassed = True
+            result.llm_decision_audit = self._build_llm_decision_audit(
+                decision="not_required",
+                llm_bypassed=True,
+                priority_score=priority_score,
+                anomaly_severity=anomaly_severity,
+                batch_context=None,
+                gate_reason="Layer 3 did not require LLM synthesis",
+                layer3_skipped=False,
+                cache_status="not_checked"
+            )
+            self.metrics.records_resolved_at_layer3 += 1
+        elif not self.model_router:
+            result.processing_stage = ProcessingStage.ML_FEATURE
+            result.llm_bypassed = True
+            result.llm_decision_audit = self._build_llm_decision_audit(
+                decision="gate_bypassed",
+                llm_bypassed=True,
+                priority_score=priority_score,
+                anomaly_severity=anomaly_severity,
+                batch_context=None,
+                gate_reason="LLM required but no model router configured",
+                layer3_skipped=False,
+                cache_status="not_configured"
+            )
             self.metrics.records_resolved_at_layer3 += 1
         else:
             # Check if LLM gate approves (batch_context=None for standard processing)
             should_invoke, reason = self.llm_gate.should_invoke_llm(
                 enriched_l3,
                 priority_score,
-                result.layer2_result.get("anomalies", [{}])[0].get("severity") if result.layer2_result.get("anomalies") else None,
+                anomaly_severity,
                 batch_context=None
             )
             
             if should_invoke:
                 # Generate prompt from enriched record
                 prompt = self._generate_synthesis_prompt(enriched_l3, layer3_results)
+                cache_status = "not_configured"
                 
                 start_layer4 = time.time()
                 try:
@@ -294,22 +361,47 @@ class MultiLayerDataPipeline:
                         if cached:
                             result.layer4_llm_response = cached[0].page_content
                             self.metrics.cache_hits += 1
+                            cache_status = "hit"
                         else:
                             result.layer4_llm_response = self.model_router.generate(prompt)
                             self.metrics.cache_misses += 1
+                            cache_status = "miss"
                     else:
                         result.layer4_llm_response = self.model_router.generate(prompt)
                         self.metrics.cache_misses += 1
                     
                     result.layer4_time_ms = (time.time() - start_layer4) * 1000
                     result.processing_stage = ProcessingStage.LLM_REQUIRED
+                    result.llm_bypassed = False
                     self.metrics.records_requiring_llm += 1
                 except Exception as e:
                     logger.error(f"LLM generation failed: {e}")
                     result.layer4_llm_response = f"LLM Error: {str(e)}"
+                    cache_status = "error"
+                result.llm_decision_audit = self._build_llm_decision_audit(
+                    decision="invoked",
+                    llm_bypassed=False,
+                    priority_score=priority_score,
+                    anomaly_severity=anomaly_severity,
+                    batch_context=None,
+                    gate_reason=reason,
+                    layer3_skipped=False,
+                    cache_status=cache_status,
+                    prompt=prompt
+                )
             else:
                 result.processing_stage = ProcessingStage.ML_FEATURE
                 result.llm_bypassed = True
+                result.llm_decision_audit = self._build_llm_decision_audit(
+                    decision="gate_bypassed",
+                    llm_bypassed=True,
+                    priority_score=priority_score,
+                    anomaly_severity=anomaly_severity,
+                    batch_context=None,
+                    gate_reason=reason,
+                    layer3_skipped=False,
+                    cache_status="not_checked"
+                )
                 self.metrics.records_resolved_at_layer3 += 1
         
         # Complete timing
@@ -415,7 +507,14 @@ Priority: {predictions.get('priority', {}).get('value', 'unknown')}
                     final_record=normalized,
                     processing_stage=ProcessingStage.INGESTION_ERROR,
                     layer1_result={"errors": layer1_errors},
-                    llm_bypassed=True
+                    llm_bypassed=True,
+                    llm_decision_audit=self._build_llm_decision_audit(
+                        decision="not_required",
+                        llm_bypassed=True,
+                        gate_reason="Layer 1 validation failed",
+                        layer3_skipped=False,
+                        batch_context=None
+                    )
                 )
                 results.append(result)
                 self.metrics.records_resolved_at_layer1 += 1
@@ -494,6 +593,41 @@ Priority: {predictions.get('priority', {}).get('value', 'unknown')}
                 llm_bypassed=True,
                 confidence_score=layer3_result.get("predictions", {}).get("priority", {}).get("confidence", 0.5)
             )
+
+            if skip_layer3:
+                result.llm_decision_audit = self._build_llm_decision_audit(
+                    decision="skipped_by_selective_propagation",
+                    llm_bypassed=True,
+                    priority_score=priority_score,
+                    anomaly_severity=anomaly_severity,
+                    batch_context=batch_context,
+                    gate_reason="LLM not required after selective propagation",
+                    layer3_skipped=True,
+                    skip_reason=skip_reason,
+                    cache_status="not_checked"
+                )
+            elif not requires_llm:
+                result.llm_decision_audit = self._build_llm_decision_audit(
+                    decision="not_required",
+                    llm_bypassed=True,
+                    priority_score=priority_score,
+                    anomaly_severity=anomaly_severity,
+                    batch_context=batch_context,
+                    gate_reason="Layer 3 did not require LLM synthesis",
+                    layer3_skipped=False,
+                    cache_status="not_checked"
+                )
+            elif requires_llm and not self.model_router:
+                result.llm_decision_audit = self._build_llm_decision_audit(
+                    decision="gate_bypassed",
+                    llm_bypassed=True,
+                    priority_score=priority_score,
+                    anomaly_severity=anomaly_severity,
+                    batch_context=batch_context,
+                    gate_reason="LLM required but no model router configured",
+                    layer3_skipped=False,
+                    cache_status="not_configured"
+                )
             
             # LLM invocation with batch context awareness
             if requires_llm and self.model_router:
@@ -506,6 +640,7 @@ Priority: {predictions.get('priority', {}).get('value', 'unknown')}
                 
                 if should_invoke:
                     prompt = self._generate_synthesis_prompt(final_record, layer3_result)
+                    cache_status = "not_configured"
                     
                     try:
                         if self.cache:
@@ -513,9 +648,11 @@ Priority: {predictions.get('priority', {}).get('value', 'unknown')}
                             if cached:
                                 result.layer4_llm_response = cached[0].page_content
                                 self.metrics.cache_hits += 1
+                                cache_status = "hit"
                             else:
                                 result.layer4_llm_response = self.model_router.generate(prompt)
                                 self.metrics.cache_misses += 1
+                                cache_status = "miss"
                         else:
                             result.layer4_llm_response = self.model_router.generate(prompt)
                             self.metrics.cache_misses += 1
@@ -526,6 +663,29 @@ Priority: {predictions.get('priority', {}).get('value', 'unknown')}
                     except Exception as e:
                         logger.error(f"LLM generation failed: {e}")
                         result.layer4_llm_response = f"LLM Error: {str(e)}"
+                        cache_status = "error"
+                    result.llm_decision_audit = self._build_llm_decision_audit(
+                        decision="invoked",
+                        llm_bypassed=False,
+                        priority_score=priority_score,
+                        anomaly_severity=anomaly_severity,
+                        batch_context=batch_context,
+                        gate_reason=gate_reason,
+                        layer3_skipped=False,
+                        cache_status=cache_status,
+                        prompt=prompt
+                    )
+                else:
+                    result.llm_decision_audit = self._build_llm_decision_audit(
+                        decision="gate_bypassed",
+                        llm_bypassed=True,
+                        priority_score=priority_score,
+                        anomaly_severity=anomaly_severity,
+                        batch_context=batch_context,
+                        gate_reason=gate_reason,
+                        layer3_skipped=False,
+                        cache_status="not_checked"
+                    )
             
             results.append(result)
             self.metrics.total_records_processed += 1
