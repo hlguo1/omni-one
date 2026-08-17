@@ -1,0 +1,157 @@
+# Omni-One Enterprise AI Platform - Production Dependencies
+
+# ============================================================================
+# CORE WEB FRAMEWORK
+# ============================================================================
+fastapi==0.104.1              # Modern async web framework
+uvicorn==0.24.0               # ASGI server
+fastapi-health==0.4.0         # Health check endpoint support
+python-multipart==0.0.6       # Form data parsing
+
+# ============================================================================
+# ASYNC & CONCURRENCY
+# ============================================================================
+asyncio-contextmanager==1.0.0  # Async context managers
+aioredis==2.0.1               # Async Redis client
+asyncpg==0.29.0               # Async PostgreSQL
+aiohttp==3.9.1                # Async HTTP client
+
+# ============================================================================
+# DATA VALIDATION & SERIALIZATION (Pydantic v2)
+# ============================================================================
+pydantic==2.5.0               # Data validation and serialization
+pydantic-settings==2.1.0      # Settings management
+pydantic-core==2.14.0         # Core validation engine
+
+# ============================================================================
+# LOGGING & OBSERVABILITY
+# ============================================================================
+structlog==23.3.0             # Structured logging
+python-json-logger==2.0.7     # JSON logging formatter
+opentelemetry-api==1.20.0     # OpenTelemetry API
+opentelemetry-sdk==1.20.0     # OpenTelemetry SDK
+opentelemetry-exporter-jaeger==1.20.0  # Jaeger tracing
+opentelemetry-instrumentation-fastapi==0.41b0  # FastAPI instrumentation
+opentelemetry-instrumentation-redis==0.41b0    # Redis instrumentation
+opentelemetry-instrumentation-sqlalchemy==0.41b0  # SQLAlchemy instrumentation
+prometheus-client==0.19.0     # Prometheus metrics
+sentry-sdk==1.38.0            # Error tracking
+python-dotenv==1.0.0          # Environment variables
+
+# ============================================================================
+# AI/ML MODELS & INFERENCE
+# ============================================================================
+litellm==1.35.0               # Multi-model LLM routing
+langchain==0.1.16             # LLM orchestration framework
+langchain-community==0.0.34   # LangChain community integrations
+sentence-transformers==2.7.0  # Embedding models
+transformers==4.40.0          # Hugging Face models
+torch==2.1.1                  # PyTorch (required for embedding models)
+
+# ============================================================================
+# VECTOR DATABASES & RETRIEVAL
+# ============================================================================
+weaviate-client==4.5.5        # Weaviate vector DB client
+pinecone-client==2.2.4        # Pinecone vector DB client
+langchain-pinecone==0.0.2     # Pinecone integration
+
+# ============================================================================
+# CACHING & DATA STORES
+# ============================================================================
+redis==5.0.1                  # Redis client
+sqlalchemy==2.0.28            # ORM
+psycopg2-binary==2.9.9        # PostgreSQL driver
+pymongo==4.6.1                # MongoDB driver
+pymysql==1.1.0                # MySQL driver
+
+# ============================================================================
+# TASK QUEUING & SCHEDULING
+# ============================================================================
+celery==5.3.4                 # Distributed task queue
+redis[hiredis]==5.0.1         # Redis with C parser
+celery-beat==2.5.0            # Celery scheduler
+APScheduler==3.10.4           # Advanced scheduling
+schedule==1.2.1               # Simple scheduling
+pika==1.3.2                   # RabbitMQ client
+
+# ============================================================================
+# DATA PROCESSING
+# ============================================================================
+pandas==2.2.1                 # Data manipulation
+numpy==1.26.4                 # Numerical computing
+scikit-learn==1.4.2           # Machine learning utilities
+scipy==1.12.0                 # Scientific computing
+imbalanced-learn==0.12.0      # Class imbalance handling
+
+# ============================================================================
+# WEB SCRAPING & PARSING
+# ============================================================================
+beautifulsoup4==4.12.3        # HTML/XML parsing
+lxml==5.1.0                   # XML/HTML processing
+requests==2.31.0              # HTTP library
+requests-oauthlib==1.4.0      # OAuth support
+
+# ============================================================================
+# INTEGRATIONS & CONNECTORS
+# ============================================================================
+slack-sdk==3.27.1             # Slack API SDK
+msal==1.26.0                  # Azure AD authentication
+zeep==4.2.1                   # SOAP web services
+salesforce-bulk==2.2.0        # Salesforce bulk API
+
+# ============================================================================
+# SECURITY & CRYPTOGRAPHY
+# ============================================================================
+cryptography==42.0.5          # Cryptographic recipes
+bcrypt==4.1.2                 # Password hashing
+PyJWT==2.8.0                  # JWT tokens
+python-jose==3.3.0            # JWT/JWE support
+
+# ============================================================================
+# SYSTEM & MONITORING
+# ============================================================================
+psutil==5.9.8                 # System utilities
+elasticsearch==8.13.1         # Elasticsearch client
+tiktoken==0.5.2               # Token counting
+
+# ============================================================================
+# TESTING & QUALITY
+# ============================================================================
+pytest==7.4.4                 # Testing framework
+pytest-asyncio==0.21.1        # Async test support
+pytest-cov==4.1.0             # Coverage reporting
+pytest-mock==3.12.0           # Mocking support
+factory-boy==3.3.0            # Test data factories
+faker==22.0.0                 # Fake data generation
+responses==0.24.1             # HTTP mocking
+
+# ============================================================================
+# DEVELOPMENT & PRODUCTIVITY
+# ============================================================================
+black==23.12.0                # Code formatter
+isort==5.13.2                 # Import sorting
+flake8==6.1.0                 # Linting
+mypy==1.7.1                   # Type checking
+pylint==3.0.3                 # Advanced linting
+pytest-ptrace==2.0.1          # Debugging support
+
+# ============================================================================
+# DEPLOYMENT & OPERATIONS
+# ============================================================================
+gunicorn==21.2.0              # WSGI HTTP server
+python-multipart==0.0.6       # Multipart form parsing
+python-dotenv==1.0.0          # Env var management
+pyyaml==6.0.1                 # YAML parsing
+toml==0.10.2                  # TOML parsing
+
+# ============================================================================
+# DOCUMENTATION
+# ============================================================================
+mkdocs==1.5.3                 # Documentation generator
+mkdocs-material==9.5.3        # Material theme
+
+# ============================================================================
+# OPTIONAL: QUANTUM & ENTERPRISE FEATURES
+# ============================================================================
+# qiskit==0.45.0              # Quantum computing (optional)
+# pennylane==0.33.1           # Quantum ML (optional)
