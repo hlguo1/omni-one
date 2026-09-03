@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Omni-One Seller OS — One outstanding product for people selling online</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>body{font-family:Inter,sans-serif;background:#f8fafc}</style>
+</head>
+<body class="min-h-screen">
+<header class="bg-white border-b sticky top-0 z-10">
+  <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+    <div><div class="text-xl font-bold"><span class="text-indigo-600">Omni-One</span> <span class="text-gray-900">Seller OS</span></div><div class="text-xs text-gray-500">The ONE outstanding product for people selling stuff online — free, local, no fees</div></div>
+    <div class="text-xs text-gray-500">Drop Shopify/Etsy CSV + supplier photo + DM export → Daily Briefing</div>
+  </div>
+</header>
+<main class="max-w-6xl mx-auto px-6 py-8">
+  <!-- Focus statement -->
+  <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4 mb-6">
+    <div class="font-semibold text-indigo-900">Focused: Seller OS is THE product.</div>
+    <div class="text-sm text-indigo-700">Not a generic AI platform. Not 5 overlapping packs. One concrete product for 1-5 person shops on Shopify/Etsy/Amazon. Revenue Ops & Micro packs moved to <code>_labs</code>. Vision (photo→text+chart→pipeline) powers supplier invoices & product photos — still 100% free, local.</div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Left: Drop zone -->
+    <div class="bg-white rounded-xl shadow p-6">
+      <h2 class="font-semibold text-gray-900 mb-2">1. Drop your messy seller folder</h2>
+      <p class="text-sm text-gray-500 mb-4">Shopify/Etsy CSV, inventory.csv, reviews.csv, instagram_dm.txt, supplier_invoice.jpg — any mess. No schema needed.</p>
+      <div class="flex gap-3 mb-4">
+        <button id="demoBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Run Demo Seller Folder (1 click)</button>
+        <button id="photoBtn" class="px-4 py-2 bg-white border rounded-lg hover:bg-gray-50">Upload photo (supplier invoice / product)</button>
+        <input id="photoInput" type="file" accept="image/*" class="hidden">
+      </div>
+      <div id="photoPreview" class="hidden mb-4 text-sm text-gray-600"></div>
+      <div class="text-xs text-gray-400">Or API: <code>POST /api/v1/seller/briefing {"demo":true}</code> or <code>POST /api/v1/seller/photo</code> (multipart, free Tesseract+OpenCV)</div>
+      <div id="status" class="mt-4 text-sm text-gray-600"></div>
+    </div>
+    <!-- Right: KPIs -->
+    <div class="bg-white rounded-xl shadow p-6">
+      <h2 class="font-semibold text-gray-900 mb-4">2. Daily Briefing — Outstanding</h2>
+      <div id="kpis" class="grid grid-cols-2 gap-3 text-sm">
+        <div class="bg-gray-50 p-3 rounded">GMV <div id="kpi-gmv" class="font-bold">—</div></div>
+        <div class="bg-gray-50 p-3 rounded">True Profit <div id="kpi-profit" class="font-bold">—</div></div>
+        <div class="bg-gray-50 p-3 rounded">Margin <div id="kpi-margin" class="font-bold">—</div></div>
+        <div class="bg-gray-50 p-3 rounded">Stockout risk <div id="kpi-stock" class="font-bold">—</div></div>
+      </div>
+      <div class="mt-4 text-sm"><div class="font-medium">Best seller</div><div id="kpi-best" class="text-gray-600">—</div></div>
+      <div id="chartWrap" class="mt-4 hidden"><img id="chartImg" class="w-full rounded border" /></div>
+    </div>
+  </div>
+
+  <!-- Alerts / Actions -->
+  <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-white rounded-xl shadow p-6">
+      <h3 class="font-semibold mb-3">Alerts (with citations file:line)</h3>
+      <div id="alerts" class="space-y-2 text-sm text-gray-600">Run demo to see alerts.</div>
+    </div>
+    <div class="bg-white rounded-xl shadow p-6">
+      <h3 class="font-semibold mb-3">Actions — Do today (one-click)</h3>
+      <div id="actions" class="space-y-2 text-sm text-gray-600">—</div>
+      <div id="draft" class="mt-4 p-3 bg-indigo-50 border border-indigo-200 rounded text-sm hidden"></div>
+    </div>
+  </div>
+
+  <div class="mt-6 bg-white rounded-xl shadow p-6">
+    <h3 class="font-semibold mb-2">Evidence (audit trail)</h3>
+    <div id="evidence" class="text-xs text-gray-500">Every number cites file:line. Example: <code>[shopify_orders.csv:5] Tote Bag Handmade qty2 gmv$56</code>, <code>[inventory.csv:2] Tote Bag Handmade 2 left, sold 6/7d</code></div>
+    <div class="mt-2 text-xs text-gray-400">Pipeline: Layer1 &lt;1ms → Layer2 &lt;10ms → Layer3 &lt;100ms → Layer4 gated (100% bypass demo, $0) — see <code>/api/v1/metrics</code></div>
+  </div>
+</main>
+<script>
+const API = "http://127.0.0.1:5003";
+const demoBtn = document.getElementById('demoBtn');
+const photoBtn = document.getElementById('photoBtn');
+const photoInput = document.getElementById('photoInput');
+const statusEl = document.getElementById('status');
+async function runSellerDemo(){
+  statusEl.textContent = "Running Seller OS demo (free, local)…";
+  const r = await fetch(API+"/api/v1/seller/briefing", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({demo:true, seed:42})});
+  if(!r.ok){ statusEl.textContent = "Failed — is server running on :5003?"; return; }
+  const j = await r.json();
+  render(j);
+  statusEl.textContent = `Ingested ${j.ingest_report?.events||j.meta.events} events — free $0`;
+}
+async function runPhoto(file){
+  statusEl.textContent = "OCR + chart + pipeline (free Tesseract)…";
+  const fd = new FormData(); fd.append("file", file); fd.append("lang","eng"); fd.append("generate_chart","true");
+  const r = await fetch(API+"/api/v1/seller/photo", {method:"POST", body: fd});
+  if(!r.ok){ statusEl.textContent = "Photo upload failed"; return; }
+  const j = await r.json();
+  document.getElementById('photoPreview').classList.remove('hidden');
+  document.getElementById('photoPreview').textContent = "OCR: " + (j.ocr.text||"").slice(0,120) + "…";
+  if(j.chart.generated_chart_base64){
+    document.getElementById('chartWrap').classList.remove('hidden');
+    document.getElementById('chartImg').src = "data:image/png;base64,"+j.chart.generated_chart_base64;
+  }
+  statusEl.textContent = `Photo analyzed free — OCR ${j.ocr.meta?.chars||0} chars, chart ${j.chart.data? j.chart.data.labels.length+" items":"none"}`;
+}
+function render(j){
+  const k=j.kpis;
+  document.getElementById('kpi-gmv').textContent = "$"+k.gmv.toFixed(2);
+  document.getElementById('kpi-profit').textContent = "$"+k.true_profit.toFixed(2) + (k.true_profit<0?" (loss)":"");
+  document.getElementById('kpi-margin').textContent = k.margin_pct.toFixed(1)+"%";
+  document.getElementById('kpi-stock').textContent = k.stockout_risk+" at risk";
+  document.getElementById('kpi-best').textContent = k.best_seller.product + " ("+k.best_seller.qty+")";
+  if(j.chart && j.chart.base64){
+    document.getElementById('chartWrap').classList.remove('hidden');
+    document.getElementById('chartImg').src = "data:image/png;base64,"+j.chart.base64;
+  }
+  document.getElementById('alerts').innerHTML = j.alerts.map(a=>`<div class="p-2 bg-${a.severity==='high'?'red':'yellow'}-50 border rounded"><div class="font-medium">[${a.severity}] ${a.message}</div><div class="text-xs text-gray-500">${(a.evidence[0]||"").slice(0,80)}</div></div>`).join("");
+  document.getElementById('actions').innerHTML = j.actions.map((a,i)=>`<div>${i+1}. ${a}</div>`).join("");
+  if(j.draft_reply && j.draft_reply.text){
+    document.getElementById('draft').classList.remove('hidden');
+    document.getElementById('draft').innerHTML = `<div class="font-medium">Draft win-back (cite ${j.draft_reply.citation})</div><div class="mt-1">"${j.draft_reply.text.slice(0,160)}"</div>`;
+  }
+  document.getElementById('evidence').textContent = "Sample: " + (j.evidence_sample[0]?.citation || j.alerts[0]?.evidence[0] || "file:line citations preserved");
+}
+demoBtn.addEventListener('click', runSellerDemo);
+photoBtn.addEventListener('click', ()=> photoInput.click());
+photoInput.addEventListener('change', e=>{ if(e.target.files[0]) runPhoto(e.target.files[0]); });
+</script>
+</body>
+</html>
