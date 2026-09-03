@@ -127,24 +127,60 @@ class FoundryDataset:
 
 
 class Transform:
-    """Like Foundry PySpark @transform. Free Python function with lineage."""
-    def __init__(self, name: str, inputs: List[FoundryDataset], output: FoundryDataset, fn: Callable):
+    """Like Foundry PySpark @transform. Free Python function with lineage + expectations gate."""
+    def __init__(self, name: str, inputs: List[FoundryDataset], output: FoundryDataset, fn: Callable,
+                 expectations: Optional[List[Callable]] = None, incremental: bool = False):
         self.name = name
         self.inputs = inputs
         self.outputs = output
         self.fn = fn
+        self.expectations = expectations or []  # each fn(df) -> {"passed": bool, ...}
+        self.incremental = incremental
         self.runs: List[Dict[str, Any]] = []
 
+    def _inputs_fingerprint(self) -> str:
+        try:
+            parts = []
+            for ds in self.inputs:
+                vers = ds.versions()
+                parts.append(f"{ds.name}:{vers[-1]['version'] if vers else 'empty'}:{vers[-1]['rows'] if vers else 0}")
+            return hashlib.sha256("|".join(parts).encode()).hexdigest()[:12]
+        except Exception:
+            return "unknown"
+
     def build(self, **kwargs) -> str:
-        """Run transform, write output, track lineage. Returns version."""
-        # Read inputs
+        """Run transform, gate on expectations, track lineage. Returns version."""
+        fp_before = self._inputs_fingerprint()
         dfs = [ds.read_latest() for ds in self.inputs]
-        # Run user fn (should return DataFrame or list[dict])
         result = self.fn(*dfs, **kwargs)
-        lineage = f"transform:{self.name} inputs={[ds.name for ds in self.inputs]} at {datetime.now().isoformat()}"
-        version = self.outputs.write(result, lineage=lineage)
-        self.runs.append({"at": datetime.now().isoformat(), "version": version, "inputs": [ds.name for ds in self.inputs]})
+        if isinstance(result, list) and PD_AVAILABLE:
+            import pandas as _pd
+            result_df = _pd.DataFrame(result)
+        else:
+            result_df = result
+        check_results = []
+        for exp in self.expectations:
+            try:
+                cr = exp(result_df)
+                check_results.append(cr)
+                if isinstance(cr, dict) and cr.get("passed") is False:
+                    raise ValueError(f"Expectation failed: {cr}")
+            except ValueError:
+                raise
+            except Exception as e:
+                check_results.append({"passed": False, "error": str(e)})
+                raise ValueError(f"Expectation error: {e}")
+        lineage = f"transform:{self.name} inputs={[ds.name for ds in self.inputs]} fp={fp_before} at {datetime.now().isoformat()}"
+        version = self.outputs.write(result_df, lineage=lineage)
+        self.runs.append({"at": datetime.now().isoformat(), "version": version, "inputs": [ds.name for ds in self.inputs], "checks": check_results, "inputs_fp": fp_before})
         return version
+
+    def build_if_stale(self, **kwargs) -> Optional[str]:
+        """Incremental: skip if inputs fingerprint unchanged since last run. Free."""
+        fp = self._inputs_fingerprint()
+        if self.runs and self.runs[-1].get("inputs_fp") == fp:
+            return None  # fresh, skip
+        return self.build(**kwargs)
 
 
 class FoundryBranch:
@@ -159,15 +195,80 @@ class FoundryBranch:
         return FoundryDataset(self.path / name, name)
 
 
-# Convenience: free checks (like Foundry Expectations)
+# Convenience: free checks (like Foundry Expectations) + profiling + multi-SQL
 def check_not_null(df, col: str) -> Dict[str, Any]:
     if not PD_AVAILABLE:
         return {"check": "not_null", "col": col, "passed": False, "error": "pandas missing"}
-    nulls = int(df[col].isna().sum()) if col in df.columns else -1
-    return {"check": "not_null", "col": col, "passed": nulls == 0, "nulls": nulls, "free": True}
+    if col not in df.columns:
+        return {"check": "not_null", "col": col, "passed": False, "error": f"missing column {col}"}
+    nulls = int(df[col].isna().sum())
+    return {"check": "not_null", "col": col, "passed": nulls == 0, "nulls": nulls, "rows": len(df), "free": True}
 
 def check_unique(df, col: str) -> Dict[str, Any]:
     if not PD_AVAILABLE:
         return {"check": "unique", "col": col, "passed": False}
-    dups = int(df.duplicated(subset=[col]).sum()) if col in df.columns else -1
-    return {"check": "unique", "col": col, "passed": dups == 0, "dups": dups, "free": True}
+    if col not in df.columns:
+        return {"check": "unique", "col": col, "passed": False, "error": f"missing column {col}"}
+    dups = int(df.duplicated(subset=[col]).sum())
+    return {"check": "unique", "col": col, "passed": dups == 0, "dups": dups, "rows": len(df), "free": True}
+
+def check_range(df, col: str, min_v: Optional[float] = None, max_v: Optional[float] = None) -> Dict[str, Any]:
+    if not PD_AVAILABLE or col not in df.columns:
+        return {"check": "range", "col": col, "passed": False}
+    try:
+        s = df[col].dropna().astype(float)
+        ok = True
+        if min_v is not None and (s < min_v).any(): ok = False
+        if max_v is not None and (s > max_v).any(): ok = False
+        return {"check": "range", "col": col, "passed": ok, "min": float(s.min()) if len(s) else None, "max": float(s.max()) if len(s) else None, "free": True}
+    except Exception as e:
+        return {"check": "range", "col": col, "passed": False, "error": str(e)}
+
+def profile_dataset(df) -> Dict[str, Any]:
+    """Free dataset profile (like Foundry stats): rows, cols, nulls, numeric summary. No Spark."""
+    if not PD_AVAILABLE:
+        return {"error": "pandas missing"}
+    try:
+        prof = {"rows": len(df), "cols": list(df.columns), "free": True, "columns": {}}
+        for c in df.columns:
+            s = df[c]
+            prof["columns"][c] = {"nulls": int(s.isna().sum()), "unique": int(s.nunique(dropna=True))}
+            try:
+                num = s.dropna().astype(float)
+                prof["columns"][c].update({"min": float(num.min()), "max": float(num.max()), "mean": float(num.mean())})
+            except Exception:
+                # top values for categorical
+                try:
+                    prof["columns"][c]["top"] = s.value_counts(dropna=True).head(3).to_dict()
+                except Exception:
+                    pass
+        return prof
+    except Exception as e:
+        return {"error": str(e)}
+
+def sql_join(datasets: Dict[str, Any], sql: str):
+    """Multi-dataset SQL via DuckDB (free). datasets: {alias: FoundryDataset}. SQL references aliases."""
+    if not DUCK_AVAILABLE:
+        raise RuntimeError("DuckDB not installed: pip install duckdb (free)")
+    con = duckdb.connect(":memory:")
+    for alias, ds in datasets.items():
+        # Support both FoundryDataset and DataFrame
+        try:
+            if hasattr(ds, "path"):
+                latest = None
+                for cand in ["latest.parquet", "latest.csv"]:
+                    p = ds.path / cand
+                    if p.exists():
+                        latest = p
+                        break
+                if latest is None:
+                    continue
+                if latest.suffix == ".parquet":
+                    con.execute(f"CREATE VIEW {alias} AS SELECT * FROM read_parquet('{latest}')")
+                else:
+                    con.execute(f"CREATE VIEW {alias} AS SELECT * FROM read_csv('{latest}', header=true)")
+            else:
+                con.register(alias, ds)
+        except Exception as e:
+            raise RuntimeError(f"register {alias}: {e}")
+    return con.execute(sql).fetchdf()

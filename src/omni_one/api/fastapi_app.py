@@ -519,6 +519,91 @@ def setup_ai_routes(app: FastAPI):
             return vision_result
 
     @app.post(
+        "/api/v1/seller/operations",
+        response_model=dict,
+        status_code=status.HTTP_200_OK,
+        summary="Seller Operations — Briefing + Workshop queue + Governance audit (methodology loop)",
+        tags=["Seller OS"],
+    )
+    async def seller_operations(
+        data: dict = Body(..., example={"demo": True}),
+        settings: Settings = Depends(get_settings),
+    ) -> dict:
+        """
+        Full Palantir-style loop for the highlight, free:
+        briefing (Seller OS) -> ontology twin -> Workshop decision queue -> AIP grounded check -> governance audit.
+        Proves the suite surrounding core tech, not just a briefing.
+        """
+        with OperationTimer("seller_operations", logger):
+            from ..packs.seller_os import make_seller_demo_folder, ingest_seller_folder, build_seller_briefing  # type: ignore
+            from ..palantir_free.ontology import Ontology, ObjectTypeDef, PropertyDef, ActionDef  # type: ignore
+            from ..palantir_free.workshop import WorkshopApp  # type: ignore
+            from ..palantir_free.governance import AuditLog, ingest_workshop, ingest_ontology_edits  # type: ignore
+            from ..palantir_free.aip import AIPLogic  # type: ignore
+            from pathlib import Path as _P
+            import tempfile
+            with tempfile.TemporaryDirectory() as tmp:
+                demo_folder = make_seller_demo_folder(_P(tmp) / "seller_demo", seed=int(data.get("seed", 42)))
+                events, report = ingest_seller_folder(demo_folder)
+                briefing = build_seller_briefing(events)
+                # Ontology twin (typed, minimal for ops loop)
+                onto = Ontology("seller-ops")
+                onto.define_object_type(ObjectTypeDef(api_name="Product", display_name="Product", primary_key="sku", title_property="name",
+                    properties=[PropertyDef(name="sku", type="string", required=True), PropertyDef(name="name", type="string", required=True), PropertyDef(name="on_hand", type="integer"), PropertyDef(name="sold_7d", type="integer")]))
+                onto.define_action(ActionDef(api_name="reorderProduct", display_name="Reorder", object_type="Product",
+                    parameters=[PropertyDef(name="status", type="string")], checks=[{"field": "status", "allowed": ["REORDERED"]}],
+                    requires_approval=True, allowed_approvers=["lead"]))
+                # Seed products from briefing chart + inventory risk
+                seen = set()
+                for prod in (briefing.get("chart", {}) or {}).get("data", {}).get("labels", [])[:6]:
+                    if prod in seen:
+                        continue
+                    seen.add(prod)
+                    on_hand = next((r.get("on_hand", 0) for r in briefing.get("stockout_risk", []) if r.get("product") == prod), 10)
+                    sold = next((b["qty"] for b in [briefing["kpis"]["best_seller"]] if b["product"] == prod), 1)
+                    from ..palantir_free.ontology import ObjectInstance as _OI  # type: ignore
+                    sku = "".join(c if c.isalnum() else "" for c in prod)[:8] or f"P{len(seen)}"
+                    try:
+                        onto.create_object(_OI(object_type="Product", primary_key=sku, properties={"sku": sku, "name": prod, "on_hand": int(on_hand), "sold_7d": int(sold)}), lineage="seller_os:briefing")
+                    except Exception:
+                        pass
+                # Workshop queue FROM ontology (grounded)
+                app = WorkshopApp(onto, "seller-daily")
+                try:
+                    made = app.build_seller_queue(briefing)
+                except Exception as e:
+                    made = []
+                # Operate first decision if present (assign only; approve needs lead + proposal)
+                operated = None
+                if made:
+                    try:
+                        app.assign(made[0].id, "ops-1")
+                        operated = made[0].id
+                    except Exception:
+                        pass
+                # AIP grounded check on first product
+                logic = AIPLogic(onto, "seller-ops")
+                aip_res = None
+                try:
+                    first_sku = next(iter(onto.objects.get("Product", {})), None)
+                    if first_sku:
+                        aip_res = logic.run_registered("seller_stockout", sku=first_sku)
+                except Exception as e:
+                    aip_res = {"error": str(e)}
+                # Governance audit
+                audit = AuditLog("seller-ops")
+                ingest_workshop(audit, app)
+                ingest_ontology_edits(audit, onto)
+                return {
+                    "briefing_kpis": briefing.get("kpis"),
+                    "workshop": app.stats(),
+                    "operated": operated,
+                    "aip": {"grounded": (aip_res or {}).get("grounded"), "answer": str((aip_res or {}).get("answer", ""))[:120]},
+                    "governance": audit.stats(),
+                    "free": True,
+                }
+
+    @app.post(
         "/api/v1/micro/briefing",
         response_model=dict,
         status_code=status.HTTP_200_OK,

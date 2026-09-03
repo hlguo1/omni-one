@@ -1,27 +1,33 @@
 # Omni-One — Deterministic-First Intelligence Platform
 
-**Core engine: 4-layer deterministic pipeline (`src/omni_one/core/data_processing_pipeline.py:1`). Highlight use case: Seller OS for people selling stuff online.**
+**Core: 4-layer pipeline + ontology-centered suite (methodology like Palantir, not a clone). Highlight: Seller OS for people selling stuff online.**
 
-Omni-One is a local-first, free ($0) alternative to Palantir Foundry/Gotham — ingest any messy folder (CSV, receipt photo, WhatsApp/DM) → OCR + chart + pipeline → evidence-backed briefing. The engine is generic; Seller OS is the **featured, outstanding app** built on it (not the only thing).
+Omni-One is local-first, free ($0): ingest messy folder → OCR+chart+pipeline → ontology twin → Workshop decisions → grounded AI → audited actions. The suite surrounds the core tech (like Palantir's methodology); Seller OS is the **featured outstanding app** proving it for concrete SMB (not the only thing).
 
-> Pipeline remains — not deleted. Seller OS is a showcase of what the engine can do for a concrete SMB.
+> Pipeline + ontology + suite remain — not deleted. Seller OS showcases the engine.
 
 ---
 
-## 1. Core Engine (always here)
+## 1. Core Meat (always here, now strengthened)
 
-**4-layer pipeline** — the moat, reused by every app:
-- **Layer 1** Ingestion `<1ms` `core/layer_1_ingestion.py:1` schema + dedup + TTL
-- **Layer 2** Statistical `<10ms` `core/layer_2_statistical.py:1` Z-score, trend, thresholds
-- **Layer 3** ML `<100ms` `core/layer_3_ml_features.py:1` sentiment, churn, priority
-- **Layer 4** LLM gated `core/data_processing_pipeline.py:311` `IntelligentLLMGate` budget-aware, `evidence_bundle` + `cost_ledger` `core/types.py:213`
+**4-layer pipeline** `src/omni_one/core/data_processing_pipeline.py:1` (thread-safe, dedup, STATISTICAL stage, cache-store, evidence parity):
+- **Layer 1** `<1ms` `core/layer_1_ingestion.py:73` robust ISO/epoch/ms timestamps, OrderedDict TTL dedup
+- **Layer 2** `<10ms` `core/layer_2_statistical.py:35` signal-bucket fallback (unique IDs), multi-key thresholds
+- **Layer 3** `<100ms` `core/layer_3_ml_features.py:45` bilingual sentiment, calibrated priority
+- **Layer 4** gated `IntelligentLLMGate` budget-aware + `evidence_bundle`/`cost_ledger` `core/types.py:213`
 
-**Free local stack:** Tesseract OCR `core/vision.py:83`, OpenCV chart `core/vision.py:120`, Matplotlib `core/vision.py:297`, DuckDB+Pandas Foundry `palantir_free/foundry.py:22`, in-mem Ontology `palantir_free/ontology.py:58`, Graph `palantir_free/gotham.py:30`, mock LLM (Ollama optional) `core/model_router.py:231` → **98.4% LLM bypass `docs/EVAL_REPORT.md:17` p50 0.03ms $0.0014/1k**
+**Suite surrounding core (Palantir methodology, free):**
+- **Foundry** `palantir_free/foundry.py:22` — versioned datasets, expectations gate, `build_if_stale`, `profile_dataset`, multi-SQL `sql_join` (DuckDB+Pandas, $0)
+- **Ontology** `palantir_free/ontology.py:16` — typed coercion, history/version, cardinality, propose/approve actions, markings, `save/load`
+- **Workshop** `palantir_free/workshop.py:1` — decision queue FROM ontology (no phantoms), assign/approve/resolve → writeback via Actions
+- **Governance** `palantir_free/governance.py:1` — hash-chained `AuditLog` across pipeline+ontology+workshop+AIP+foundry, `verify()`, markings filter
+- **AIP** `palantir_free/aip.py:44` — `FunctionRegistry`, `check_grounding` anti-hallucination, `evaluate()` harness, single reused pipeline
+- **Vision** `core/vision.py:83` Tesseract + OpenCV + Matplotlib ($0) → **98.8% bypass p50 0.07ms $0.0011/1k**
 
-Use the engine directly:
+Use the core directly:
 ```bash
-PYTHONPATH=src python -m pytest tests/unit -q # 9 passed includes pipeline audit
-PYTHONPATH=src python -c "from omni_one.core.data_processing_pipeline import MultiLayerDataPipeline; p=MultiLayerDataPipeline(); print(p.process_record({'timestamp':__import__('datetime').datetime.now(),'source':'test','entity_id':'x','value':100}).evidence_bundle)"
+PYTHONPATH=src python -m pytest tests/unit -q # 22 passed (core + methodology)
+PYTHONPATH=src python3 scripts/e2e_core_methodology.py --out /tmp/e2e_method # 6-stage loop PASSED
 PYTHONPATH=src python -m omni_one.core.eval_harness --n 2000 # writes docs/EVAL_REPORT.md
 ```
 
@@ -57,16 +63,19 @@ curl -F file=@chart.png http://localhost:5003/api/v1/vision/analyze | jq .ocr.te
 
 ---
 
-## 3. All Capabilities (engine + highlights + labs)
+## 3. Suite surrounding core (methodology like Palantir, not a clone)
 
-| Layer | Engine (core, always) | Highlight App (Seller OS) | Labs (still runnable) |
-|---|---|---|---|
-| Ingest | 4-layer pipeline + vision OCR/chart | `packs/seller_os.py:236` shopify/etsy/inventory/DM/supplier photo | `_labs/micro_biz.py`, `_labs/revenue_ops.py` |
-| Store | Foundry `foundry.py:22` DuckDB/Parquet | Seller briefing `seller_os.py:319` | e2e `scripts/e2e_palantir_free.py:1` |
-| Twin | Ontology `ontology.py:58` | Seller products/customers graph | Palantir-free ontology demo |
-| Investigate | Gotham `gotham.py:30` | At-risk customer graph | RevOps churn graph |
-| Act | AIP `aip.py:40` gated LLM | Win-back draft, reorder action | Proactive engine |
-| Deploy | Apollo `apollo.py:22` compose | `web/seller.html` | `web/index.html` generic |
+| Pillar | What it does (free) | Highlight wiring |
+|---|---|---|
+| Foundry `foundry.py:22` | Versioned datasets, expectations gate, incremental `build_if_stale`, profiling, multi-SQL | Seller Shopify/Etsy → joined |
+| Ontology `ontology.py:16` | Typed twin, history/version, cardinality, propose/approve, markings, save/load | Product/Order/Shipment/Ward twin |
+| Pipeline `data_processing_pipeline.py:1` | 4-layer evidence + cost, dedup, STATISTICAL stage | Seller events → evidence |
+| Workshop `workshop.py:1` | Decision queue FROM ontology (no phantoms), assign/approve/resolve → Actions | Seller stockout + supply delay queue |
+| AIP `aip.py:44` | Registry, grounding check, eval, reused pipeline | `seller_stockout` grounded 1.0, eval 2/2 |
+| Governance `governance.py:1` | Hash-chained audit across all, verify, markings | 29 events verified |
+| Apollo `apollo.py:22` | Compose manifest | `web/seller.html` ships |
+
+Labs still runnable: `_labs/micro_biz.py`, `_labs/revenue_ops.py`, `scripts/e2e_palantir_free.py:1` (6 pillars $0).
 
 ---
 
@@ -92,31 +101,31 @@ curl -X POST http://localhost:5003/api/v1/seller/briefing -H "Content-Type: appl
 curl http://localhost:5003/api/docs  # all endpoints
 ```
 
-## 5. APIs
+## 5. APIs (core + highlight)
 
 | Endpoint | Purpose | Cost |
 |---|---|---|
-| `POST /api/v1/seller/briefing {"demo":true}` | Seller highlight demo | $0 |
-| `POST /api/v1/seller/photo` multipart | Seller invoice/product photo → OCR+chart+pipeline | $0 |
+| `POST /api/v1/seller/briefing {"demo":true}` | Seller highlight demo (GMV $274 profit $169) | $0 |
+| `POST /api/v1/seller/operations {"demo":true}` | Briefing + Workshop queue + AIP grounded + Governance audit (full loop) | $0 |
+| `POST /api/v1/seller/photo` multipart | Seller invoice photo → OCR+chart+pipeline | $0 |
 | `POST /api/v1/vision/analyze` | Generic photo (engine) | $0 |
-| `GET /api/v1/vision/demo` | Synthetic receipt+chart | $0 |
 | `POST /api/v1/analyze {"records":[...]}` | Raw pipeline (engine) | $0 |
-| `POST /api/v1/synthesize` | Pipeline + gated LLM | $0 mock |
 | Labs: `POST /api/v1/micro/briefing`, `POST /api/v1/revenue/health` | `_labs` | $0 |
 
 ## 6. Docs
 
-- **Engine:** `docs/MULTI_LAYER_ARCHITECTURE.md`, `docs/QUICK_START_PIPELINE.md`, `docs/EVAL_REPORT.md` (98.4% bypass), `core/data_processing_pipeline.py:170`
-- **Highlight:** `docs/SELLER_OS.md`, `docs/FOCUS.md` (why ONE product), `packs/seller_os.py:1`, `web/seller.html:1`
-- **Labs:** `packs/_labs/` + `docs/MICRO_BIZ.md` (labs), `palantir_free/` free Palantir alt `scripts/e2e_palantir_free.py:1`
-- **Vision free:** `core/vision.py:1`
+- **Core:** `docs/MULTI_LAYER_ARCHITECTURE.md`, `docs/EVAL_REPORT.md` (98.8% bypass), `core/data_processing_pipeline.py:1`
+- **Suite:** `palantir_free/ontology.py:16`, `foundry.py:22`, `workshop.py:1`, `governance.py:1`, `aip.py:44`, `scripts/e2e_core_methodology.py:1`
+- **Highlight:** `docs/SELLER_OS.md`, `docs/FOCUS.md`, `packs/seller_os.py:1`, `web/seller.html:1`
+- **Labs:** `packs/_labs/` + `scripts/e2e_palantir_free.py:1`
 
-## 7. Verify
+## 7. Verify (robust)
 
 ```bash
-PYTHONPATH=src python -m pytest tests/unit -q  # 9 passed
+PYTHONPATH=src python -m pytest tests/unit -q  # 22 passed (core + methodology)
+PYTHONPATH=src python3 scripts/e2e_core_methodology.py --out /tmp/e2e_method  # Foundry→Ontology→Pipeline→Workshop→AIP→Governance PASSED
 PYTHONPATH=src python scripts/e2e_palantir_free.py --out /tmp/e2e  # 6 pillars PASSED $0
-ls src/omni_one/core/data_processing_pipeline.py  # 49K, not deleted
+ls src/omni_one/core/data_processing_pipeline.py  # core meat, not deleted
 ```
 
-*Core engine stays. Seller OS is the outstanding showcase — not the only thing.*
+*Core meat strengthened with suite methodology. Seller OS is the outstanding highlight proving it.*

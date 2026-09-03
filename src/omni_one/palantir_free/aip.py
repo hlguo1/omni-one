@@ -41,46 +41,142 @@ except ImportError:
         ModelRouter = None  # type: ignore
 
 
+def check_grounding(ontology: Ontology, citations: List[str]) -> Dict[str, Any]:
+    """Validate citations reference real ontology objects (anti-hallucination gate). Free.
+    Accepts 'ontology:Type:pk...', 'Type:pk', or containing 'Type:pk'. Returns score + ungrounded list.
+    """
+    import re as _re
+    if not citations:
+        return {"score": 0.0, "checked": 0, "ungrounded": [], "ok": False}
+    grounded, ungrounded = 0, []
+    for cit in citations:
+        s = str(cit)
+        # Find all Type:pk candidates (CapWord:alnum-_)
+        found = False
+        for m in _re.finditer(r"\b([A-Z][A-Za-z0-9_]*):([A-Za-z0-9_\-]+)", s):
+            t, pk = m.group(1), m.group(2)
+            # Skip generic prefixes like 'ontology' if followed by real ref later — check all
+            if t.lower() == "ontology":
+                continue
+            if ontology.get(t, pk) is not None:
+                found = True
+                break
+        # Fallback: 'ontology:Type:pk' explicit
+        if not found:
+            m2 = _re.search(r"ontology:([A-Za-z0-9_]+):([A-Za-z0-9_\-]+)", s)
+            if m2 and ontology.get(m2.group(1), m2.group(2)) is not None:
+                found = True
+        if found:
+            grounded += 1
+        else:
+            ungrounded.append(s[:80])
+    score = grounded / max(len(citations), 1)
+    return {"score": round(score, 3), "checked": len(citations), "grounded": grounded, "ungrounded": ungrounded, "ok": score >= 0.5}
+
+
+class FunctionRegistry:
+    """Registry of ontology-grounded functions (like Palantir Functions). Free."""
+    def __init__(self):
+        self._fns: Dict[str, Dict[str, Any]] = {}
+
+    def register(self, name: str, fn: Callable, description: str = "", required_inputs: Optional[List[str]] = None):
+        self._fns[name] = {"fn": fn, "description": description, "required": required_inputs or []}
+
+    def get(self, name: str) -> Callable:
+        if name not in self._fns:
+            raise KeyError(f"function {name} not registered (have {list(self._fns)})")
+        return self._fns[name]["fn"]
+
+    def list(self) -> List[Dict[str, Any]]:
+        return [{"name": k, "description": v["description"], "required": v["required"]} for k, v in self._fns.items()]
+
+
+# Global default registry with built-in logics (registered below)
+DEFAULT_REGISTRY = FunctionRegistry()
+
+
 class AIPLogic:
     """
     Ontology-grounded logic. Like Palantir AIP Logic but free.
-    Each logic is a Python function that takes ontology + inputs, returns grounded output with citations.
+    Reuses single pipeline, validates grounding, supports registry + eval.
     """
-    def __init__(self, ontology: Ontology, name: str):
+    def __init__(self, ontology: Ontology, name: str, registry: Optional[FunctionRegistry] = None):
         self.ontology = ontology
         self.name = name
+        self.registry = registry or DEFAULT_REGISTRY
         self.runs: List[Dict[str, Any]] = []
-
-    def run(self, fn: Callable, **inputs) -> Dict[str, Any]:
-        """
-        fn signature: fn(ontology, inputs, pipeline) -> {"answer": str, "citations": [...], "actions": [...]}
-        We inject pipeline and capture evidence.
-        """
-        # Create free pipeline (mock LLM if no Ollama)
-        pipeline = None
+        self._pipeline = None
+        # Lazy single pipeline (was new per run — wasteful)
         if MultiLayerDataPipeline:
-            class _MockRouter(ModelRouter):  # type: ignore
-                def generate(self, prompt: str, model=None, **kw):  # type: ignore
-                    # Deterministic grounded mock — cites ontology objects
-                    return f"[AIP MOCK:{self.name if hasattr(self, 'name') else 'logic'}] {prompt[:100]} — grounded in ontology {len(inputs)} inputs."
             try:
-                pipeline = MultiLayerDataPipeline(model_router=_MockRouter(), cache=SemanticCache())  # type: ignore
+                outer = self
+                class _MockRouter(ModelRouter):  # type: ignore
+                    def generate(self, prompt: str, model=None, **kw):  # type: ignore
+                        return f"[AIP MOCK:{outer.name}] {prompt[:100]} — grounded."
+                self._pipeline = MultiLayerDataPipeline(model_router=_MockRouter(), cache=SemanticCache())  # type: ignore
             except Exception:
-                pipeline = None
+                self._pipeline = None
 
-        # Run user logic
-        result = fn(self.ontology, inputs, pipeline)
-        # Enrich with lineage
+    def run(self, fn: Callable, grounding_threshold: float = 0.5, **inputs) -> Dict[str, Any]:
+        """fn(ontology, inputs, pipeline) -> {answer, citations, actions}. Grounding-checked."""
+        result = fn(self.ontology, dict(inputs), self._pipeline)
+        return self._finalize(result, grounding_threshold)
+
+    def run_registered(self, fn_name: str, grounding_threshold: float = 0.5, **inputs) -> Dict[str, Any]:
+        fn = self.registry.get(fn_name)
+        # Validate required inputs early (like Palantir)
+        meta = self.registry._fns[fn_name]
+        missing = [r for r in meta["required"] if r not in inputs]
+        if missing:
+            raise ValueError(f"{fn_name} missing required inputs {missing}")
+        return self.run(fn, grounding_threshold=grounding_threshold, **inputs)
+
+    def _finalize(self, result: Dict[str, Any], grounding_threshold: float) -> Dict[str, Any]:
+        result = dict(result or {})
         result["logic"] = self.name
         result["at"] = datetime.now().isoformat()
         result["ontology_hash"] = self.ontology.lineage_hash()
         result["free"] = True
         result["cost_usd"] = 0.0
-        # If pipeline was used inside fn, result may already have evidence; else add generic
-        if "citations" not in result:
-            result["citations"] = [f"ontology:{k}:{v}" for k, v in inputs.items()]
+        if "citations" not in result or not result["citations"]:
+            result["citations"] = []
+        # Grounding gate (anti-hallucination, like Palantir guardrails)
+        g = check_grounding(self.ontology, list(result.get("citations", [])))
+        result["grounding"] = g
+        result["grounded"] = bool(g.get("ok"))
+        if not g.get("ok"):
+            result["warning"] = f"Low grounding {g.get('score')} < {grounding_threshold}: {g.get('ungrounded', [])[:2]}"
         self.runs.append(result)
         return result
+
+    def evaluate(self, cases: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Eval harness for AIP (like Palantir Eval): cases=[{fn, inputs, expect_contains, expect_actions}]. Free."""
+        passed, total = 0, 0
+        details = []
+        for c in cases:
+            total += 1
+            try:
+                fn = c["fn"] if callable(c.get("fn")) else self.registry.get(c.get("fn_name", ""))
+                res = self.run(fn, **c.get("inputs", {}))
+                ok = True
+                reasons = []
+                for needle in c.get("expect_contains", []):
+                    if needle not in str(res.get("answer", "")):
+                        ok = False
+                        reasons.append(f"missing {needle!r}")
+                for act in c.get("expect_actions", []):
+                    if act not in (res.get("actions") or []):
+                        ok = False
+                        reasons.append(f"missing action {act!r}")
+                if c.get("require_grounded") and not res.get("grounded"):
+                    ok = False
+                    reasons.append("not grounded")
+                if ok:
+                    passed += 1
+                details.append({"case": c.get("name", f"case{total}"), "passed": ok, "reasons": reasons, "answer": str(res.get("answer", ""))[:100]})
+            except Exception as e:
+                details.append({"case": c.get("name", f"case{total}"), "passed": False, "reasons": [str(e)]})
+        return {"passed": passed, "total": total, "pass_rate": round(passed / max(total, 1), 3), "details": details, "free": True}
 
 
 class AIPAgent:
@@ -169,3 +265,30 @@ def logic_fraud_ring(ontology: Ontology, inputs: Dict[str, Any], pipeline) -> Di
         "citations": [f"ontology:Transaction:{tx_pk}.amount={amount}"],
         "actions": ["freeze", "investigate"] if is_anomaly else [],
     }
+
+
+def logic_seller_stockout(ontology: Ontology, inputs: Dict[str, Any], pipeline) -> Dict[str, Any]:
+    """Seller highlight grounded in Product ontology (used by Workshop + eval)."""
+    sku = inputs.get("sku") or inputs.get("object")
+    prod = ontology.get("Product", sku) if sku else None
+    if not prod:
+        return {"answer": "Product not found", "citations": []}
+    try:
+        on_hand = float(prod.properties.get("on_hand", 0))
+        sold_7d = float(prod.properties.get("sold_7d", 0))
+    except Exception:
+        on_hand, sold_7d = 0, 0
+    days = on_hand / (sold_7d / 7) if sold_7d else 999
+    at_risk = days < 5
+    return {
+        "answer": f"Product {sku} {on_hand} left, sold {sold_7d}/7d = {days:.1f} days — {'REORDER' if at_risk else 'OK'}",
+        "citations": [f"ontology:Product:{sku}.on_hand={on_hand}", f"ontology:Product:{sku}.sold_7d={sold_7d}"],
+        "actions": ["reorder"] if at_risk else [],
+    }
+
+
+# Register built-ins (methodology: discoverable functions, like Palantir)
+DEFAULT_REGISTRY.register("supply_delay", logic_supply_delay, "Shipment delay check", ["shipment_id"])
+DEFAULT_REGISTRY.register("hospital_overflow", logic_hospital_overflow, "Ward overflow check", ["ward_id"])
+DEFAULT_REGISTRY.register("fraud_ring", logic_fraud_ring, "Transaction anomaly check", ["transaction_id"])
+DEFAULT_REGISTRY.register("seller_stockout", logic_seller_stockout, "Product stockout check", ["sku"])
