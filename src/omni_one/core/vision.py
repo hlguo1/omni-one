@@ -247,64 +247,118 @@ def extract_chart_data_heuristic(pil_image, image_bytes: Optional[bytes] = None,
 
 def _parse_numbers_from_text(text: str) -> Dict[str, Any]:
     """
-    Parse label:value pairs from OCR text. E.g.:
-      "Tacos 30\nBurritos 12\nSales $450"
-    Returns {"labels": [...], "values": [...]}.
+    Parse label:value pairs from OCR text. Robust: ignores dates, filters implausible.
+    E.g.: "Tacos 30\\nBurritos 12\\nSales $450" -> labels/values.
     Free, deterministic.
     """
     if not text or not text.strip():
         return {"labels": [], "values": []}
     labels: List[str] = []
     values: List[float] = []
-    for line in text.splitlines():
-        line = line.strip()
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
         if not line:
             continue
-        # Find money/number at end
-        m = re.search(r"([A-Za-z ]+?)\s*\$?\s*(\d+(?:[.,]\d+)?)\s*$", line)
+        # Skip pure date lines (avoid 2024-09-12 -> 12.0)
+        if re.match(r"^\s*\d{4}[-/]\d{1,2}[-/]\d{1,2}\s*$", line):
+            continue
+        if re.match(r"^(date|fecha)\s*[:\-]?\s*\d", line, re.I) and "$" not in line and "x" not in line.lower():
+            continue
+        # Remove date substring
+        line_nodate = re.sub(r"\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b", " ", line)
+        line_nodate = re.sub(r"\b\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\b", " ", line_nodate)
+        # Special: "Item 32 x 3.50 = 112.00" -> label=Item, value=112 (last, not qty)
+        # Detect qty x price pattern and extract label before first digit
+        m_qty = re.search(r"^(.+?)\s+\d+\s*[xX]\s*\$?\s*\d+(?:\.\d+)?\s*=\s*\$?\s*(\d+(?:\.\d{1,2})?)\s*$", line_nodate)
+        if m_qty:
+            label = m_qty.group(1).strip(" -:xX*")[:20] or line_nodate[:12]
+            try:
+                val = float(m_qty.group(2).replace(",", ""))
+                if 1900 <= val <= 2100 and "$" not in line_nodate:
+                    continue
+                labels.append(label or line_nodate[:12])
+                values.append(val)
+                continue
+            except Exception:
+                pass
+        # Find money/number at end (prefer $ or x patterns)
+        m = re.search(r"([A-Za-z \-]+?)\s*\$?\s*(\d+(?:\.\d{1,2})?)\s*$", line_nodate)
         if m:
-            label = m.group(1).strip()
+            label = m.group(1).strip(" -:xX*")
+            if len(label) < 2:
+                label = line_nodate.split("$")[0].strip()[:20] or line_nodate[:12]
             try:
                 val = float(m.group(2).replace(",", ""))
-                labels.append(label[:20])
+                # Filter implausible: years (1900-2100) when line has no $/x/qty context
+                if 1900 <= val <= 2100 and "$" not in line_nodate and "x" not in line_nodate.lower():
+                    # Likely year, skip unless it's clearly a value
+                    if len(line_nodate.strip().split()) <= 2:
+                        continue
+                labels.append(label[:20] or line_nodate[:12])
                 values.append(val)
             except Exception:
                 continue
         else:
-            # Try any number in line
-            nums = re.findall(r"\$?\s*(\d+(?:[.,]\d+)?)", line)
+            # Try any number in line (last), but skip if only date-like numbers
+            nums = re.findall(r"\$?\s*(\d+(?:\.\d{1,2})?)", line_nodate)
+            # Filter years
+            nums = [n for n in nums if not (1900 <= float(n.replace(",", "")) <= 2100 and "$" not in line_nodate)]
             if nums:
                 try:
                     val = float(nums[-1].replace(",", ""))
-                    # Label is first words
-                    label = re.split(r"\d", line, 1)[0].strip()[:20] or line[:12]
+                    label = re.split(r"\d", line_nodate, 1)[0].strip()[:20] or line_nodate[:12]
+                    if len(label.strip()) < 2:
+                        continue
                     labels.append(label)
                     values.append(val)
                 except Exception:
                     continue
-    # If still empty, collect all numbers as values with generic labels
-    if not labels and not values:
-        nums = re.findall(r"(\d+(?:[.,]\d+)?)", text)
-        for i, n in enumerate(nums[:8]):
-            try:
-                labels.append(f"Item {i+1}")
-                values.append(float(n.replace(",", "")))
-            except Exception:
-                continue
-    return {"labels": labels[:12], "values": values[:12]}
+    # Deduplicate labels (keep first), cap 12
+    seen = set()
+    uniq_labels, uniq_values = [], []
+    for lb, vv in zip(labels, values):
+        key = lb.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        uniq_labels.append(lb)
+        uniq_values.append(vv)
+        if len(uniq_labels) >= 12:
+            break
+    return {"labels": uniq_labels, "values": uniq_values}
 
 
 def data_to_chart_base64(data: Dict[str, Any], title: str = "Extracted Data") -> Optional[str]:
     """
-    Free chart generation via matplotlib. Returns base64 PNG (data URI without prefix) or None.
-    No API, local.
+    Free chart generation via matplotlib. Robust: truncates long labels, handles mismatch.
+    Returns base64 PNG or None. No API, local.
     """
     if not MPL_AVAILABLE or plt is None:
         return None
-    labels = data.get("labels") or []
-    values = data.get("values") or []
-    if not labels or not values or len(labels) != len(values):
+    labels = list(data.get("labels") or [])
+    values = list(data.get("values") or [])
+    if not labels or not values:
         return None
+    # Robust: trim to min length instead of failing on mismatch
+    n = min(len(labels), len(values), 12)
+    if n == 0:
+        return None
+    labels, values = labels[:n], values[:n]
+    # Sanitize: labels to str, values to float, drop non-finite
+    clean_labels, clean_values = [], []
+    for lb, vv in zip(labels, values):
+        try:
+            f = float(vv)
+            if f != f or f in (float("inf"), float("-inf")):
+                continue
+            lb_s = str(lb)[:18] or f"Item {len(clean_labels)+1}"
+            clean_labels.append(lb_s)
+            clean_values.append(f)
+        except Exception:
+            continue
+    if not clean_labels:
+        return None
+    labels, values = clean_labels, clean_values
     try:
         fig, ax = plt.subplots(figsize=(6, 3.5))
         # Limit to 12 bars

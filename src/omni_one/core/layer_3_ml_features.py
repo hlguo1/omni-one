@@ -84,73 +84,128 @@ class FeatureExtractor:
         
         return features
     
+    # Extended source map: core + Seller OS + vision sources (robust, no collision)
+    SOURCE_MAP = {
+        "salesforce": 1, "slack": 2, "email": 3, "webhook": 4,
+        "orders": 5, "inventory": 6, "review": 7, "dm": 8,
+        "supplier": 9, "photo_ocr": 10, "photo_chart": 11,
+        "sales_log": 12, "product_telemetry": 13, "context": 14, "api": 15,
+        "shipment": 16, "ward": 17, "transaction": 18, "notebook": 19,
+        "instagram": 20, "voice_note": 21, "receipt": 22,
+    }
+
     @staticmethod
     def create_feature_vector(record: Dict[str, Any]) -> Dict[str, float]:
         """
         Create comprehensive feature vector from record.
         """
         features = {}
-        
+
         # Time features
         if "timestamp" in record and isinstance(record["timestamp"], datetime):
-            features.update(FeatureExtractor.extract_time_features(record["timestamp"]))
-        
+            try:
+                features.update(FeatureExtractor.extract_time_features(record["timestamp"]))
+            except Exception:
+                pass
+
         # Value features
         if "value" in record:
-            features.update(FeatureExtractor.extract_value_features(record["value"]))
-        
-        # Metadata features
-        if "metadata" in record:
-            features.update(FeatureExtractor.extract_metadata_features(record["metadata"]))
-        
-        # Source encoding
-        source_map = {"salesforce": 1, "slack": 2, "email": 3, "webhook": 4}
-        features["source_encoded"] = float(source_map.get(record.get("source", "webhook"), 4))
-        
+            try:
+                features.update(FeatureExtractor.extract_value_features(record["value"]))
+            except Exception:
+                pass
+
+        # Metadata features (skip bools, cap size)
+        if "metadata" in record and isinstance(record.get("metadata"), dict):
+            try:
+                meta = {k: v for k, v in record["metadata"].items() if not isinstance(v, bool)}
+                # Cap to 20 numeric fields to avoid explosion
+                count = 0
+                features["metadata_size"] = float(len(meta))
+                for key, val in meta.items():
+                    if isinstance(val, (int, float)) and count < 20:
+                        # Sanitize key
+                        safe = "".join(c if c.isalnum() else "_" for c in str(key))[:24]
+                        features[f"meta_{safe}"] = float(val)
+                        count += 1
+            except Exception:
+                features["metadata_size"] = 0.0
+
+        # Source encoding (stable for unknown sources via hash bucket 30-39)
+        src = str(record.get("source", "webhook"))
+        if src in FeatureExtractor.SOURCE_MAP:
+            features["source_encoded"] = float(FeatureExtractor.SOURCE_MAP[src])
+        else:
+            import hashlib
+            h = int(hashlib.md5(src.encode()).hexdigest()[:4], 16) % 10
+            features["source_encoded"] = float(30 + h)
+
         return features
 
 
 class SimpleSentimentClassifier:
     """
     Simple sentiment classifier using keyword matching + ML scoring.
-    Fast alternative to LLM-based sentiment analysis.
+    Bilingual (EN/ES) + seller-specific (late, damaged, tracking). Fast, free.
     """
-    
+
     def __init__(self):
         self.positive_keywords = {
             "excellent", "great", "amazing", "wonderful", "perfect",
-            "love", "passionate", "thrilled", "excited", "impressed"
+            "love", "passionate", "thrilled", "excited", "impressed",
+            "beautiful", "fast", "quick", "thanks", "thank you",
+            "gracias", "excelente", "buen", "bueno", "delicioso", "rico",
+            "fantastic", "awesome", "satisfied", "happy",
         }
         self.negative_keywords = {
             "terrible", "awful", "horrible", "bad", "poor", "hate",
-            "disappointed", "frustrated", "angry", "upset", "concerning"
+            "disappointed", "frustrated", "angry", "upset", "concerning",
+            "late", "damaged", "chipped", "broken", "missing", "wrong",
+            "refund", "return", "complaint", "worried", "hasn't arrived",
+            "hasnt arrived", "no tracking", "where is my", "never arrived",
+            "tardó", "tarde", "molesto", "molesta", "enojado", "malo", "lento",
+            "espera larga", "cold", "waited", "long wait",
         }
-    
+
     def predict_sentiment(self, text: str) -> MLPrediction:
         """
         Predict sentiment: -1 (negative), 0 (neutral), 1 (positive).
-        Uses keyword matching + confidence scoring.
+        Calibrated confidence: 0.5 + 0.15*margin, capped 0.95 (not hits/words).
         """
+        import re
         text_lower = text.lower()
-        
-        positive_hits = sum(1 for kw in self.positive_keywords if kw in text_lower)
-        negative_hits = sum(1 for kw in self.negative_keywords if kw in text_lower)
-        
-        # Determine sentiment
+        # Word-boundary match for short keywords to reduce false positives
+        def _hits(keywords):
+            c = 0
+            for kw in keywords:
+                if len(kw) <= 4:
+                    if re.search(r"\b" + re.escape(kw) + r"\b", text_lower):
+                        c += 1
+                else:
+                    if kw in text_lower:
+                        c += 1
+            return c
+
+        positive_hits = _hits(self.positive_keywords)
+        negative_hits = _hits(self.negative_keywords)
+
+        # Determine sentiment with calibrated confidence
         if positive_hits > negative_hits:
             sentiment = 1
-            confidence = min(positive_hits / max(len(text.split()), 1), 1.0)
+            margin = positive_hits - negative_hits
+            confidence = min(0.55 + 0.15 * margin, 0.95)
         elif negative_hits > positive_hits:
             sentiment = -1
-            confidence = min(negative_hits / max(len(text.split()), 1), 1.0)
+            margin = negative_hits - positive_hits
+            confidence = min(0.55 + 0.15 * margin, 0.95)
         else:
             sentiment = 0
             confidence = 0.5
-        
+
         return MLPrediction(
             prediction_type="sentiment_classification",
             predicted_value=sentiment,
-            confidence=confidence,
+            confidence=float(confidence),
             feature_importance={
                 "positive_hits": positive_hits,
                 "negative_hits": negative_hits,
@@ -177,23 +232,44 @@ class ChurnRiskScorer:
     
     def score_churn_risk(self, client_features: Dict[str, float]) -> MLPrediction:
         """
-        Score churn risk on 0-1 scale.
+        Score churn risk on 0-1 scale. Robust: falls back to generic signals
+        when expected keys missing (was always 0 for pipeline features).
         """
         risk_score = 0.0
         weighted_sum = 0.0
         weight_sum = 0.0
-        
+        matched = 0
+
         for feature_name, weight in self.feature_weights.items():
             if feature_name in client_features:
                 value = client_features[feature_name]
-                # Normalize and apply weight
-                normalized = np.tanh(value / 100) if value != 0 else 0
+                try:
+                    if isinstance(value, bool):
+                        continue
+                    # Normalize and apply weight
+                    normalized = np.tanh(float(value) / 100) if float(value) != 0 else 0
+                except Exception:
+                    continue
                 contribution = normalized * weight
                 weighted_sum += abs(contribution)
                 weight_sum += abs(weight)
-        
+                matched += 1
+
         if weight_sum > 0:
             risk_score = min(weighted_sum / weight_sum, 1.0)
+        else:
+            # Fallback: use generic value signals if present (value, value_log, sentiment)
+            # e.g., very low engagement (logins) or negative sentiment implies risk
+            try:
+                if "value" in client_features:
+                    v = float(client_features["value"])
+                    # Heuristic: extreme values (very low logins, very high delay) -> risk
+                    # Use log scale to avoid explosion
+                    risk_score = float(min(abs(np.tanh(v / 50)) * 0.3, 0.4))
+                else:
+                    risk_score = 0.0
+            except Exception:
+                risk_score = 0.0
         
         # Determine risk level
         if risk_score > 0.7:
@@ -232,24 +308,33 @@ class PriorityScorer:
         """
         priority_score = 0.0
         reasons = []
-        
-        # Anomaly signals
+
+        # Anomaly signals (include medium/low so single-medium anomalies surface)
         if has_anomaly:
             if anomaly_severity == "critical":
-                priority_score += 0.4
+                priority_score += 0.45
                 reasons.append("Critical anomaly")
             elif anomaly_severity == "high":
-                priority_score += 0.3
+                priority_score += 0.35
                 reasons.append("High anomaly")
-        
+            elif anomaly_severity == "medium":
+                priority_score += 0.20
+                reasons.append("Medium anomaly")
+            elif anomaly_severity == "low":
+                priority_score += 0.05
+                reasons.append("Low anomaly")
+
         # Churn risk signal
-        if predicted_churn_risk and predicted_churn_risk > 0.6:
-            priority_score += 0.3
-            reasons.append("High churn risk")
-        
+        try:
+            if predicted_churn_risk is not None and float(predicted_churn_risk) > 0.6:
+                priority_score += 0.3
+                reasons.append("High churn risk")
+        except Exception:
+            pass
+
         # Sentiment signal
         if sentiment_negative:
-            priority_score += 0.2
+            priority_score += 0.25
             reasons.append("Negative sentiment")
         
         # Normalize

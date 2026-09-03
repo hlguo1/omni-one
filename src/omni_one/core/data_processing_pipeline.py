@@ -292,21 +292,44 @@ class MultiLayerDataPipeline:
     """
     
     def __init__(self, model_router: Optional[ModelRouter] = None, cache: Optional[SemanticCache] = None, per_record_budget_usd: Optional[float] = None):
+        import threading
         self.layer1 = Layer1Ingestion()
         self.layer2 = Layer2StatisticalProcessing()
         self.layer3 = Layer3MLFeatures()
         self.model_router = model_router
         self.cache = cache
         self.llm_gate = IntelligentLLMGate(model_router, cache, per_record_budget_usd=per_record_budget_usd) if model_router else None
-        
+
         self.metrics = PipelineMetrics()
         self.per_record_budget_usd = per_record_budget_usd
-    
+        self._metrics_lock = threading.RLock()
+
+    def reset(self):
+        """Reset pipeline state for fresh streams/tests (clears windows, dedup, metrics)."""
+        try:
+            self.layer1.reset()
+        except Exception:
+            pass
+        try:
+            self.layer2.reset()
+        except Exception:
+            pass
+        with self._metrics_lock:
+            self.metrics = PipelineMetrics()
+
     def _generate_record_id(self, record: Dict[str, Any]) -> str:
-        """Generate unique ID for tracking."""
-        entity_id = record.get("entity_id", "unknown")
-        timestamp = record.get("timestamp", "")
-        return f"{entity_id}_{timestamp}"
+        """Generate stable unique ID for tracking (isoformat for datetime)."""
+        entity_id = str(record.get("entity_id", "unknown"))
+        ts = record.get("timestamp", "")
+        try:
+            if isinstance(ts, datetime):
+                ts = ts.isoformat()
+            else:
+                ts = str(ts)
+        except Exception:
+            ts = str(ts)
+        # Truncate long timestamps, keep deterministic
+        return f"{entity_id}_{ts[:26]}" if ts else entity_id
 
     def _build_llm_decision_audit(self,
                                   decision: str,
@@ -334,8 +357,135 @@ class MultiLayerDataPipeline:
             audit["skip_reason"] = skip_reason
         if prompt is not None:
             audit["prompt_preview"] = prompt[:200]
+            # Store full length for accurate cost (not just preview)
+            audit["prompt_len"] = len(prompt)
         return audit
-    
+
+    def _inc(self, field: str, amount: int = 1):
+        """Thread-safe metrics increment."""
+        try:
+            with self._metrics_lock:
+                setattr(self.metrics, field, getattr(self.metrics, field) + amount)
+        except Exception:
+            pass
+
+    def _store_cache(self, prompt: str, response: str):
+        """Best-effort cache store after LLM miss (was missing — hit_rate always 0)."""
+        if not self.cache or not prompt or not response:
+            return
+        try:
+            # Store as dict with response key for retrieve() compat
+            self.cache.set(prompt, {"response": response})
+        except Exception:
+            pass
+
+    def _finalize_evidence(
+        self,
+        result: ProcessingResult,
+        record: Dict[str, Any],
+        record_id: str,
+        full_prompt: Optional[str] = None,
+    ):
+        """Shared evidence + cost builder for process_record and optimized path. Robust, never throws."""
+        try:
+            evidence_steps = []
+            if result.layer1_result is not None:
+                if result.layer1_result.get("errors"):
+                    # Handle ValidationError dataclasses or dicts
+                    try:
+                        errs = str(result.layer1_result.get("errors"))[:120]
+                    except Exception:
+                        errs = "validation failed"
+                    evidence_steps.append(_build_evidence_step("layer_1_ingestion", "validation_failed", f"Layer 1: validation failed {errs}", raw={"errors": str(errs)[:200]}, latency_ms=result.layer1_time_ms))
+                else:
+                    raw = {"source": record.get("source"), "entity_id": record.get("entity_id")}
+                    h = hashlib.sha256(json.dumps(raw, sort_keys=True, default=str).encode()).hexdigest()[:8]
+                    evidence_steps.append(_build_evidence_step("layer_1_ingestion", f"validated hash={h}", f"Layer 1: validated record hash {h}", raw=raw, latency_ms=result.layer1_time_ms))
+            if result.layer2_result is not None:
+                anomalies = result.layer2_result.get("anomalies", []) or []
+                if anomalies:
+                    for anom in anomalies[:2]:
+                        try:
+                            score = float(anom.get("score", 0) or 0)
+                        except Exception:
+                            score = 0.0
+                        evidence_steps.append(_build_evidence_step("layer_2_statistical", f"{anom.get('type')} severity={anom.get('severity')} score={score:.2f}", f"Layer 2: {anom.get('explanation','')}", raw=anom, latency_ms=result.layer2_time_ms / max(len(anomalies), 1)))
+                else:
+                    evidence_steps.append(_build_evidence_step("layer_2_statistical", "no_anomaly", "Layer 2: no statistical anomaly detected", raw=result.layer2_result, latency_ms=result.layer2_time_ms))
+            if result.layer3_result is not None:
+                prio = (result.layer3_result.get("predictions", {}) or {}).get("priority", {}) or {}
+                if result.layer3_result.get("skipped"):
+                    evidence_steps.append(_build_evidence_step("layer_3_ml_features", f"skipped reason={result.layer3_result.get('skip_reason')}", f"Layer 3: skipped ({result.layer3_result.get('skip_reason')})", raw=result.layer3_result, latency_ms=0))
+                else:
+                    try:
+                        sc = float(prio.get("score", 0) or 0)
+                    except Exception:
+                        sc = 0.0
+                    evidence_steps.append(_build_evidence_step("layer_3_ml_features", f"priority={prio.get('value')} score={sc:.2f}", f"Layer 3: priority {prio.get('value')} ({sc:.2f}) reasons={prio.get('reasons')}", raw=result.layer3_result, latency_ms=result.layer3_time_ms))
+            # Layer 4
+            prompt_for_cost = full_prompt or result.llm_decision_audit.get("prompt_preview")
+            model_used = None
+            cached_flag = result.llm_decision_audit.get("cache_status") == "hit"
+            if result.llm_decision_audit.get("prompt_preview") or full_prompt:
+                try:
+                    model_used = getattr(self.model_router, "registry", {}).get("balanced", {}).get("model") if self.model_router else None
+                except Exception:
+                    model_used = None
+                evidence_steps.append(_build_evidence_step("layer_4_llm_synthesis", f"decision={result.llm_decision_audit.get('decision')} gate={str(result.llm_decision_audit.get('gate_reason',''))[:40]}", f"Layer 4: {result.llm_decision_audit.get('decision')} - {result.llm_decision_audit.get('gate_reason','')}", raw={"gate_reason": result.llm_decision_audit.get("gate_reason")}, cost_usd=0.0 if cached_flag else 0.0005, latency_ms=result.layer4_time_ms))
+            else:
+                evidence_steps.append(_build_evidence_step("layer_4_llm_synthesis", f"bypassed reason={str(result.llm_decision_audit.get('gate_reason',''))[:40]}", f"Layer 4: bypassed - {result.llm_decision_audit.get('gate_reason','')}", raw=result.llm_decision_audit, latency_ms=0))
+
+            if EvidenceBundle is not None and evidence_steps:
+                try:
+                    if isinstance(evidence_steps[0], dict):
+                        steps = [EvidenceStep(**s) for s in evidence_steps]  # type: ignore
+                    else:
+                        steps = evidence_steps  # type: ignore
+                    bundle = EvidenceBundle(record_id=record_id, steps=steps, final_decision=result.processing_stage.value if hasattr(result.processing_stage, "value") else str(result.processing_stage), llm_bypassed=result.llm_bypassed)  # type: ignore
+                    result.evidence_bundle = bundle
+                except Exception:
+                    result.evidence_bundle = {"record_id": record_id, "steps": [s if isinstance(s, dict) else s.model_dump() for s in evidence_steps], "final_decision": result.processing_stage.value if hasattr(result.processing_stage, "value") else str(result.processing_stage), "llm_bypassed": result.llm_bypassed}
+            else:
+                result.evidence_bundle = {"record_id": record_id, "steps": evidence_steps, "final_decision": result.processing_stage.value if hasattr(result.processing_stage, "value") else str(result.processing_stage), "llm_bypassed": result.llm_bypassed}
+            result.evidence_steps = [s if isinstance(s, dict) else s.model_dump() for s in evidence_steps]
+
+            result.cost_ledger = _build_cost_ledger(record_id, prompt=prompt_for_cost, model_used=model_used, cached=cached_flag, budget_usd=getattr(self.llm_gate, "per_record_budget_usd", None) if self.llm_gate else None, model_router=self.model_router)
+            try:
+                cost_val = result.cost_ledger.cost_usd if hasattr(result.cost_ledger, "cost_usd") else result.cost_ledger.get("cost_usd", 0)  # type: ignore
+                with self._metrics_lock:
+                    self.metrics.total_cost_usd += float(cost_val or 0)
+                    self.metrics.evidence_bundles_produced += 1
+            except Exception:
+                pass
+        except Exception as e:
+            logger.warning(f"Evidence bundle build failed: {e}")
+            result.evidence_steps = []
+            result.evidence_bundle = {"error": str(e), "record_id": record_id}
+            result.cost_ledger = {"record_id": record_id, "cost_usd": 0.0}
+
+    def _update_timing_and_bypass(self, result: ProcessingResult, start_total: float):
+        """Shared timing + bypass update (thread-safe)."""
+        result.total_time_ms = (time.time() - start_total) * 1000
+        with self._metrics_lock:
+            self.metrics.total_layer1_time_ms += result.layer1_time_ms
+            self.metrics.total_layer2_time_ms += result.layer2_time_ms
+            self.metrics.total_layer3_time_ms += result.layer3_time_ms
+            self.metrics.total_layer4_time_ms += result.layer4_time_ms
+            self.metrics.total_records_processed += 1
+            total = max(self.metrics.total_records_processed, 1)
+            self.metrics.avg_processing_time_ms = (
+                self.metrics.total_layer1_time_ms +
+                self.metrics.total_layer2_time_ms +
+                self.metrics.total_layer3_time_ms +
+                self.metrics.total_layer4_time_ms
+            ) / total
+            resolved = (
+                self.metrics.records_resolved_at_layer1 +
+                self.metrics.records_resolved_at_layer2 +
+                self.metrics.records_resolved_at_layer3
+            )
+            self.metrics.llm_bypass_rate = (resolved / total * 100)
+
     def process_record(self, record: Dict[str, Any]) -> ProcessingResult:
         """
         Process a single record through all layers.
@@ -352,14 +502,28 @@ class MultiLayerDataPipeline:
             processing_stage=ProcessingStage.INGESTION_ERROR  # Default, will be updated
         )
         
-        # LAYER 1: Fast Ingestion & Validation
+        # LAYER 1: Fast Ingestion & Validation (+ dedup, was missing in pipeline path)
         start_layer1 = time.time()
-        normalized, layer1_errors = self.layer1.normalize_record(record)
+        try:
+            normalized, layer1_errors = self.layer1.normalize_record(record)
+        except Exception as e:
+            from layer_1_ingestion import ValidationError as _VE  # type: ignore
+            try:
+                from .layer_1_ingestion import ValidationError as _VE  # type: ignore
+            except Exception:
+                pass
+            layer1_errors = [{"code": "EXCEPTION", "message": str(e)}]  # type: ignore
+            normalized = None  # type: ignore
         result.layer1_time_ms = (time.time() - start_layer1) * 1000
-        
+
         if layer1_errors:
             result.processing_stage = ProcessingStage.INGESTION_ERROR
-            result.layer1_result = {"errors": layer1_errors}
+            # Serialize ValidationError dataclasses safely
+            try:
+                errs = [e.__dict__ if hasattr(e, "__dict__") else str(e) for e in layer1_errors]  # type: ignore
+            except Exception:
+                errs = str(layer1_errors)
+            result.layer1_result = {"errors": errs}
             result.llm_bypassed = True
             result.llm_decision_audit = self._build_llm_decision_audit(
                 decision="not_required",
@@ -368,66 +532,127 @@ class MultiLayerDataPipeline:
                 layer3_skipped=False,
                 batch_context=None
             )
-            self.metrics.records_resolved_at_layer1 += 1
+            self._inc("records_resolved_at_layer1")
+            self._finalize_evidence(result, record, record_id)
+            self._update_timing_and_bypass(result, start_total)
             return result
-        
+
+        # Dedup check (pipeline previously bypassed DuplicateDetector)
+        try:
+            if self.layer1.duplicate_detector.is_duplicate(normalized):  # type: ignore
+                result.processing_stage = ProcessingStage.INGESTION_ERROR
+                result.layer1_result = {"valid": True, "duplicate": True}
+                result.final_record = normalized
+                result.llm_bypassed = True
+                result.llm_decision_audit = self._build_llm_decision_audit(
+                    decision="duplicate",
+                    llm_bypassed=True,
+                    gate_reason="Duplicate record (dedup hash match)",
+                    layer3_skipped=False,
+                    batch_context=None,
+                    cache_status="not_checked",
+                )
+                self._inc("records_resolved_at_layer1")
+                self._finalize_evidence(result, record, record_id)
+                self._update_timing_and_bypass(result, start_total)
+                return result
+        except Exception:
+            pass
+
         result.final_record = normalized
         result.layer1_result = {"valid": True}
-        
+
         # LAYER 2: Statistical Anomaly Detection
         start_layer2 = time.time()
-        enriched_l2, anomalies = self.layer2.process_record(normalized)
+        try:
+            enriched_l2, anomalies = self.layer2.process_record(normalized)
+        except Exception as e:
+            logger.warning(f"Layer2 failed: {e}")
+            enriched_l2, anomalies = normalized, []
+            enriched_l2 = dict(enriched_l2) if isinstance(enriched_l2, dict) else normalized
+            enriched_l2["_layer2_results"] = {"anomaly_detected": False, "anomalies": [], "requires_llm": False, "error": str(e)}
         result.layer2_time_ms = (time.time() - start_layer2) * 1000
         result.final_record = enriched_l2
-        result.layer2_result = enriched_l2.get("_layer2_results", {})
-        
-        # Check for critical anomalies requiring LLM
+        result.layer2_result = enriched_l2.get("_layer2_results", {}) if isinstance(enriched_l2, dict) else {}
+
+        # Check for critical anomalies requiring LLM (thread-safe)
         if result.layer2_result.get("anomaly_detected"):
             for anom in result.layer2_result.get("anomalies", []):
-                if anom["severity"] == "critical":
-                    self.metrics.critical_anomalies_detected += 1
-                elif anom["severity"] == "high":
-                    self.metrics.high_anomalies_detected += 1
-        
+                try:
+                    if anom.get("severity") == "critical":
+                        self._inc("critical_anomalies_detected")
+                    elif anom.get("severity") == "high":
+                        self._inc("high_anomalies_detected")
+                except Exception:
+                    pass
+
         # LAYER 3: ML Feature Engineering
         start_layer3 = time.time()
-        enriched_l3, layer3_results = self.layer3.process_record(enriched_l2)
+        try:
+            enriched_l3, layer3_results = self.layer3.process_record(enriched_l2)
+        except Exception as e:
+            logger.warning(f"Layer3 failed: {e}")
+            enriched_l3, layer3_results = enriched_l2, {"predictions": {"priority": {"value": "low", "score": 0.0, "confidence": 0.3, "reasons": [f"layer3_error:{e}"]}}, "requires_llm": False}
         result.layer3_time_ms = (time.time() - start_layer3) * 1000
         result.final_record = enriched_l3
-        result.layer3_result = enriched_l3.get("_layer3_results", {})
-        
-        # Determine if LLM is needed
-        requires_llm = layer3_results.get("requires_llm", False)
-        priority_score = layer3_results.get("predictions", {}).get("priority", {}).get("score", 0.0)
-        confidence_score = max([
-            p.get("confidence", 0.0) 
-            for p in layer3_results.get("predictions", {}).values()
-            if isinstance(p, dict)
-        ], default=0.5)
-        
-        result.confidence_score = confidence_score
-        
-        # LAYER 4: Intelligent LLM Gating
-        anomaly_severity = (
-            result.layer2_result.get("anomalies", [{}])[0].get("severity")
-            if result.layer2_result.get("anomalies")
-            else None
-        )
+        result.layer3_result = enriched_l3.get("_layer3_results", {}) if isinstance(enriched_l3, dict) else layer3_results
 
+        # Determine if LLM is needed (robust defaults)
+        try:
+            requires_llm = bool(layer3_results.get("requires_llm", False))
+            priority_score = float((layer3_results.get("predictions", {}) or {}).get("priority", {}).get("score", 0.0) or 0.0)
+        except Exception:
+            requires_llm, priority_score = False, 0.0
+        try:
+            confidence_score = max([
+                float(p.get("confidence", 0.0) or 0.0)
+                for p in (layer3_results.get("predictions", {}) or {}).values()
+                if isinstance(p, dict)
+            ], default=0.5)
+        except Exception:
+            confidence_score = 0.5
+
+        result.confidence_score = confidence_score
+
+        # LAYER 4: Intelligent LLM Gating (max severity, not first)
+        try:
+            severities = [a.get("severity") for a in (result.layer2_result.get("anomalies", []) or []) if isinstance(a, dict)]
+            order = {"low": 0, "medium": 1, "high": 2, "critical": 3}
+            anomaly_severity = max(severities, key=lambda s: order.get(str(s), -1)) if severities else None
+        except Exception:
+            anomaly_severity = None
+
+        full_prompt: Optional[str] = None
         if not requires_llm:
-            result.processing_stage = ProcessingStage.ML_FEATURE
-            result.llm_bypassed = True
-            result.llm_decision_audit = self._build_llm_decision_audit(
-                decision="not_required",
-                llm_bypassed=True,
-                priority_score=priority_score,
-                anomaly_severity=anomaly_severity,
-                batch_context=None,
-                gate_reason="Layer 3 did not require LLM synthesis",
-                layer3_skipped=False,
-                cache_status="not_checked"
-            )
-            self.metrics.records_resolved_at_layer3 += 1
+            # Distinguish STATISTICAL (anomaly but no LLM) vs ML_FEATURE for accurate bypass metrics
+            if result.layer2_result.get("anomaly_detected"):
+                result.processing_stage = ProcessingStage.STATISTICAL
+                result.llm_bypassed = True
+                result.llm_decision_audit = self._build_llm_decision_audit(
+                    decision="statistical_only",
+                    llm_bypassed=True,
+                    priority_score=priority_score,
+                    anomaly_severity=anomaly_severity,
+                    batch_context=None,
+                    gate_reason="Anomaly detected but Layer 3 did not require LLM",
+                    layer3_skipped=False,
+                    cache_status="not_checked"
+                )
+                self._inc("records_resolved_at_layer2")
+            else:
+                result.processing_stage = ProcessingStage.ML_FEATURE
+                result.llm_bypassed = True
+                result.llm_decision_audit = self._build_llm_decision_audit(
+                    decision="not_required",
+                    llm_bypassed=True,
+                    priority_score=priority_score,
+                    anomaly_severity=anomaly_severity,
+                    batch_context=None,
+                    gate_reason="Layer 3 did not require LLM synthesis",
+                    layer3_skipped=False,
+                    cache_status="not_checked"
+                )
+                self._inc("records_resolved_at_layer3")
         elif not self.model_router:
             result.processing_stage = ProcessingStage.ML_FEATURE
             result.llm_bypassed = True
@@ -441,42 +666,51 @@ class MultiLayerDataPipeline:
                 layer3_skipped=False,
                 cache_status="not_configured"
             )
-            self.metrics.records_resolved_at_layer3 += 1
+            self._inc("records_resolved_at_layer3")
         else:
             # Check if LLM gate approves (batch_context=None for standard processing)
-            should_invoke, reason = self.llm_gate.should_invoke_llm(
-                enriched_l3,
-                priority_score,
-                anomaly_severity,
-                batch_context=None
-            )
-            
+            try:
+                should_invoke, reason = self.llm_gate.should_invoke_llm(  # type: ignore
+                    enriched_l3,
+                    priority_score,
+                    anomaly_severity,
+                    batch_context=None
+                )
+            except Exception as e:
+                should_invoke, reason = False, f"gate_error:{e}"
+
             if should_invoke:
                 # Generate prompt from enriched record
                 prompt = self._generate_synthesis_prompt(enriched_l3, layer3_results)
+                full_prompt = prompt
                 cache_status = "not_configured"
-                
+
                 start_layer4 = time.time()
                 try:
                     # Check cache first
                     if self.cache:
-                        cached = self.cache.retrieve(prompt, k=1)
+                        try:
+                            cached = self.cache.retrieve(prompt, k=1)
+                        except Exception:
+                            cached = []
                         if cached:
                             result.layer4_llm_response = cached[0].page_content
-                            self.metrics.cache_hits += 1
+                            self._inc("cache_hits")
                             cache_status = "hit"
                         else:
                             result.layer4_llm_response = self.model_router.generate(prompt)
-                            self.metrics.cache_misses += 1
+                            self._inc("cache_misses")
                             cache_status = "miss"
+                            # Store for future (was missing — hit_rate always 0)
+                            self._store_cache(prompt, result.layer4_llm_response or "")
                     else:
                         result.layer4_llm_response = self.model_router.generate(prompt)
-                        self.metrics.cache_misses += 1
-                    
+                        self._inc("cache_misses")
+
                     result.layer4_time_ms = (time.time() - start_layer4) * 1000
                     result.processing_stage = ProcessingStage.LLM_REQUIRED
                     result.llm_bypassed = False
-                    self.metrics.records_requiring_llm += 1
+                    self._inc("records_requiring_llm")
                 except Exception as e:
                     logger.error(f"LLM generation failed: {e}")
                     result.layer4_llm_response = f"LLM Error: {str(e)}"
@@ -493,10 +727,18 @@ class MultiLayerDataPipeline:
                     prompt=prompt
                 )
             else:
-                result.processing_stage = ProcessingStage.ML_FEATURE
+                # Gate bypassed — still distinguish statistical
+                if result.layer2_result.get("anomaly_detected"):
+                    result.processing_stage = ProcessingStage.STATISTICAL
+                    self._inc("records_resolved_at_layer2")
+                    decision = "gate_bypassed_statistical"
+                else:
+                    result.processing_stage = ProcessingStage.ML_FEATURE
+                    self._inc("records_resolved_at_layer3")
+                    decision = "gate_bypassed"
                 result.llm_bypassed = True
                 result.llm_decision_audit = self._build_llm_decision_audit(
-                    decision="gate_bypassed",
+                    decision=decision,
                     llm_bypassed=True,
                     priority_score=priority_score,
                     anomaly_severity=anomaly_severity,
@@ -505,98 +747,11 @@ class MultiLayerDataPipeline:
                     layer3_skipped=False,
                     cache_status="not_checked"
                 )
-                self.metrics.records_resolved_at_layer3 += 1
         
-        # --- Evidence bundle & cost ledger (new in STRATEGY.md) ---
-        try:
-            evidence_steps = []
-            # Layer 1 evidence
-            if result.layer1_result is not None:
-                if result.layer1_result.get("errors"):
-                    evidence_steps.append(_build_evidence_step("layer_1_ingestion", "validation_failed", f"Layer 1: validation failed {result.layer1_result.get('errors')}", raw=result.layer1_result, latency_ms=result.layer1_time_ms))
-                else:
-                    # deterministic dedup hash citation
-                    raw = {"source": record.get("source"), "entity_id": record.get("entity_id")}
-                    h = hashlib.sha256(json.dumps(raw, sort_keys=True, default=str).encode()).hexdigest()[:8]
-                    evidence_steps.append(_build_evidence_step("layer_1_ingestion", f"validated hash={h}", f"Layer 1: validated record hash {h}", raw=raw, latency_ms=result.layer1_time_ms))
-            # Layer 2 evidence
-            if result.layer2_result is not None:
-                anomalies = result.layer2_result.get("anomalies", [])
-                if anomalies:
-                    for anom in anomalies[:2]:
-                        evidence_steps.append(_build_evidence_step("layer_2_statistical", f"{anom.get('type')} severity={anom.get('severity')} score={anom.get('score',0):.2f}", f"Layer 2: {anom.get('explanation','')}", raw=anom, latency_ms=result.layer2_time_ms / max(len(anomalies),1)))
-                else:
-                    evidence_steps.append(_build_evidence_step("layer_2_statistical", "no_anomaly", "Layer 2: no statistical anomaly detected", raw=result.layer2_result, latency_ms=result.layer2_time_ms))
-            # Layer 3 evidence
-            if result.layer3_result is not None:
-                prio = result.layer3_result.get("predictions", {}).get("priority", {})
-                if result.layer3_result.get("skipped"):
-                    evidence_steps.append(_build_evidence_step("layer_3_ml_features", f"skipped reason={result.layer3_result.get('skip_reason')}", f"Layer 3: skipped ({result.layer3_result.get('skip_reason')})", raw=result.layer3_result, latency_ms=0))
-                else:
-                    evidence_steps.append(_build_evidence_step("layer_3_ml_features", f"priority={prio.get('value')} score={prio.get('score',0):.2f}", f"Layer 3: priority {prio.get('value')} ({prio.get('score',0):.2f}) reasons={prio.get('reasons')}", raw=result.layer3_result, latency_ms=result.layer3_time_ms))
-            # Layer 4 evidence
-            prompt_for_cost = None
-            model_used = None
-            cached_flag = False
-            if result.llm_decision_audit.get("prompt_preview"):
-                prompt_for_cost = result.llm_decision_audit.get("prompt_preview")
-                # try to infer model
-                model_used = getattr(self.model_router, "registry", {}).get("balanced", {}).get("model") if self.model_router else None
-                if result.llm_decision_audit.get("cache_status") == "hit":
-                    cached_flag = True
-                evidence_steps.append(_build_evidence_step("layer_4_llm_synthesis", f"decision={result.llm_decision_audit.get('decision')} gate={result.llm_decision_audit.get('gate_reason','')[:40]}", f"Layer 4: {result.llm_decision_audit.get('decision')} - {result.llm_decision_audit.get('gate_reason','')}", raw={"gate_reason": result.llm_decision_audit.get("gate_reason")}, cost_usd=0.0 if cached_flag else 0.0005, latency_ms=result.layer4_time_ms))
-            else:
-                # no LLM
-                evidence_steps.append(_build_evidence_step("layer_4_llm_synthesis", f"bypassed reason={result.llm_decision_audit.get('gate_reason','')[:40]}", f"Layer 4: bypassed - {result.llm_decision_audit.get('gate_reason','')}", raw=result.llm_decision_audit, latency_ms=0))
+        # --- Evidence + cost (shared helper, uses full prompt for accurate cost) ---
+        self._finalize_evidence(result, record, record_id, full_prompt=full_prompt)
+        self._update_timing_and_bypass(result, start_total)
 
-            # Build bundle
-            if EvidenceBundle is not None:
-                try:
-                    bundle = EvidenceBundle(record_id=record_id, steps=[s if hasattr(s, "model_dump") else EvidenceStep(**s) for s in evidence_steps if isinstance(s, dict)] if isinstance(evidence_steps[0], dict) else evidence_steps, final_decision=result.processing_stage.value if hasattr(result.processing_stage,"value") else str(result.processing_stage), llm_bypassed=result.llm_bypassed)
-                    # If we passed dicts, pydantic will validate; if we passed EvidenceStep objects, keep as is
-                    result.evidence_bundle = bundle
-                except Exception:
-                    # fallback dict bundle
-                    result.evidence_bundle = {"record_id": record_id, "steps": [s if isinstance(s, dict) else s.model_dump() for s in evidence_steps], "final_decision": result.processing_stage.value if hasattr(result.processing_stage,"value") else str(result.processing_stage), "llm_bypassed": result.llm_bypassed}
-            else:
-                result.evidence_bundle = {"record_id": record_id, "steps": evidence_steps, "final_decision": result.processing_stage.value if hasattr(result.processing_stage,"value") else str(result.processing_stage), "llm_bypassed": result.llm_bypassed}
-            result.evidence_steps = [s if isinstance(s, dict) else s.model_dump() for s in evidence_steps]
-
-            # Cost ledger
-            result.cost_ledger = _build_cost_ledger(record_id, prompt=prompt_for_cost, model_used=model_used, cached=cached_flag, budget_usd=getattr(self.llm_gate, "per_record_budget_usd", None) if self.llm_gate else None, model_router=self.model_router)
-            # Accumulate total cost
-            cost_val = result.cost_ledger.cost_usd if hasattr(result.cost_ledger, "cost_usd") else result.cost_ledger.get("cost_usd", 0)
-            self.metrics.total_cost_usd += float(cost_val or 0)
-            self.metrics.evidence_bundles_produced += 1
-        except Exception as e:
-            logger.warning(f"Evidence bundle build failed: {e}")
-            result.evidence_steps = []
-            result.evidence_bundle = {"error": str(e), "record_id": record_id}
-            result.cost_ledger = {"record_id": record_id, "cost_usd": 0.0}
-
-        # Complete timing
-        result.total_time_ms = (time.time() - start_total) * 1000
-        self.metrics.total_layer1_time_ms += result.layer1_time_ms
-        self.metrics.total_layer2_time_ms += result.layer2_time_ms
-        self.metrics.total_layer3_time_ms += result.layer3_time_ms
-        self.metrics.total_layer4_time_ms += result.layer4_time_ms
-        
-        self.metrics.total_records_processed += 1
-        self.metrics.avg_processing_time_ms = (
-            self.metrics.total_layer1_time_ms + 
-            self.metrics.total_layer2_time_ms + 
-            self.metrics.total_layer3_time_ms + 
-            self.metrics.total_layer4_time_ms
-        ) / max(self.metrics.total_records_processed, 1)
-        
-        # Update bypass rate
-        self.metrics.llm_bypass_rate = (
-            (self.metrics.records_resolved_at_layer1 + 
-              self.metrics.records_resolved_at_layer2 +
-              self.metrics.records_resolved_at_layer3) / 
-             max(self.metrics.total_records_processed, 1) * 100
-        )
-        
         return result
     
     def _generate_synthesis_prompt(self, record: Dict[str, Any], layer3_results: Dict[str, Any]) -> str:
@@ -659,24 +814,31 @@ Priority: {predictions.get('priority', {}).get('value', 'unknown')}
         """
         if not records:
             return [], self.metrics
-        
-        batch_start = time.time()
-        results = []
-        
-        # Phase 1: Layer 1 & Layer 2 on all records
-        layer2_outputs = []
-        layer2_summary = None
-        
+
+        results: List[ProcessingResult] = []
+        layer2_outputs: List[Tuple] = []
+
+        # Phase 1: Layer 1 & Layer 2 on all records (with timing, dedup, counters)
         for record in records:
+            rec_start = time.time()
+            record_id = self._generate_record_id(record)
             # Layer 1: Ingestion
-            normalized, layer1_errors = self.layer1.normalize_record(record)
+            try:
+                normalized, layer1_errors = self.layer1.normalize_record(record)
+            except Exception as e:
+                normalized, layer1_errors = None, [{"code": "EXCEPTION", "message": str(e)}]  # type: ignore
             if layer1_errors:
+                try:
+                    errs = [e.__dict__ if hasattr(e, "__dict__") else str(e) for e in layer1_errors]  # type: ignore
+                except Exception:
+                    errs = str(layer1_errors)
                 result = ProcessingResult(
-                    record_id=record.get("entity_id", "unknown"),
+                    record_id=record_id,
                     original_record=record,
-                    final_record=normalized,
+                    final_record=normalized if isinstance(normalized, dict) else record,  # type: ignore
                     processing_stage=ProcessingStage.INGESTION_ERROR,
-                    layer1_result={"errors": layer1_errors},
+                    layer1_result={"errors": errs},
+                    layer1_time_ms=(time.time() - rec_start) * 1000,
                     llm_bypassed=True,
                     llm_decision_audit=self._build_llm_decision_audit(
                         decision="not_required",
@@ -686,53 +848,99 @@ Priority: {predictions.get('priority', {}).get('value', 'unknown')}
                         batch_context=None
                     )
                 )
+                self._finalize_evidence(result, record, record_id)
+                self._inc("records_resolved_at_layer1")
+                self._update_timing_and_bypass(result, rec_start)
                 results.append(result)
-                self.metrics.records_resolved_at_layer1 += 1
                 continue
-            
-            # Layer 2: Statistical Anomaly Detection
-            enriched_l2, anomalies = self.layer2.process_record(normalized)
-            layer2_outputs.append((record, normalized, enriched_l2, anomalies))
-        
+
+            # Dedup (was missing in optimized path)
+            try:
+                if self.layer1.duplicate_detector.is_duplicate(normalized):  # type: ignore
+                    result = ProcessingResult(
+                        record_id=record_id,
+                        original_record=record,
+                        final_record=normalized,
+                        processing_stage=ProcessingStage.INGESTION_ERROR,
+                        layer1_result={"valid": True, "duplicate": True},
+                        layer1_time_ms=(time.time() - rec_start) * 1000,
+                        llm_bypassed=True,
+                        llm_decision_audit=self._build_llm_decision_audit(
+                            decision="duplicate", llm_bypassed=True,
+                            gate_reason="Duplicate record (dedup hash match)",
+                            layer3_skipped=False, batch_context=None,
+                        ),
+                    )
+                    self._finalize_evidence(result, record, record_id)
+                    self._inc("records_resolved_at_layer1")
+                    self._update_timing_and_bypass(result, rec_start)
+                    results.append(result)
+                    continue
+            except Exception:
+                pass
+
+            # Layer 2: Statistical Anomaly Detection (timed)
+            l2_start = time.time()
+            try:
+                enriched_l2, anomalies = self.layer2.process_record(normalized)
+            except Exception as e:
+                enriched_l2, anomalies = dict(normalized), []
+                enriched_l2["_layer2_results"] = {"anomaly_detected": False, "anomalies": [], "requires_llm": False, "error": str(e)}
+            l2_time = (time.time() - l2_start) * 1000
+            # Track critical/high (parity with process_record)
+            try:
+                for anom in (enriched_l2.get("_layer2_results", {}) or {}).get("anomalies", []) or []:
+                    if anom.get("severity") == "critical":
+                        self._inc("critical_anomalies_detected")
+                    elif anom.get("severity") == "high":
+                        self._inc("high_anomalies_detected")
+            except Exception:
+                pass
+            layer2_outputs.append((record, normalized, enriched_l2, anomalies, rec_start, l2_time))
+
         # Compute batch aggregates from Layer 2
-        batch_context = self._compute_batch_context(layer2_outputs)
-        
-        # Phase 2: Selective propagation to Layer 3
-        for record, normalized, enriched_l2, anomalies in layer2_outputs:
-            layer2_result = enriched_l2.get("_layer2_results", {})
-            anomaly_severity = None
-            if layer2_result.get("anomalies"):
-                anomaly_severity = max(
-                    [a["severity"] for a in layer2_result.get("anomalies", [])],
-                    key=lambda x: ["low", "medium", "high", "critical"].index(x)
-                )
-            
+        batch_context = self._compute_batch_context([(r, n, e, a) for (r, n, e, a, _, _) in layer2_outputs])
+
+        # Phase 2: Selective propagation to Layer 3 (with evidence parity)
+        for record, normalized, enriched_l2, anomalies, rec_start, l2_time in layer2_outputs:
+            layer2_result = enriched_l2.get("_layer2_results", {}) if isinstance(enriched_l2, dict) else {}
+            try:
+                severities = [a.get("severity") for a in (layer2_result.get("anomalies", []) or []) if isinstance(a, dict)]
+                order = {"low": 0, "medium": 1, "high": 2, "critical": 3}
+                anomaly_severity = max(severities, key=lambda s: order.get(str(s), -1)) if severities else None
+            except Exception:
+                anomaly_severity = None
+
             # SELECTIVE PROPAGATION LOGIC
             skip_layer3 = False
             skip_reason = ""
-            
+
             if enable_selective_propagation:
-                # Skip Layer 3 for records that clearly don't need it
                 if not layer2_result.get("anomaly_detected"):
-                    # No anomalies = likely doesn't need expensive ML scoring
                     skip_layer3 = True
                     skip_reason = "no_anomalies"
                 elif anomaly_severity == "low":
-                    # Low severity = skip ML scoring
                     skip_layer3 = True
                     skip_reason = "low_severity"
-            
-            # Process Layer 3 if needed
+
+            # Process Layer 3 if needed (timed)
+            l3_start = time.time()
+            full_prompt: Optional[str] = None
             if not skip_layer3:
-                # Inject batch context into record for Layer 3
-                enriched_l2["_batch_context"] = batch_context
-                enriched_l3, layer3_results = self.layer3.process_record(enriched_l2)
+                try:
+                    enriched_l2["_batch_context"] = batch_context
+                    enriched_l3, layer3_results = self.layer3.process_record(enriched_l2)
+                except Exception as e:
+                    enriched_l3, layer3_results = enriched_l2, {"predictions": {"priority": {"value": "low", "score": 0.0, "confidence": 0.3, "reasons": [f"layer3_error:{e}"]}}, "requires_llm": False}
                 final_record = enriched_l3
-                layer3_result = enriched_l3.get("_layer3_results", {})
+                layer3_result = enriched_l3.get("_layer3_results", {}) if isinstance(enriched_l3, dict) else layer3_results
+                l3_time = (time.time() - l3_start) * 1000
             else:
-                # Layer 3 skipped - construct minimal Layer 3 result
                 final_record = enriched_l2
-                final_record["_batch_context"] = batch_context
+                try:
+                    final_record["_batch_context"] = batch_context
+                except Exception:
+                    pass
                 final_record["_layer3_results"] = {
                     "predictions": {
                         "priority": {
@@ -747,24 +955,39 @@ Priority: {predictions.get('priority', {}).get('value', 'unknown')}
                     "skip_reason": skip_reason
                 }
                 layer3_result = final_record["_layer3_results"]
-                self.metrics.records_resolved_at_layer3 += 1
-            
+                l3_time = 0.0
+                # Don't increment here — increment after stage decision for accuracy
+
             # Layer 4: Intelligent LLM Gating with batch context
-            priority_score = layer3_result.get("predictions", {}).get("priority", {}).get("score", 0.0)
-            requires_llm = layer3_result.get("requires_llm", False)
-            
+            try:
+                priority_score = float((layer3_result.get("predictions", {}) or {}).get("priority", {}).get("score", 0.0) or 0.0)
+                requires_llm = bool(layer3_result.get("requires_llm", False))
+                conf = float((layer3_result.get("predictions", {}) or {}).get("priority", {}).get("confidence", 0.5) or 0.5)
+            except Exception:
+                priority_score, requires_llm, conf = 0.0, False, 0.5
+
             result = ProcessingResult(
-                record_id=record.get("entity_id", "unknown"),
+                record_id=self._generate_record_id(record),
                 original_record=record,
                 final_record=final_record,
                 processing_stage=ProcessingStage.ML_FEATURE,
+                layer1_result={"valid": True},
+                layer1_time_ms=0.0,  # set below from rec_start? keep 0, total covers it
                 layer2_result=layer2_result,
+                layer2_time_ms=l2_time,
                 layer3_result=layer3_result,
+                layer3_time_ms=l3_time,
                 llm_bypassed=True,
-                confidence_score=layer3_result.get("predictions", {}).get("priority", {}).get("confidence", 0.5)
+                confidence_score=conf,
             )
+            # Approximate layer1 time as small (already validated); total measured from rec_start
+            try:
+                result.layer1_time_ms = 0.1
+            except Exception:
+                pass
 
             if skip_layer3:
+                result.processing_stage = ProcessingStage.ML_FEATURE
                 result.llm_decision_audit = self._build_llm_decision_audit(
                     decision="skipped_by_selective_propagation",
                     llm_bypassed=True,
@@ -776,100 +999,110 @@ Priority: {predictions.get('priority', {}).get('value', 'unknown')}
                     skip_reason=skip_reason,
                     cache_status="not_checked"
                 )
+                self._inc("records_resolved_at_layer3")
             elif not requires_llm:
-                result.llm_decision_audit = self._build_llm_decision_audit(
-                    decision="not_required",
-                    llm_bypassed=True,
-                    priority_score=priority_score,
-                    anomaly_severity=anomaly_severity,
-                    batch_context=batch_context,
-                    gate_reason="Layer 3 did not require LLM synthesis",
-                    layer3_skipped=False,
-                    cache_status="not_checked"
-                )
+                # Distinguish STATISTICAL vs ML_FEATURE (was always ML_FEATURE)
+                if layer2_result.get("anomaly_detected"):
+                    result.processing_stage = ProcessingStage.STATISTICAL
+                    result.llm_decision_audit = self._build_llm_decision_audit(
+                        decision="statistical_only", llm_bypassed=True,
+                        priority_score=priority_score, anomaly_severity=anomaly_severity,
+                        batch_context=batch_context,
+                        gate_reason="Anomaly detected but Layer 3 did not require LLM",
+                        layer3_skipped=False, cache_status="not_checked",
+                    )
+                    self._inc("records_resolved_at_layer2")
+                else:
+                    result.processing_stage = ProcessingStage.ML_FEATURE
+                    result.llm_decision_audit = self._build_llm_decision_audit(
+                        decision="not_required", llm_bypassed=True,
+                        priority_score=priority_score, anomaly_severity=anomaly_severity,
+                        batch_context=batch_context,
+                        gate_reason="Layer 3 did not require LLM synthesis",
+                        layer3_skipped=False, cache_status="not_checked",
+                    )
+                    self._inc("records_resolved_at_layer3")
             elif requires_llm and not self.model_router:
+                result.processing_stage = ProcessingStage.ML_FEATURE
                 result.llm_decision_audit = self._build_llm_decision_audit(
-                    decision="gate_bypassed",
-                    llm_bypassed=True,
-                    priority_score=priority_score,
-                    anomaly_severity=anomaly_severity,
+                    decision="gate_bypassed", llm_bypassed=True,
+                    priority_score=priority_score, anomaly_severity=anomaly_severity,
                     batch_context=batch_context,
                     gate_reason="LLM required but no model router configured",
-                    layer3_skipped=False,
-                    cache_status="not_configured"
+                    layer3_skipped=False, cache_status="not_configured",
                 )
-            
+                self._inc("records_resolved_at_layer3")
+
             # LLM invocation with batch context awareness
-            if requires_llm and self.model_router:
-                should_invoke, gate_reason = self.llm_gate.should_invoke_llm(
-                    final_record,
-                    priority_score,
-                    anomaly_severity,
-                    batch_context  # Pass batch context for adaptive gating
-                )
-                
+            if requires_llm and self.model_router and not skip_layer3:
+                try:
+                    should_invoke, gate_reason = self.llm_gate.should_invoke_llm(  # type: ignore
+                        final_record, priority_score, anomaly_severity, batch_context,
+                    )
+                except Exception as e:
+                    should_invoke, gate_reason = False, f"gate_error:{e}"
+
                 if should_invoke:
                     prompt = self._generate_synthesis_prompt(final_record, layer3_result)
+                    full_prompt = prompt
                     cache_status = "not_configured"
-                    
+
+                    l4_start = time.time()
                     try:
                         if self.cache:
-                            cached = self.cache.retrieve(prompt, k=1)
+                            try:
+                                cached = self.cache.retrieve(prompt, k=1)
+                            except Exception:
+                                cached = []
                             if cached:
                                 result.layer4_llm_response = cached[0].page_content
-                                self.metrics.cache_hits += 1
+                                self._inc("cache_hits")
                                 cache_status = "hit"
                             else:
                                 result.layer4_llm_response = self.model_router.generate(prompt)
-                                self.metrics.cache_misses += 1
+                                self._inc("cache_misses")
                                 cache_status = "miss"
+                                self._store_cache(prompt, result.layer4_llm_response or "")
                         else:
                             result.layer4_llm_response = self.model_router.generate(prompt)
-                            self.metrics.cache_misses += 1
-                        
+                            self._inc("cache_misses")
+
+                        result.layer4_time_ms = (time.time() - l4_start) * 1000
                         result.processing_stage = ProcessingStage.LLM_REQUIRED
                         result.llm_bypassed = False
-                        self.metrics.records_requiring_llm += 1
+                        self._inc("records_requiring_llm")
                     except Exception as e:
                         logger.error(f"LLM generation failed: {e}")
                         result.layer4_llm_response = f"LLM Error: {str(e)}"
+                        result.layer4_time_ms = (time.time() - l4_start) * 1000
                         cache_status = "error"
                     result.llm_decision_audit = self._build_llm_decision_audit(
-                        decision="invoked",
-                        llm_bypassed=False,
-                        priority_score=priority_score,
-                        anomaly_severity=anomaly_severity,
-                        batch_context=batch_context,
-                        gate_reason=gate_reason,
-                        layer3_skipped=False,
-                        cache_status=cache_status,
-                        prompt=prompt
+                        decision="invoked", llm_bypassed=False,
+                        priority_score=priority_score, anomaly_severity=anomaly_severity,
+                        batch_context=batch_context, gate_reason=gate_reason,
+                        layer3_skipped=False, cache_status=cache_status, prompt=prompt,
                     )
                 else:
+                    if layer2_result.get("anomaly_detected"):
+                        result.processing_stage = ProcessingStage.STATISTICAL
+                        self._inc("records_resolved_at_layer2")
+                        decision = "gate_bypassed_statistical"
+                    else:
+                        # Already counted? skip_layer3 False here, so count now
+                        self._inc("records_resolved_at_layer3")
+                        decision = "gate_bypassed"
                     result.llm_decision_audit = self._build_llm_decision_audit(
-                        decision="gate_bypassed",
-                        llm_bypassed=True,
-                        priority_score=priority_score,
-                        anomaly_severity=anomaly_severity,
-                        batch_context=batch_context,
-                        gate_reason=gate_reason,
-                        layer3_skipped=False,
-                        cache_status="not_checked"
+                        decision=decision, llm_bypassed=True,
+                        priority_score=priority_score, anomaly_severity=anomaly_severity,
+                        batch_context=batch_context, gate_reason=gate_reason,
+                        layer3_skipped=False, cache_status="not_checked",
                     )
-            
+
+            # Evidence parity (was missing in optimized path)
+            self._finalize_evidence(result, record, result.record_id, full_prompt=full_prompt)
+            self._update_timing_and_bypass(result, rec_start)
             results.append(result)
-            self.metrics.total_records_processed += 1
-        
-        # Update metrics
-        batch_elapsed = (time.time() - batch_start) * 1000
-        self.metrics.avg_processing_time_ms = batch_elapsed / max(len(results), 1)
-        self.metrics.llm_bypass_rate = (
-            (self.metrics.records_resolved_at_layer1 + 
-             self.metrics.records_resolved_at_layer2 +
-             self.metrics.records_resolved_at_layer3) / 
-            max(self.metrics.total_records_processed, 1) * 100
-        )
-        
+
         return results, self.metrics
     
     def _compute_batch_context(self, layer2_outputs: List[Tuple]) -> Dict[str, Any]:

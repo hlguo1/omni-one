@@ -44,92 +44,124 @@ class StatisticalAnomalyDetector:
             window_size: Number of historical points to consider
             z_threshold: Number of standard deviations for outlier detection
         """
+        import threading
         self.window_size = window_size
         self.z_threshold = z_threshold
         self.data_windows: Dict[str, deque] = {}  # Per entity/metric windows
-    
+        self._lock = threading.RLock()
+
+    def reset(self):
+        """Clear all history (for tests / fresh streams)."""
+        with self._lock:
+            self.data_windows.clear()
+
     def _ensure_numeric(self, value: Any) -> Optional[float]:
-        """Convert value to numeric or None."""
+        """Convert value to numeric or None. Excludes bool (subclass of int)."""
+        if isinstance(value, bool):
+            return None
         if isinstance(value, (int, float)):
-            return float(value)
+            # Guard NaN/Inf
+            try:
+                f = float(value)
+                if f != f or f in (float("inf"), float("-inf")):  # NaN check
+                    return None
+                return f
+            except Exception:
+                return None
         elif isinstance(value, str):
             try:
-                return float(value)
+                s = value.strip().replace(",", "")
+                if not s:
+                    return None
+                return float(s)
             except ValueError:
                 return None
         return None
     
     def detect_outlier(self, entity_id: str, current_value: float) -> AnomalyResult:
         """
-        Detect if current value is a statistical outlier using Z-score.
+        Detect if current value is a statistical outlier using Z-score. Thread-safe.
         """
-        if entity_id not in self.data_windows:
-            self.data_windows[entity_id] = deque(maxlen=self.window_size)
-        
-        window = self.data_windows[entity_id]
-        
-        # Need at least 2 points for statistics
-        if len(window) < 2:
+        with self._lock:
+            if entity_id not in self.data_windows:
+                self.data_windows[entity_id] = deque(maxlen=self.window_size)
+
+            window = self.data_windows[entity_id]
+
+            # Need at least 5 points for stable statistics (was 2 — too noisy)
+            if len(window) < 5:
+                window.append(current_value)
+                return AnomalyResult(
+                    is_anomaly=False,
+                    anomaly_type="insufficient_data",
+                    severity="low",
+                    confidence=0.0,
+                    score=0.0,
+                    explanation=f"Insufficient historical data ({len(window)}/5)"
+                )
+
+            # Compute statistics
+            values = np.array(list(window))
+            mean = float(np.mean(values))
+            std = float(np.std(values))
+
+            # Handle case where all values are the same
+            if std == 0:
+                # If current differs from constant, it's an anomaly (step change)
+                if current_value != mean:
+                    window.append(current_value)
+                    return AnomalyResult(
+                        is_anomaly=True,
+                        anomaly_type="outlier",
+                        severity="medium",
+                        confidence=0.6,
+                        score=0.6,
+                        explanation=f"Step change from constant {mean:.2f} to {current_value}",
+                        metrics={"z_score": float("inf"), "mean": mean, "std": std, "current_value": current_value}
+                    )
+                return AnomalyResult(
+                    is_anomaly=False,
+                    anomaly_type="constant_signal",
+                    severity="low",
+                    confidence=0.0,
+                    score=0.0,
+                    explanation="All historical values are identical"
+                )
+
+            # Compute z-score
+            z_score = abs((current_value - mean) / std)
+            is_anomaly = z_score > self.z_threshold
+
+            # Add to window
             window.append(current_value)
+
+            # Confidence based on z-score magnitude (capped)
+            confidence = min(z_score / (self.z_threshold + 1.0), 1.0) if is_anomaly else 0.0
+
+            # Determine severity
+            if z_score > 5.0:
+                severity = "critical"
+            elif z_score > 3.0:
+                severity = "high"
+            elif z_score > 2.0:
+                severity = "medium"
+            else:
+                severity = "low"
+
             return AnomalyResult(
-                is_anomaly=False,
-                anomaly_type="insufficient_data",
-                severity="low",
-                confidence=0.0,
-                score=0.0,
-                explanation="Insufficient historical data"
+                is_anomaly=is_anomaly,
+                anomaly_type="outlier",
+                severity=severity,
+                confidence=float(confidence),
+                score=float(min(z_score / 5.0, 1.0)),  # Capped to 0-1
+                explanation=f"Value {current_value} is {z_score:.1f} std deviations from mean {mean:.2f}",
+                metrics={
+                    "z_score": float(z_score),
+                    "mean": mean,
+                    "std": std,
+                    "current_value": current_value
+                }
             )
-        
-        # Compute statistics
-        values = np.array(list(window))
-        mean = np.mean(values)
-        std = np.std(values)
-        
-        # Handle case where all values are the same
-        if std == 0:
-            return AnomalyResult(
-                is_anomaly=False,
-                anomaly_type="constant_signal",
-                severity="low",
-                confidence=0.0,
-                score=0.0,
-                explanation="All historical values are identical"
-            )
-        
-        # Compute z-score
-        z_score = abs((current_value - mean) / std)
-        is_anomaly = z_score > self.z_threshold
-        
-        # Add to window
-        window.append(current_value)
-        
-        # Confidence based on z-score magnitude
-        confidence = min(z_score / self.z_threshold, 1.0) if is_anomaly else 0.0
-        
-        # Determine severity
-        if z_score > 4.0:
-            severity = "critical"
-        elif z_score > 3.0:
-            severity = "high"
-        elif z_score > 2.0:
-            severity = "medium"
-        else:
-            severity = "low"
-        
-        return AnomalyResult(
-            is_anomaly=is_anomaly,
-            anomaly_type="outlier",
-            severity=severity,
-            confidence=confidence,
-            score=z_score / 5.0,  # Normalize to 0-1
-            explanation=f"Value {current_value} is {z_score:.1f} std deviations from mean {mean:.2f}",
-            metrics={
-                "z_score": z_score,
-                "mean": mean,
-                "std": std,
-                "current_value": current_value
-            }
-        )
 
 
 class ThresholdAnomalyDetector:
@@ -260,68 +292,119 @@ class TrendAnomalyDetector:
 class Layer2StatisticalProcessing:
     """
     Layer 2: Fast Statistical Anomaly Detection
-    
+
     Detects anomalies using purely statistical methods:
-    - Z-score outlier detection
-    - Threshold violations
+    - Z-score outlier detection (per-entity + per-signal fallback for high-cardinality IDs)
+    - Threshold violations (multi-key lookup)
     - Trend changes
-    
+
     No LLM calls, no ML training, all deterministic.
     """
-    
+
     def __init__(self):
         self.z_detector = StatisticalAnomalyDetector()
         self.threshold_detector = ThresholdAnomalyDetector()
         self.trend_detector = TrendAnomalyDetector()
-        
+
         # Default thresholds for common metrics
         self._setup_default_thresholds()
-    
+
+    def reset(self):
+        """Clear all detector history (for tests / fresh streams)."""
+        try:
+            self.z_detector.reset()
+        except Exception:
+            pass
+        # Trend detector has no reset — clear manually
+        try:
+            self.trend_detector.data_windows.clear()
+        except Exception:
+            pass
+
     def _setup_default_thresholds(self):
         """Setup sensible default thresholds."""
         # Customer sentiment (-1 to 1)
         self.threshold_detector.set_threshold("sentiment", lower=-1.0, upper=1.0)
         # Revenue typically positive
         self.threshold_detector.set_threshold("revenue", lower=0.0)
-    
+        # Seller OS: stockout, margin guards
+        self.threshold_detector.set_threshold("on_hand", lower=0.0)
+        self.threshold_detector.set_threshold("margin_pct", lower=-100.0, upper=100.0)
+
     def set_metric_threshold(self, metric_name: str, lower: Optional[float] = None, upper: Optional[float] = None):
         """Allow dynamic threshold configuration."""
         self.threshold_detector.set_threshold(metric_name, lower, upper)
-    
+
+    def _bucket_key(self, record: Dict[str, Any]) -> str:
+        """Stable bucket for high-cardinality entity_ids: prefer source:signal, fallback entity."""
+        source = str(record.get("source", "unknown"))
+        meta = record.get("metadata") if isinstance(record.get("metadata"), dict) else {}
+        signal = str(meta.get("signal", "")) if meta else ""
+        entity_id = str(record.get("entity_id", "unknown"))
+        if signal:
+            return f"{source}:{signal}"
+        return entity_id
+
+    def _threshold_keys(self, record: Dict[str, Any]) -> List[str]:
+        """All keys to try for threshold lookup (fixes single-key miss)."""
+        source = str(record.get("source", "unknown"))
+        entity_id = str(record.get("entity_id", "unknown"))
+        meta = record.get("metadata") if isinstance(record.get("metadata"), dict) else {}
+        signal = str(meta.get("signal", "")) if meta else ""
+        keys = [
+            f"{source}_{entity_id}",
+            f"{source}:{signal}" if signal else "",
+            source,
+            signal,
+            entity_id,
+        ]
+        return [k for k in keys if k]
+
     def process_record(self, record: Dict[str, Any]) -> Tuple[Optional[Dict[str, Any]], List[AnomalyResult]]:
         """
         Process a single normalized record through Layer 2.
-        
+
         Returns:
             (enriched_record, anomalies)
         """
         anomalies = []
-        numeric_value = None
-        
-        # Try to extract numeric value
-        if isinstance(record.get("value"), (int, float)):
-            numeric_value = float(record["value"])
-        
+        numeric_value = self.z_detector._ensure_numeric(record.get("value"))
+
         entity_id = record.get("entity_id", "unknown")
-        source = record.get("source", "unknown")
-        
+        # Bucket for z-score/trend: entity if warmed, else source:signal fallback
+        bucket = self._bucket_key(record)
+
         # Check for anomalies
         if numeric_value is not None:
-            # Z-score based outlier detection
-            z_anomaly = self.z_detector.detect_outlier(entity_id, numeric_value)
+            # Primary: entity bucket
+            z_anomaly = self.z_detector.detect_outlier(str(entity_id), numeric_value)
             if z_anomaly.is_anomaly:
                 anomalies.append(z_anomaly)
-            
-            # Trend change detection
-            trend_anomaly = self.trend_detector.detect_trend_change(entity_id, numeric_value)
-            if trend_anomaly.is_anomaly:
-                anomalies.append(trend_anomaly)
-            
-            # Threshold detection (if source-specific threshold exists)
-            metric_key = f"{source}_{entity_id}"
-            threshold_anomaly = self.threshold_detector.detect_threshold_breach(metric_key, numeric_value)
-            if threshold_anomaly.is_anomaly:
-                anomalies.append(threshold_anomaly)
+            else:
+                # Fallback: signal bucket when entity has insufficient data
+                # (fixes unique order IDs never warming)
+                if z_anomaly.anomaly_type == "insufficient_data" and bucket != str(entity_id):
+                    fallback = self.z_detector.detect_outlier(bucket, numeric_value)
+                    if fallback.is_anomaly:
+                        anomalies.append(fallback)
+
+            # Trend change detection (same bucket logic, best-effort)
+            try:
+                trend_anomaly = self.trend_detector.detect_trend_change(str(entity_id), numeric_value)
+                if trend_anomaly.is_anomaly:
+                    anomalies.append(trend_anomaly)
+            except Exception:
+                pass
+
+            # Threshold detection — try all keys (fixes never-firing thresholds)
+            for metric_key in self._threshold_keys(record):
+                try:
+                    threshold_anomaly = self.threshold_detector.detect_threshold_breach(metric_key, numeric_value)
+                    if threshold_anomaly.is_anomaly:
+                        anomalies.append(threshold_anomaly)
+                        break  # one threshold hit is enough
+                except Exception:
+                    continue
         
         # Enrich record with Layer 2 results
         enriched = record.copy()
