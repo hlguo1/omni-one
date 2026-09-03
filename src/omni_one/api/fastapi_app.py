@@ -567,12 +567,22 @@ def setup_ai_routes(app: FastAPI):
                         onto.create_object(_OI(object_type="Product", primary_key=sku, properties={"sku": sku, "name": prod, "on_hand": int(on_hand), "sold_7d": int(sold)}), lineage="seller_os:briefing")
                     except Exception:
                         pass
-                # Workshop queue FROM ontology (grounded)
+                # Workshop queue FROM ontology via 12-scenario library (sharp, idempotent)
                 app = WorkshopApp(onto, "seller-daily")
                 try:
-                    made = app.build_seller_queue(briefing)
-                except Exception as e:
-                    made = []
+                    from ..packs.seller_scenarios import run_all_scenarios, scenarios_to_workshop  # type: ignore
+                    scen = run_all_scenarios(events)
+                    made = scenarios_to_workshop(scen, app)
+                    # keep scen for response
+                    try:
+                        briefing["scenarios"] = {"by_scenario": scen["by_scenario"], "total": scen["total"]}
+                    except Exception:
+                        pass
+                except Exception:
+                    try:
+                        made = app.build_seller_queue(briefing)
+                    except Exception:
+                        made = []
                 # Operate first decision if present (assign only; approve needs lead + proposal)
                 operated = None
                 if made:
@@ -596,12 +606,95 @@ def setup_ai_routes(app: FastAPI):
                 ingest_ontology_edits(audit, onto)
                 return {
                     "briefing_kpis": briefing.get("kpis"),
+                    "scenarios": briefing.get("scenarios", {}),
                     "workshop": app.stats(),
                     "operated": operated,
                     "aip": {"grounded": (aip_res or {}).get("grounded"), "answer": str((aip_res or {}).get("answer", ""))[:120]},
                     "governance": audit.stats(),
                     "free": True,
                 }
+
+    @app.get(
+        "/api/v1/seller/scenarios",
+        response_model=dict,
+        summary="List 12 practical seller scenarios (sharp use cases)",
+        tags=["Seller OS"],
+    )
+    async def seller_scenarios_list() -> dict:
+        """Static registry: id + what triggers it + Workshop action. No fees."""
+        try:
+            from ..packs.seller_scenarios import SCENARIOS, SCENARIO_THRESHOLDS  # type: ignore
+        except ImportError:
+            from omni_one.packs.seller_scenarios import SCENARIOS, SCENARIO_THRESHOLDS  # type: ignore
+        return {"scenarios": [{"id": s["id"], "desc": s["desc"]} for s in SCENARIOS],
+                "thresholds": SCENARIO_THRESHOLDS, "total": len(SCENARIOS), "free": True}
+
+    @app.post(
+        "/api/v1/seller/scenarios/run",
+        response_model=dict,
+        status_code=status.HTTP_200_OK,
+        summary="Run 12 scenarios on demo or your folder → Workshop queue + audit",
+        tags=["Seller OS"],
+    )
+    async def seller_scenarios_run(
+        data: dict = Body(..., example={"demo": True}),
+        settings: Settings = Depends(get_settings),
+    ) -> dict:
+        """Deterministic, idempotent, O(n). Returns decisions sorted critical→low with stable IDs."""
+        with OperationTimer("seller_scenarios_run", logger):
+            from pathlib import Path as _P
+            import tempfile
+            try:
+                from ..packs.seller_os import make_seller_demo_folder, ingest_seller_folder  # type: ignore
+                from ..packs.seller_scenarios import run_all_scenarios, scenarios_to_workshop  # type: ignore
+                from ..palantir_free.ontology import Ontology, ObjectTypeDef, PropertyDef, ActionDef, ObjectInstance  # type: ignore
+                from ..palantir_free.workshop import WorkshopApp  # type: ignore
+                from ..palantir_free.governance import AuditLog, ingest_workshop  # type: ignore
+            except ImportError:
+                from omni_one.packs.seller_os import make_seller_demo_folder, ingest_seller_folder  # type: ignore
+                from omni_one.packs.seller_scenarios import run_all_scenarios, scenarios_to_workshop  # type: ignore
+                from omni_one.palantir_free.ontology import Ontology, ObjectTypeDef, PropertyDef, ActionDef, ObjectInstance  # type: ignore
+                from omni_one.palantir_free.workshop import WorkshopApp  # type: ignore
+                from omni_one.palantir_free.governance import AuditLog, ingest_workshop  # type: ignore
+            folder = data.get("folder")
+            use_demo = data.get("demo", False) or not folder
+            if use_demo:
+                with tempfile.TemporaryDirectory() as tmp:
+                    demo_folder = make_seller_demo_folder(_P(tmp) / "d", seed=int(data.get("seed", 42)))
+                    events, report = ingest_seller_folder(demo_folder)
+                    scen = run_all_scenarios(events)
+                    # Minimal ontology for grounding (Product only)
+                    onto = Ontology("seller-scen")
+                    onto.define_object_type(ObjectTypeDef(api_name="Product", display_name="Product", primary_key="sku", title_property="name",
+                        properties=[PropertyDef(name="sku", type="string", required=True), PropertyDef(name="name", type="string", required=True)]))
+                    seen = set()
+                    for d in scen["decisions"]:
+                        prod = d.get("product")
+                        if prod and prod not in seen:
+                            seen.add(prod)
+                            sku = "".join(c if c.isalnum() else "" for c in prod)[:10] or f"P{len(seen)}"
+                            try:
+                                onto.create_object(ObjectInstance(object_type="Product", primary_key=sku, properties={"sku": sku, "name": prod}))
+                            except Exception:
+                                pass
+                    if not seen:
+                        onto.create_object(ObjectInstance(object_type="Product", primary_key="GEN", properties={"sku": "GEN", "name": "General"}))
+                    app = WorkshopApp(onto, "seller-scen")
+                    made = scenarios_to_workshop(scen, app)
+                    audit = AuditLog("seller-scen")
+                    ingest_workshop(audit, app)
+                    return {"by_scenario": scen["by_scenario"], "total": scen["total"],
+                            "decisions": scen["decisions"][:20], "workshop": app.stats(),
+                            "governance": audit.stats(), "free": True}
+            p = _P(str(folder))
+            if not p.exists():
+                raise ValidationError(f"Folder not found: {folder}")
+            from ..packs.seller_os import ingest_seller_folder as _ing  # type: ignore
+            events, report = _ing(p)
+            from ..packs.seller_scenarios import run_all_scenarios as _run  # type: ignore
+            scen = _run(events)
+            return {"by_scenario": scen["by_scenario"], "total": scen["total"],
+                    "decisions": scen["decisions"][:30], "free": True}
 
     @app.post(
         "/api/v1/micro/briefing",

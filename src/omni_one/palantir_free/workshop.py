@@ -75,7 +75,7 @@ class WorkshopApp:
     def add_decision(self, title: str, object_ref: str, severity: str = "medium",
                      evidence: Optional[List[str]] = None,
                      proposed_action: Optional[Dict[str, Any]] = None,
-                     source: str = "manual") -> Decision:
+                     source: str = "manual", stable_id: Optional[str] = None) -> Decision:
         # Grounding check: object must exist (like Palantir — no phantom decisions)
         try:
             t, pk = object_ref.split(":", 1)
@@ -83,7 +83,17 @@ class WorkshopApp:
             raise ValueError(f"object_ref must be Type:pk, got {object_ref!r}")
         if not self.ontology.get(t, pk):
             raise ValueError(f"Decision object {object_ref} not in ontology (grounding failed)")
-        d = Decision(self._next_id(), title, object_ref, severity, "open", evidence, proposed_action, None, source)
+        # Idempotent upsert: stable_id reuses existing decision (tech sound)
+        if stable_id and stable_id in self.decisions:
+            existing = self.decisions[stable_id]
+            # Refresh evidence/title if changed (keep status/history)
+            existing.title = title
+            existing.evidence = evidence or existing.evidence
+            existing.proposed_action = proposed_action or existing.proposed_action
+            existing.history.append({"op": "upserted", "at": datetime.now().isoformat(), "source": source})
+            return existing
+        did = stable_id or self._next_id()
+        d = Decision(did, title, object_ref, severity, "open", evidence, proposed_action, None, source)
         self.decisions[d.id] = d
         return d
 

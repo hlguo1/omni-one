@@ -31,15 +31,15 @@ PYTHONPATH=src python3 scripts/e2e_core_methodology.py --out /tmp/e2e_method # 6
 PYTHONPATH=src python -m omni_one.core.eval_harness --n 2000 # writes docs/EVAL_REPORT.md
 ```
 
-## 2. Highlight: Seller OS — One Outstanding Product for Online Sellers
+## 2. Highlight: Seller OS — 12 Sharp Scenarios for Online Sellers
 
-**For 1-5 person shops on Shopify / Etsy / Amazon + Instagram DMs** who live on spreadsheets and phone photos. Other verticals (RevOps, micro tacos, generic vision) still runnable in `src/omni_one/packs/_labs/` and `palantir_free/` as labs/samples — Seller OS is the polished, focused demo.
+**For 1-5 person shops on Shopify / Etsy / Amazon + Instagram DMs.** Full catalog: `docs/SCENARIOS.md` (STOCKOUT, DEAD_STOCK, UNANSWERED_COMPLAINT, REFUND_RISK, REVIEW_CRISIS, DM_BACKLOG, FEE_CREEP, SHIPPING_LOSS, PROFIT_DIP, COGS_SPIKE, PRICE_MISMATCH, LISTING_GAP). Each: trigger → evidence `file:line` → Workshop action. Demo hits 8/12.
 
 **What it proves the engine can do:**
-- **True profit, not GMV** — parses Shopify `Total` + Etsy `fees` + supplier `50 x 4.00` → per-unit COGS `packs/seller_os.py:155` → margin with citation `[shopify_orders.csv:5] Tote Bag qty2 gmv$56`
-- **Stockout risk** — velocity 7d vs `on_hand` `inventory.csv` `packs/seller_os.py:258` → `Tote Bag Handmade 2 left, sold 6/7d = 2.3 days`
-- **Win-back draft** — detects `where is my order? / chipped` in DMs `packs/seller_os.py:267` → gated draft `[MOCK SELLER DRAFT]` free
-- **One page** — `web/seller.html` → drop folder or photo → briefing + chart base64 + evidence trail
+- **True profit, not GMV** — `packs/seller_os.py:155` per-unit COGS → `[shopify_orders.csv:5] Tote Bag qty2 gmv$56`
+- **Stockout + 11 more** — `packs/seller_scenarios.py:1` single-pass O(n), stable IDs (idempotent), severity-sorted. E.g. `Tote 2 left, sold 6/7d = 2.3d`, `Unanswered complaint from Alice`, `Price mismatch 7% Shopify vs Etsy`
+- **Win-back draft** — gated `[MOCK SELLER DRAFT]` free
+- **One page** — `web/seller.html` → Run Demo + Run 12 Scenarios + photo → briefing + chart + queue
 
 Demo (synthetic, still uses pipeline engine):
 ```bash

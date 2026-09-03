@@ -26,13 +26,15 @@
     <div class="bg-white rounded-xl shadow p-6">
       <h2 class="font-semibold text-gray-900 mb-2">1. Drop your messy seller folder</h2>
       <p class="text-sm text-gray-500 mb-4">Shopify/Etsy CSV, inventory.csv, reviews.csv, instagram_dm.txt, supplier_invoice.jpg — any mess. No schema needed.</p>
-      <div class="flex gap-3 mb-4">
+      <div class="flex flex-wrap gap-3 mb-4">
         <button id="demoBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Run Demo Seller Folder (1 click)</button>
+        <button id="scenBtn" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Run 12 Practical Scenarios</button>
         <button id="photoBtn" class="px-4 py-2 bg-white border rounded-lg hover:bg-gray-50">Upload photo (supplier invoice / product)</button>
         <input id="photoInput" type="file" accept="image/*" class="hidden">
       </div>
       <div id="photoPreview" class="hidden mb-4 text-sm text-gray-600"></div>
-      <div class="text-xs text-gray-400">Or API: <code>POST /api/v1/seller/briefing {"demo":true}</code> or <code>POST /api/v1/seller/photo</code> (multipart, free Tesseract+OpenCV)</div>
+      <div id="scenarios" class="mb-4 text-xs text-gray-600">12 scenarios: STOCKOUT, DEAD_STOCK, UNANSWERED_COMPLAINT, REFUND_RISK, REVIEW_CRISIS, DM_BACKLOG, FEE_CREEP, SHIPPING_LOSS, PROFIT_DIP, COGS_SPIKE, PRICE_MISMATCH, LISTING_GAP — loading…</div>
+      <div class="text-xs text-gray-400">Or API: <code>POST /api/v1/seller/briefing {"demo":true}</code> · <code>POST /api/v1/seller/scenarios/run</code> · <code>POST /api/v1/seller/photo</code> (free)</div>
       <div id="status" class="mt-4 text-sm text-gray-600"></div>
     </div>
     <!-- Right: KPIs -->
@@ -81,7 +83,26 @@ async function runSellerDemo(){
   const j = await r.json();
   render(j);
   statusEl.textContent = `Ingested ${j.ingest_report?.events||j.meta.events} events — free $0`;
+  loadScenarios();
 }
+async function loadScenarios(){
+  try{
+    const r = await fetch(API+"/api/v1/seller/scenarios");
+    if(!r.ok) return;
+    const j = await r.json();
+    document.getElementById('scenarios').innerHTML = `<span class="font-medium">${j.total} practical scenarios:</span> ` + j.scenarios.map(s=>`<span class="inline-block bg-gray-100 rounded px-2 py-0.5 mr-1 mb-1">${s.id}</span>`).join("");
+  }catch(e){}
+}
+async function runScenarios(){
+  statusEl.textContent = "Running 12 scenarios → Workshop queue (free)…";
+  const r = await fetch(API+"/api/v1/seller/scenarios/run", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({demo:true})});
+  if(!r.ok){ statusEl.textContent = "Scenarios failed — is server running?"; return; }
+  const j = await r.json();
+  document.getElementById('alerts').innerHTML = j.decisions.slice(0,8).map(d=>`<div class="p-2 bg-red-50 border rounded"><div class="font-medium">[${d.severity}] ${d.scenario}: ${d.title}</div><div class="text-xs text-gray-500">${(d.evidence[0]||"").slice(0,80)} · id ${d.id}</div></div>`).join("");
+  document.getElementById('actions').innerHTML = `<div>Workshop: ${j.workshop.total} grounded decisions (stable IDs, no phantoms)</div><div>Governance: ${j.governance.total} events verified=${j.governance.verified}</div>`;
+  statusEl.textContent = `Scenarios ${j.total} total (${Object.entries(j.by_scenario).filter(([k,v])=>v>0).map(([k,v])=>k+":"+v).join(", ")}) — free $0`;
+}
+loadScenarios();
 async function runPhoto(file){
   statusEl.textContent = "OCR + chart + pipeline (free Tesseract)…";
   const fd = new FormData(); fd.append("file", file); fd.append("lang","eng"); fd.append("generate_chart","true");
@@ -116,6 +137,7 @@ function render(j){
   document.getElementById('evidence').textContent = "Sample: " + (j.evidence_sample[0]?.citation || j.alerts[0]?.evidence[0] || "file:line citations preserved");
 }
 demoBtn.addEventListener('click', runSellerDemo);
+document.getElementById('scenBtn').addEventListener('click', runScenarios);
 photoBtn.addEventListener('click', ()=> photoInput.click());
 photoInput.addEventListener('change', e=>{ if(e.target.files[0]) runPhoto(e.target.files[0]); });
 </script>
