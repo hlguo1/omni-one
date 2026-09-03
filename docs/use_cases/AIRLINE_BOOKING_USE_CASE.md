@@ -1,3 +1,5 @@
+> **LABS use case** — Seller OS is the ONE outstanding product for online sellers (`docs/SELLER_OS.md`). This use case is kept for reference but not primary.
+
 # Omni-One Enterprise AI: Airline Booking Agency Revenue Optimization
 
 ## Concrete Use Case: Dynamic Revenue Management & Customer Intelligence Platform

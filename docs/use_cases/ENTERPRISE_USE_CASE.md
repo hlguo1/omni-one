@@ -1,3 +1,5 @@
+> **LABS use case** — Seller OS is the ONE outstanding product for online sellers (`docs/SELLER_OS.md`). This use case is kept for reference but not primary.
+
 # Omni-One Enterprise AI: Sales Team Workflow Enhancement
 
 ## Concrete Use Case: Enterprise Sales Opportunity Detection & Client Relationship Management

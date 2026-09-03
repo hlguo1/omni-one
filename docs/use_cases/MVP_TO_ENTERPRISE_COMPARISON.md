@@ -1,3 +1,5 @@
+> **LABS use case** — Seller OS is the ONE outstanding product for online sellers (`docs/SELLER_OS.md`). This use case is kept for reference but not primary.
+
 # From MVP to Enterprise-Grade AI Stack
 ## What Actually Changed
 

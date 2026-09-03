@@ -1,3 +1,5 @@
+> **FOCUS: Seller OS reuses this engine** — 4-layer pipeline powers Seller OS stockout/profit with citations. See `docs/SELLER_OS.md` for product; this doc is engine detail.
+
 """
 Multi-Layered Data Processing Architecture
 ============================================

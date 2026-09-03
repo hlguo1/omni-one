@@ -1,3 +1,5 @@
+> **FOCUS: Seller OS is the ONE primary product** — this doc is **engine / labs** (deterministic pipeline, ingest, etc.) reused by Seller OS but not the outward product. See `docs/FOCUS.md` and `docs/SELLER_OS.md`.
+
 # Addressing LLM Limitations: High-Velocity Data Processing
 
 ## The Critical Problem

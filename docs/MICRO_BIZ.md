@@ -1,6 +1,9 @@
-# Micro-Biz Pack — Omni-One for the Smallest Businesses
+# Micro-Biz Pack — LABS (superseded by Seller OS)
 
-> **"No website, no database, just a phone and a shoebox of receipts — still gets a daily briefing in 5 minutes."**
+> **LABS — moved to `src/omni_one/packs/_labs/micro_biz.py`. Primary is now Seller OS for people selling online (`packs/seller_os.py`).**
+> This doc kept for history. Use Seller OS for outward-facing product. Micro-biz logic merged into Seller OS (receipt OCR + DM).
+
+> **Original pitch:** "No website, no database, just a phone and a shoebox of receipts — still gets a daily briefing in 5 minutes."
 
 This pack is the counter-weight to the enterprise RevOps pack. Same deterministic-first engine, but for a taco truck, nail salon, or auto shop that has *nothing* structured.
 

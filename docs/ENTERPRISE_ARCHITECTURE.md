@@ -1,3 +1,5 @@
+> **FOCUS: Seller OS is the ONE primary product** — this doc is **engine / labs** (deterministic pipeline, ingest, etc.) reused by Seller OS but not the outward product. See `docs/FOCUS.md` and `docs/SELLER_OS.md`.
+
 # Enterprise-Grade AI Application Architecture (OpenAI/Anthropic/FAANG-Level)
 
 **Version:** 1.0

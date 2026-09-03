@@ -43,16 +43,16 @@ Layer 4: LLM (gated + budgeted)  500ms  only 10-30% need it, with evidence bundl
 This is not an optimization — it is a *different compute graph*. Competitors optimize prompts; we **eliminate calls**.
 
 ### Industry Usefulness: Pick One Wedge, Win It, Then Expand
-We reject “platform for everyone.” **ICP for next 90 days: Revenue Operations (RevOps) at B2B SaaS / FinTech (50-2000 employees).**
+We reject “platform for everyone.” **ICP for next 90 days: Seller OS for people selling stuff online (1-5 person Shopify/Etsy/Amazon shops, $5k-100k GMV/mo).** Updated per `docs/FOCUS.md:1` — RevOps moved to `_labs`.
 
-Why RevOps:
-- Pain is acute: churn costs 5-25× acquisition; CSMs drown in Slack/Salesforce/Gong signals.
-- Data exists: Salesforce, Zendesk, Slack, email, product telemetry — exactly the connectors we already stubbed (`data/connectors/ingestion.py:112`).
-- Budget exists: $50k-$500k/yr tool spend, clear ROI math (“reduce gross churn 2pts → $2M retained”).
-- Evaluation is crisp: precision/recall on at-risk accounts, not vibes.
+Why Sellers Online (concrete, non-overlapping):
+- Pain is acute: no true profit view (GMV ≠ profit after 6.5% Etsy + shipping + COGS), stockouts of best seller kill sales, DMs/reviews missed → 1-star.
+- Data exists but messy: `shopify_orders.csv`/`etsy_settlement.csv` + `inventory.csv` + `instagram_dm.txt` + `supplier_invoice.jpg` → exactly what `packs/seller_os.py:236` ingests (fuzzy headers, OCR free).
+- Budget exists but tiny: $0-19/mo, needs $0 demo and $0 pipeline (98% bypass `docs/EVAL_REPORT.md` → $0.0014/1k). Our free local Tesseract+OpenCV+Matplotlib+mock LLM beats $200/mo tools.
+- Evaluation is crisp: true profit $ vs spreadsheet, stockout recall, at-risk DM recall — not vibes.
 
-**Outcomes we sell (measurable):**
-- “Detect 80% of at-risk accounts 14 days earlier, with <5% false positives, at 10× lower LLM cost, with every alert citing its evidence.”
+**Outcomes we sell (measurable, demo `scripts/demo_seller_os.py:1`):**
+- “GMV $274 → true profit $169 (fees $16.71 + COGS $64.20) with citations file:line, Stockout 1 (Tote 2 left, 2.3 days), 3 DM at-risk with draft, chart base64 free”
 
 ### Three Pillars (Product Becomes Category)
 
@@ -91,18 +91,19 @@ Why RevOps:
 | Evidence Bundle + Cost Ledger | `core/data_processing_pipeline.py:46`, `core/types.py:213` | Every `ProcessingResult` has `evidence_bundle: EvidenceChain` and `cost_ledger` |
 | Budget-Aware Router | `core/model_router.py:15` | `select_model(budget=0.001, latency_sla=300)` returns constrained optimum with `estimated_cost` |
 | Eval Harness | `core/eval_harness.py` (NEW) | `python -m omni_one.core.eval_harness --n=5000` prints bypass, p50/p99, $/1k, and writes `EVAL_REPORT.md` |
-| RevOps Pack (synthetic) | `packs/revenue_ops.py` (NEW) | `python scripts/demo_revenue_ops.py` runs 100 synthetic accounts → dashboard JSON with churn recall >0.75 |
-| Wire FastAPI prod app | `api/fastapi_app.py:49` | `/api/v1/synthesize` and `/api/v1/analyze` actually call pipeline + router + cache, not TODO |
+| Seller OS Pack (THE product) | `packs/seller_os.py:1` | `PYTHONPATH=src python scripts/demo_seller_os.py --folder /tmp/seller_demo` → GMV $274 true profit $169 stockout 1 at-risk 3 |
+| Vision Free | `core/vision.py:1` | `POST /api/v1/seller/photo` OCR Tesseract + chart OpenCV free → pipeline $0 |
+| Wire FastAPI prod app | `api/fastapi_app.py:342` | `POST /api/v1/seller/briefing` + `POST /api/v1/seller/photo` + `POST /api/v1/vision/analyze` all free, actually call pipeline |
 
 ### Phase 2 (Weeks 3-6) — Make It Stick
 - Human feedback loop: `/api/v1/feedback` writes to `continuous_learning` and retrains priority thresholds weekly.
 - Real connectors: make `data/connectors/ingestion.py` actually talk to stubbed CSV/Webhook with checkpointing proven in tests.
 - Health + cost dashboards: Grafana-ready Prometheus metrics for bypass rate, $/1k, fairness compliance.
 
-### Phase 3 (Weeks 7-12) — Make It Sell
-- Design partner program: 2-3 RevOps teams on free pilot, joint case study, “$ saved vs Datadog+LLM” benchmark.
-- SOC2 evidence export: one-click zip of `EvidenceBundle` logs for auditors.
-- Pricing: per-1k-events with LLM budget cap, not per-seat.
+### Phase 3 (Weeks 7-12) — Make It Sell (Seller OS)
+- Design partner: 10 online sellers (Etsy/Shopify) on free pilot, joint case: “spreadsheet GMV vs true profit $169, prevented stockout Tote 2.3 days”.
+- Evidence export: one-click zip of `EvidenceBundle` file:line citations for seller accountant.
+- Pricing: Free <500 orders/mo, $19/mo >500, still $0 pipeline (mock) or BYO `GOOGLE_API_KEY`.
 
 ---
 
@@ -110,17 +111,21 @@ Why RevOps:
 
 ```bash
 # 1. Verify pipeline still passes audit tests
-python -m pytest tests/unit/test_llm_decision_audit.py tests/unit/test_counterfactual_fairness_audit.py tests/unit/test_data_ingestion_checkpointing.py -v
+PYTHONPATH=src python -m pytest tests/unit -q  # 9 passed
 
 # 2. Run eval harness (proves bypass)
-python -m omni_one.core.eval_harness --n=1000 --seed=42
+PYTHONPATH=src python -m omni_one.core.eval_harness --n=1000 --seed=42
 
-# 3. Demo RevOps pack (proves usefulness)
-python scripts/demo_revenue_ops.py --accounts=100
+# 3. Demo Seller OS (THE product)
+PYTHONPATH=src python scripts/demo_seller_os.py --folder /tmp/seller_demo
+# → GMV $274 true profit $169 margin 61.7% stockout 1 at-risk 3
 
-# 4. Boot prod app and hit live endpoint
-uvicorn src.omni_one.api.fastapi_app:create_omni_one_app --factory --port 5003
-curl -X POST http://localhost:5003/api/v1/synthesize -H "Content-Type: application/json" -d '{"query":"why is acme at risk?","context":["MRR dropped 40% last week"]}'
+# 4. Photo free
+curl -F file=@supplier_invoice.jpg http://localhost:5003/api/v1/seller/photo | jq .cost_usd # 0.0
+
+# 5. Boot prod app
+PYTHONPATH=src uvicorn omni_one.api.fastapi_app:create_omni_one_app --factory --port 5003
+# open web/seller.html → drop folder, get briefing + chart
 ```
 
 ---
@@ -140,7 +145,8 @@ curl -X POST http://localhost:5003/api/v1/synthesize -H "Content-Type: applicati
 From **scaffolding → moat**:
 - `EVAL_REPORT.md` exists and is regenerated in CI (was: claims in docs only)
 - `curl /api/v1/metrics` shows real pipeline metrics, not hard-coded `llm_bypass_rate: 0.92` (`api/fastapi_app.py:233`)
-- 1 vertical demo goes from `python scripts/demo_enterprise.py` (generic) to `python scripts/demo_revenue_ops.py` (sells to a buyer with a title)
+- 1 vertical demo goes from `python scripts/demo_enterprise.py` (generic) to `PYTHONPATH=src python scripts/demo_seller_os.py` (sells to online seller with title)
+- `web/seller.html` one-page drop folder → briefing + chart is the product, not 12 enterprise docs
 - `server.py` imports resolve, test suite passes, `pytest` coverage no longer mocks everything
 
-**This strategy makes Omni-One not “another AI platform” but “the only operational intelligence platform that can prove its cost, latency, and fairness at streaming scale.”**
+**This strategy makes Omni-One not “another AI platform” but “the profit & stock truth for online sellers, for $0.”**
