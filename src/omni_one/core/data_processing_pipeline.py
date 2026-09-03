@@ -16,6 +16,7 @@ For 1000 events/sec:
 - With pipeline: ~5 LLMs calls = 2-10 seconds = feasible
 """
 
+import hashlib
 import logging
 import time
 import asyncio
@@ -25,11 +26,52 @@ from datetime import datetime, timedelta
 from enum import Enum
 import json
 
-from layer_1_ingestion import Layer1Ingestion, IngestionMetrics
-from layer_2_statistical import Layer2StatisticalProcessing
-from layer_3_ml_features import Layer3MLFeatures
-from model_router import ModelRouter  # Our existing LLM router
-from cache import SemanticCache
+def _load_types():
+    try:
+        from .types import EvidenceBundle as EB, EvidenceStep as ES, CostLedgerEntry as CE  # type: ignore
+        return EB, ES, CE
+    except (ImportError, ValueError):
+        try:
+            from omni_one.core.types import EvidenceBundle as EB, EvidenceStep as ES, CostLedgerEntry as CE  # type: ignore
+            return EB, ES, CE
+        except (ImportError, ValueError):
+            import importlib.util as _ilu, pathlib as _pl
+            for _p in [_pl.Path(__file__).parent / "types.py", _pl.Path(__file__).parent.parent.parent / "omni_one" / "core" / "types.py"]:
+                if _p.exists():
+                    _spec = _ilu.spec_from_file_location("omni_one_core_types", _p)
+                    _mod = _ilu.module_from_spec(_spec)  # type: ignore
+                    assert _spec and _spec.loader
+                    _spec.loader.exec_module(_mod)  # type: ignore
+                    return _mod.EvidenceBundle, _mod.EvidenceStep, _mod.CostLedgerEntry  # type: ignore
+            return None, None, None  # type: ignore
+
+EvidenceBundle, EvidenceStep, CostLedgerEntry = _load_types()  # type: ignore
+
+def _load_layer_modules():
+    try:
+        from .layer_1_ingestion import Layer1Ingestion as L1, IngestionMetrics as IM  # type: ignore
+        from .layer_2_statistical import Layer2StatisticalProcessing as L2  # type: ignore
+        from .layer_3_ml_features import Layer3MLFeatures as L3  # type: ignore
+        from .model_router import ModelRouter as MR  # type: ignore
+        from .cache import SemanticCache as SC  # type: ignore
+        return L1, IM, L2, L3, MR, SC
+    except (ImportError, ValueError):
+        try:
+            from omni_one.core.layer_1_ingestion import Layer1Ingestion as L1, IngestionMetrics as IM  # type: ignore
+            from omni_one.core.layer_2_statistical import Layer2StatisticalProcessing as L2  # type: ignore
+            from omni_one.core.layer_3_ml_features import Layer3MLFeatures as L3  # type: ignore
+            from omni_one.core.model_router import ModelRouter as MR  # type: ignore
+            from omni_one.core.cache import SemanticCache as SC  # type: ignore
+            return L1, IM, L2, L3, MR, SC
+        except (ImportError, ValueError):
+            from layer_1_ingestion import Layer1Ingestion as L1, IngestionMetrics as IM  # type: ignore
+            from layer_2_statistical import Layer2StatisticalProcessing as L2  # type: ignore
+            from layer_3_ml_features import Layer3MLFeatures as L3  # type: ignore
+            from model_router import ModelRouter as MR  # type: ignore
+            from cache import SemanticCache as SC  # type: ignore
+            return L1, IM, L2, L3, MR, SC
+
+Layer1Ingestion, IngestionMetrics, Layer2StatisticalProcessing, Layer3MLFeatures, ModelRouter, SemanticCache = _load_layer_modules()  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +107,24 @@ class ProcessingResult:
     llm_bypassed: bool = False
     confidence_score: float = 0.0
     llm_decision_audit: Dict[str, Any] = field(default_factory=dict)
+    # New in STRATEGY.md: audit-grade evidence + cost
+    evidence_bundle: Any = None  # EvidenceBundle when available, else dict
+    cost_ledger: Any = None  # CostLedgerEntry when available
+    evidence_steps: List[Dict[str, Any]] = field(default_factory=list)  # flat for JSON serialization
+
+    def to_dict(self) -> Dict[str, Any]:
+        base = {
+            "record_id": self.record_id,
+            "processing_stage": self.processing_stage.value if hasattr(self.processing_stage, "value") else str(self.processing_stage),
+            "llm_bypassed": self.llm_bypassed,
+            "confidence_score": self.confidence_score,
+            "total_time_ms": round(self.total_time_ms, 2),
+            "llm_decision_audit": self.llm_decision_audit,
+            "cost_ledger": self.cost_ledger.model_dump() if hasattr(self.cost_ledger, "model_dump") else self.cost_ledger,
+            "evidence_bundle": self.evidence_bundle.model_dump() if hasattr(self.evidence_bundle, "model_dump") else self.evidence_bundle,
+            "evidence_steps": self.evidence_steps,
+        }
+        return base
 
 
 @dataclass
@@ -92,24 +152,30 @@ class PipelineMetrics:
     # Cache statistics
     cache_hits: int = 0
     cache_misses: int = 0
+    # Evidence + cost (new)
+    total_cost_usd: float = 0.0
+    evidence_bundles_produced: int = 0
 
 
 class IntelligentLLMGate:
     """
-    Intelligent gating for LLM invocations.
-    Decides whether to call LLM based on confidence, priority, cache, etc.
+    Intelligent gating for LLM invocations — now budget-aware.
+    Decides whether to call LLM based on priority, severity, cache, batch context, and $ budget.
+    See docs/STRATEGY.md Pillar 1: cost/latency/quality frontier.
     """
     
-    def __init__(self, model_router: ModelRouter, cache: SemanticCache = None):
+    def __init__(self, model_router: Optional[ModelRouter] = None, cache: Optional[SemanticCache] = None, per_record_budget_usd: Optional[float] = None):
         self.model_router = model_router
         self.cache = cache
+        self.per_record_budget_usd = per_record_budget_usd
         self.llm_call_history = []  # Track LLM calls for analytics
     
     def should_invoke_llm(self, 
                          record: Dict[str, Any],
                          priority_score: float,
                          anomaly_severity: Optional[str] = None,
-                         batch_context: Optional[Dict[str, Any]] = None) -> Tuple[bool, str]:
+                         batch_context: Optional[Dict[str, Any]] = None,
+                         estimated_cost_usd: Optional[float] = None) -> Tuple[bool, str]:
         """
         Determine if LLM invocation is justified.
         
@@ -118,11 +184,16 @@ class IntelligentLLMGate:
             priority_score: Priority score from Layer 3
             anomaly_severity: Anomaly severity from Layer 2
             batch_context: Aggregate statistics from batch (for contextual gating)
+            estimated_cost_usd: Pre-estimated cost for this record's LLM call
         
         Returns:
             (should_invoke, reason)
         """
-        # Critical or high priority = always invoke
+        # Budget gate: if cost would exceed per-record budget, never invoke unless critical
+        if self.per_record_budget_usd is not None and estimated_cost_usd is not None:
+            if estimated_cost_usd > self.per_record_budget_usd and anomaly_severity not in ["critical"]:
+                return False, f"Budget exceeded: est ${estimated_cost_usd:.4f} > budget ${self.per_record_budget_usd:.4f}"
+        # Critical or high priority = always invoke (unless budget hard block above)
         if priority_score > 0.6 or anomaly_severity in ["critical", "high"]:
             reason = f"High priority ({priority_score:.2f}) or critical anomaly"
             if batch_context:
@@ -158,6 +229,8 @@ class IntelligentLLMGate:
     
     def invoke_llm(self, record: Dict[str, Any], prompt: str) -> str:
         """Invoke LLM with proper routing."""
+        if not self.model_router:
+            raise RuntimeError("No model router configured")
         response = self.model_router.generate(prompt)
         self.llm_call_history.append({
             "timestamp": datetime.now(),
@@ -165,6 +238,35 @@ class IntelligentLLMGate:
             "response": response
         })
         return response
+
+
+def _build_evidence_step(layer: str, signal: str, citation: str, raw: Optional[Dict[str, Any]] = None, cost_usd: float = 0.0, latency_ms: float = 0.0):
+    """Helper to build EvidenceStep or dict if pydantic unavailable."""
+    raw = raw or {}
+    if EvidenceBundle is not None and EvidenceStep is not None:
+        try:
+            return EvidenceStep(layer=layer, signal=signal, citation=citation, raw=raw, cost_usd=cost_usd, latency_ms=latency_ms)
+        except Exception:
+            pass
+    return {"layer": layer, "signal": signal, "citation": citation, "raw": raw, "cost_usd": cost_usd, "latency_ms": latency_ms}
+
+def _build_cost_ledger(record_id: str, prompt: Optional[str] = None, model_used: Optional[str] = None, cached: bool = False, budget_usd: Optional[float] = None, model_router: Optional[ModelRouter] = None):
+    if CostLedgerEntry is None:
+        return {"record_id": record_id, "model_used": model_used, "cached": cached, "cost_usd": 0.0, "budget_usd": budget_usd}
+    try:
+        cost = 0.0
+        input_tokens = 0
+        output_tokens = 0
+        if prompt and model_router and model_used:
+            input_tokens = model_router._estimate_tokens(prompt) if hasattr(model_router, "_estimate_tokens") else len(prompt)//4  # type: ignore
+            output_tokens = 512
+            # find model key
+            cost = model_router.estimate_cost_for_model(model_used, prompt, output_tokens) if hasattr(model_router, "estimate_cost_for_model") else 0.0
+            if cached:
+                cost = 0.0
+        return CostLedgerEntry(record_id=record_id, model_used=model_used, input_tokens=input_tokens, output_tokens=output_tokens, cost_usd=round(cost, 6), cached=cached, budget_usd=budget_usd, budget_exceeded=(budget_usd is not None and cost > budget_usd))
+    except Exception:
+        return CostLedgerEntry(record_id=record_id, model_used=model_used, input_tokens=0, output_tokens=0, cost_usd=0.0, cached=cached, budget_usd=budget_usd, budget_exceeded=False)
 
 
 class MultiLayerDataPipeline:
@@ -189,15 +291,16 @@ class MultiLayerDataPipeline:
         - process_batch_optimized(enable_selective_propagation=True): Optimized batch processing
     """
     
-    def __init__(self, model_router: Optional[ModelRouter] = None, cache: Optional[SemanticCache] = None):
+    def __init__(self, model_router: Optional[ModelRouter] = None, cache: Optional[SemanticCache] = None, per_record_budget_usd: Optional[float] = None):
         self.layer1 = Layer1Ingestion()
         self.layer2 = Layer2StatisticalProcessing()
         self.layer3 = Layer3MLFeatures()
         self.model_router = model_router
         self.cache = cache
-        self.llm_gate = IntelligentLLMGate(model_router, cache) if model_router else None
+        self.llm_gate = IntelligentLLMGate(model_router, cache, per_record_budget_usd=per_record_budget_usd) if model_router else None
         
         self.metrics = PipelineMetrics()
+        self.per_record_budget_usd = per_record_budget_usd
     
     def _generate_record_id(self, record: Dict[str, Any]) -> str:
         """Generate unique ID for tracking."""
@@ -404,6 +507,73 @@ class MultiLayerDataPipeline:
                 )
                 self.metrics.records_resolved_at_layer3 += 1
         
+        # --- Evidence bundle & cost ledger (new in STRATEGY.md) ---
+        try:
+            evidence_steps = []
+            # Layer 1 evidence
+            if result.layer1_result is not None:
+                if result.layer1_result.get("errors"):
+                    evidence_steps.append(_build_evidence_step("layer_1_ingestion", "validation_failed", f"Layer 1: validation failed {result.layer1_result.get('errors')}", raw=result.layer1_result, latency_ms=result.layer1_time_ms))
+                else:
+                    # deterministic dedup hash citation
+                    raw = {"source": record.get("source"), "entity_id": record.get("entity_id")}
+                    h = hashlib.sha256(json.dumps(raw, sort_keys=True, default=str).encode()).hexdigest()[:8]
+                    evidence_steps.append(_build_evidence_step("layer_1_ingestion", f"validated hash={h}", f"Layer 1: validated record hash {h}", raw=raw, latency_ms=result.layer1_time_ms))
+            # Layer 2 evidence
+            if result.layer2_result is not None:
+                anomalies = result.layer2_result.get("anomalies", [])
+                if anomalies:
+                    for anom in anomalies[:2]:
+                        evidence_steps.append(_build_evidence_step("layer_2_statistical", f"{anom.get('type')} severity={anom.get('severity')} score={anom.get('score',0):.2f}", f"Layer 2: {anom.get('explanation','')}", raw=anom, latency_ms=result.layer2_time_ms / max(len(anomalies),1)))
+                else:
+                    evidence_steps.append(_build_evidence_step("layer_2_statistical", "no_anomaly", "Layer 2: no statistical anomaly detected", raw=result.layer2_result, latency_ms=result.layer2_time_ms))
+            # Layer 3 evidence
+            if result.layer3_result is not None:
+                prio = result.layer3_result.get("predictions", {}).get("priority", {})
+                if result.layer3_result.get("skipped"):
+                    evidence_steps.append(_build_evidence_step("layer_3_ml_features", f"skipped reason={result.layer3_result.get('skip_reason')}", f"Layer 3: skipped ({result.layer3_result.get('skip_reason')})", raw=result.layer3_result, latency_ms=0))
+                else:
+                    evidence_steps.append(_build_evidence_step("layer_3_ml_features", f"priority={prio.get('value')} score={prio.get('score',0):.2f}", f"Layer 3: priority {prio.get('value')} ({prio.get('score',0):.2f}) reasons={prio.get('reasons')}", raw=result.layer3_result, latency_ms=result.layer3_time_ms))
+            # Layer 4 evidence
+            prompt_for_cost = None
+            model_used = None
+            cached_flag = False
+            if result.llm_decision_audit.get("prompt_preview"):
+                prompt_for_cost = result.llm_decision_audit.get("prompt_preview")
+                # try to infer model
+                model_used = getattr(self.model_router, "registry", {}).get("balanced", {}).get("model") if self.model_router else None
+                if result.llm_decision_audit.get("cache_status") == "hit":
+                    cached_flag = True
+                evidence_steps.append(_build_evidence_step("layer_4_llm_synthesis", f"decision={result.llm_decision_audit.get('decision')} gate={result.llm_decision_audit.get('gate_reason','')[:40]}", f"Layer 4: {result.llm_decision_audit.get('decision')} - {result.llm_decision_audit.get('gate_reason','')}", raw={"gate_reason": result.llm_decision_audit.get("gate_reason")}, cost_usd=0.0 if cached_flag else 0.0005, latency_ms=result.layer4_time_ms))
+            else:
+                # no LLM
+                evidence_steps.append(_build_evidence_step("layer_4_llm_synthesis", f"bypassed reason={result.llm_decision_audit.get('gate_reason','')[:40]}", f"Layer 4: bypassed - {result.llm_decision_audit.get('gate_reason','')}", raw=result.llm_decision_audit, latency_ms=0))
+
+            # Build bundle
+            if EvidenceBundle is not None:
+                try:
+                    bundle = EvidenceBundle(record_id=record_id, steps=[s if hasattr(s, "model_dump") else EvidenceStep(**s) for s in evidence_steps if isinstance(s, dict)] if isinstance(evidence_steps[0], dict) else evidence_steps, final_decision=result.processing_stage.value if hasattr(result.processing_stage,"value") else str(result.processing_stage), llm_bypassed=result.llm_bypassed)
+                    # If we passed dicts, pydantic will validate; if we passed EvidenceStep objects, keep as is
+                    result.evidence_bundle = bundle
+                except Exception:
+                    # fallback dict bundle
+                    result.evidence_bundle = {"record_id": record_id, "steps": [s if isinstance(s, dict) else s.model_dump() for s in evidence_steps], "final_decision": result.processing_stage.value if hasattr(result.processing_stage,"value") else str(result.processing_stage), "llm_bypassed": result.llm_bypassed}
+            else:
+                result.evidence_bundle = {"record_id": record_id, "steps": evidence_steps, "final_decision": result.processing_stage.value if hasattr(result.processing_stage,"value") else str(result.processing_stage), "llm_bypassed": result.llm_bypassed}
+            result.evidence_steps = [s if isinstance(s, dict) else s.model_dump() for s in evidence_steps]
+
+            # Cost ledger
+            result.cost_ledger = _build_cost_ledger(record_id, prompt=prompt_for_cost, model_used=model_used, cached=cached_flag, budget_usd=getattr(self.llm_gate, "per_record_budget_usd", None) if self.llm_gate else None, model_router=self.model_router)
+            # Accumulate total cost
+            cost_val = result.cost_ledger.cost_usd if hasattr(result.cost_ledger, "cost_usd") else result.cost_ledger.get("cost_usd", 0)
+            self.metrics.total_cost_usd += float(cost_val or 0)
+            self.metrics.evidence_bundles_produced += 1
+        except Exception as e:
+            logger.warning(f"Evidence bundle build failed: {e}")
+            result.evidence_steps = []
+            result.evidence_bundle = {"error": str(e), "record_id": record_id}
+            result.cost_ledger = {"record_id": record_id, "cost_usd": 0.0}
+
         # Complete timing
         result.total_time_ms = (time.time() - start_total) * 1000
         self.metrics.total_layer1_time_ms += result.layer1_time_ms
@@ -422,9 +592,9 @@ class MultiLayerDataPipeline:
         # Update bypass rate
         self.metrics.llm_bypass_rate = (
             (self.metrics.records_resolved_at_layer1 + 
-             self.metrics.records_resolved_at_layer2 +
-             self.metrics.records_resolved_at_layer3) / 
-            max(self.metrics.total_records_processed, 1) * 100
+              self.metrics.records_resolved_at_layer2 +
+              self.metrics.records_resolved_at_layer3) / 
+             max(self.metrics.total_records_processed, 1) * 100
         )
         
         return result
@@ -765,7 +935,7 @@ Priority: {predictions.get('priority', {}).get('value', 'unknown')}
         return results, self.metrics
     
     def get_metrics_summary(self) -> Dict[str, Any]:
-        """Get human-readable metrics summary."""
+        """Get human-readable metrics summary (now with cost & evidence)."""
         return {
             "total_records": self.metrics.total_records_processed,
             "llm_bypass_rate": f"{self.metrics.llm_bypass_rate:.1f}%",
@@ -791,6 +961,14 @@ Priority: {predictions.get('priority', {}).get('value', 'unknown')}
                 "hits": self.metrics.cache_hits,
                 "misses": self.metrics.cache_misses,
                 "hit_rate": f"{self.metrics.cache_hits / max(self.metrics.cache_hits + self.metrics.cache_misses, 1) * 100:.1f}%"
+            },
+            "cost": {
+                "total_usd": round(self.metrics.total_cost_usd, 4),
+                "avg_per_1k_usd": round((self.metrics.total_cost_usd / max(self.metrics.total_records_processed,1))*1000, 4),
+                "est_savings_vs_naive_llm_everywhere_usd": round(self.metrics.total_cost_usd * (100 / max(100 - self.metrics.llm_bypass_rate, 1) - 1), 2) if self.metrics.llm_bypass_rate < 99 else 0,
+            },
+            "evidence": {
+                "bundles_produced": self.metrics.evidence_bundles_produced,
             }
         }
 

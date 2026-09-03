@@ -224,19 +224,21 @@ class InputValidationMiddleware(BaseHTTPMiddleware):
     
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """Validate request inputs."""
-        # Skip validation for health checks and swagger docs
-        if request.url.path in ["/health", "/readiness", "/docs", "/openapi.json"]:
+        # Skip validation for health checks, docs, and free vision upload
+        if request.url.path in ["/health", "/readiness", "/docs", "/openapi.json"] or request.url.path.startswith("/api/v1/vision/") or request.url.path.startswith("/api/docs"):
             return await call_next(request)
         
-        # Validate content type for POST/PUT/PATCH
+        # Validate content type for POST/PUT/PATCH — allow json AND multipart for free photo upload
         if request.method in ["POST", "PUT", "PATCH"]:
             content_type = request.headers.get("content-type", "")
-            if not content_type.startswith("application/json"):
+            # Free vision upload uses multipart/form-data; also allow octet-stream for binary
+            allowed_prefixes = ("application/json", "multipart/form-data", "multipart/", "application/octet-stream")
+            if not content_type.startswith(allowed_prefixes):
                 return JSONResponse(
                     status_code=400,
                     content={
                         "code": "INVALID_REQUEST",
-                        "message": "Content-Type must be application/json",
+                        "message": "Content-Type must be application/json or multipart/form-data (for free photo upload)",
                         "status_code": 400,
                         "request_id": getattr(request.state, "request_id", None),
                     },

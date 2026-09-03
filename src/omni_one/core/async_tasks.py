@@ -1,8 +1,13 @@
 from celery import Celery
 import os
-from rag_engine import RAGEngine
-from model_router import ModelRouter
-from cache import SemanticCache
+try:
+    from .rag_engine import RAGEngine  # type: ignore
+    from .model_router import ModelRouter  # type: ignore
+    from .cache import SemanticCache  # type: ignore
+except ImportError:
+    from rag_engine import RAGEngine  # type: ignore
+    from model_router import ModelRouter  # type: ignore
+    from cache import SemanticCache  # type: ignore
 
 # Celery app
 app = Celery('omni_tasks', broker='redis://localhost:6379/0', backend='redis://localhost:6379/0')

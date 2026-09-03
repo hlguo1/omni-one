@@ -210,6 +210,44 @@ class AnomalyAlert(BaseModel):
         return str(value)
 
 
+class EvidenceStep(BaseModel):
+    """Single step in an evidence chain (auditable, cited)."""
+    layer: str = Field(description="Layer 1-4 id, e.g., layer_1_ingestion")
+    signal: str = Field(description="Machine-readable signal, e.g., z_score=4.2")
+    citation: str = Field(description="Human-readable citation, e.g., 'Layer 2: z_score 4.2 vs mean 95000'")
+    raw: Dict[str, Any] = Field(default_factory=dict, description="Raw metrics for replay")
+    cost_usd: float = Field(default=0.0, ge=0, description="Cost incurred at this step")
+    latency_ms: float = Field(default=0.0, ge=0, description="Latency for this step")
+
+class EvidenceBundle(BaseModel):
+    """Full chain of evidence for a record — every insight is citeable."""
+    record_id: str
+    steps: List[EvidenceStep] = Field(default_factory=list)
+    final_decision: str = Field(description="Why we stopped: ingestion_error, statistical, ml_feature, llm_required")
+    llm_bypassed: bool
+    total_cost_usd: float = Field(default=0.0, ge=0)
+    total_latency_ms: float = Field(default=0.0, ge=0)
+    citations: List[str] = Field(default_factory=list, description="All citations flattened for rendering")
+
+    def add_step(self, step: EvidenceStep):
+        self.steps.append(step)
+        self.citations.append(step.citation)
+        self.total_cost_usd += step.cost_usd
+        self.total_latency_ms += step.latency_ms
+
+
+class CostLedgerEntry(BaseModel):
+    """Per-record cost accounting."""
+    record_id: str
+    model_used: Optional[str] = None
+    input_tokens: int = Field(ge=0, default=0)
+    output_tokens: int = Field(ge=0, default=0)
+    cost_usd: float = Field(ge=0, default=0.0)
+    cached: bool = False
+    budget_usd: Optional[float] = None
+    budget_exceeded: bool = False
+
+
 class ProcessingMetrics(BaseModel):
     """Pipeline processing metrics."""
     
@@ -223,6 +261,9 @@ class ProcessingMetrics(BaseModel):
     layer_3_time_ms: Optional[float] = None
     layer_4_time_ms: Optional[float] = None
     total_cost_usd: float = Field(ge=0)
+    # New in STRATEGY.md Phase 1
+    evidence_bundles_produced: int = Field(default=0, ge=0, description="Number of evidence bundles emitted")
+    avg_evidence_steps: float = Field(default=0.0, ge=0, description="Avg steps per bundle")
 
 
 class HealthStatus(BaseModel):
