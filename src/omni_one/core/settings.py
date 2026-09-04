@@ -104,6 +104,18 @@ class Settings(BaseSettings):
             if len(v) < 32:
                 raise ValueError("Secret key must be at least 32 characters in production")
         return v
+
+    @field_validator("api_keys")
+    @classmethod
+    def validate_api_keys(cls, v: list, info) -> list:
+        # Fail closed in prod: demo/test keys must not survive
+        if info.data.get("environment") == Environment.PRODUCTION:
+            bad = {"demo-key", "test-key"}
+            if any(str(k).strip() in bad for k in (v or [])):
+                raise ValueError("Remove demo-key/test-key from VALID_API_KEYS in production")
+            if not v:
+                raise ValueError("VALID_API_KEYS must be set in production")
+        return v
     
     # ========================================================================
     # RATE LIMITING
@@ -149,6 +161,28 @@ class Settings(BaseSettings):
     default_model: str = Field(
         default="gemini-2.5-flash-preview-05-20",
         description="Default LLM model"
+    )
+
+    # Seller OS free-first LLM policy: mock by default, never paid unless explicit
+    seller_llm: str = Field(
+        default="mock",
+        description="Seller LLM mode: mock (default $0) | ollama | google. Paid only if explicitly set + key present."
+    )
+    seller_max_llm_usd: float = Field(
+        default=0.0,
+        ge=0.0,
+        description="Per-briefing LLM budget cap in USD. 0.0 = $0 mock only."
+    )
+    briefing_cache_ttl_s: int = Field(
+        default=3600,
+        ge=60,
+        description="Seller briefing cache TTL in seconds (DuckDB/JSON)."
+    )
+    max_upload_mb: int = Field(
+        default=5,
+        ge=1,
+        le=50,
+        description="Max photo upload size in MB."
     )
     
     # Model inference configuration
@@ -205,6 +239,19 @@ class Settings(BaseSettings):
     database_url: str = Field(
         default="postgresql://user:pass@localhost:5432/omni_one",
         description="PostgreSQL database URL"
+    )
+    # Local-first persistence ($0): DuckDB file + JSONL audit + inbox root
+    duckdb_path: str = Field(
+        default="./data/omni.duckdb",
+        description="Local DuckDB file path (free, no server)."
+    )
+    audit_path: str = Field(
+        default="./data/audit.jsonl",
+        description="Append-only audit JSONL path."
+    )
+    allowed_root: str = Field(
+        default="./data/inbox",
+        description="Only allowed folder root for seller briefing uploads (path-traversal guard)."
     )
     database_min_connections: int = Field(
         default=5,

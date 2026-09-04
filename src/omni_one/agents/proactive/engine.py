@@ -2,17 +2,37 @@ from .sentiment import SentimentAnalyzer
 from .predictive import PredictiveAnalytics
 from .anomaly import AnomalyDetector
 from typing import Dict, Any, List, Optional, Tuple
-from rag_engine import RAGEngine
-from model_router import ModelRouter
+try:
+    from ...core.rag_engine import RAGEngine  # type: ignore
+except Exception:
+    try:
+        from omni_one.core.rag_engine import RAGEngine  # type: ignore
+    except Exception:
+        RAGEngine = object  # type: ignore  # free fallback: seller path never needs RAG
+try:
+    from ...core.model_router import ModelRouter  # type: ignore
+except Exception:
+    try:
+        from omni_one.core.model_router import ModelRouter  # type: ignore
+    except Exception:
+        from model_router import ModelRouter  # type: ignore
 import logging
 
-# Import new multi-layer pipeline
+# Import new multi-layer pipeline (absolute first, no PYTHONPATH hack needed)
 try:
-    from core.data_processing_pipeline import MultiLayerDataPipeline, ProcessingResult
+    from ...core.data_processing_pipeline import MultiLayerDataPipeline, ProcessingResult  # type: ignore
     PIPELINE_AVAILABLE = True
-except ImportError:
-    PIPELINE_AVAILABLE = False
-    ProcessingResult = None
+except (ImportError, ValueError):
+    try:
+        from omni_one.core.data_processing_pipeline import MultiLayerDataPipeline, ProcessingResult  # type: ignore
+        PIPELINE_AVAILABLE = True
+    except (ImportError, ValueError):
+        try:
+            from core.data_processing_pipeline import MultiLayerDataPipeline, ProcessingResult  # type: ignore
+            PIPELINE_AVAILABLE = True
+        except ImportError:
+            PIPELINE_AVAILABLE = False
+            ProcessingResult = None
 
 logger = logging.getLogger(__name__)
 

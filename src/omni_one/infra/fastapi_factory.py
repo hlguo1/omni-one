@@ -135,21 +135,48 @@ class OmniOneAPIFactory:
         @app.get("/readiness", tags=["Health"])
         async def readiness_check():
             """
-            Readiness probe for Kubernetes.
-            
-            Checks critical dependencies (Redis, Database, Weaviate).
+            Readiness probe.
+
+            Small-business friendly: returns 200 with mode:mvp when only
+            optional deps (redis/weaviate/db) are down. 503 only when the
+            local store itself is unwritable.
             """
+            try:
+                from .store import get_data_root as _dataroot
+                _dataroot().mkdir(parents=True, exist_ok=True)
+                local_ok = True
+            except Exception:
+                local_ok = False
             is_ready = await self.health_registry.check_critical()
-            
-            status_code = 200 if is_ready else 503
-            return JSONResponse(
-                status_code=status_code,
-                content={
-                    "ready": is_ready,
-                    "service": "omni-one",
-                    "checks": await self.health_registry.check_all(),
-                },
-            )
+            all_checks = await self.health_registry.check_all()
+            # MVP mode: no critical checks registered locally == ready if disk writable
+            if not self.health_registry.checks:
+                return JSONResponse(
+                    status_code=200 if local_ok else 503,
+                    content={
+                        "ready": bool(local_ok),
+                        "mode": "mvp",
+                        "service": "omni-one",
+                        "checks": all_checks,
+                        "local_store_ok": local_ok,
+                    },
+                )
+            status_code = 200 if (is_ready and local_ok) else 503
+            content: dict = {
+                "ready": bool(is_ready and local_ok),
+                "service": "omni-one",
+                "checks": all_checks,
+                "local_store_ok": local_ok,
+            }
+            # Surface degraded_ok when critical pass but optional fail
+            try:
+                unhealthy = [c for c in all_checks.get("checks", []) if c.get("status") != "healthy" and not c.get("critical")]
+                if is_ready and local_ok and unhealthy:
+                    content["mode"] = "degraded_ok"
+                    status_code = 200
+            except Exception:
+                pass
+            return JSONResponse(status_code=status_code, content=content)
         
         @app.get("/status", tags=["Health"])
         async def status_check():
@@ -182,8 +209,28 @@ class OmniOneAPIFactory:
             return {"pong": True}
     
     async def _setup_health_checks(self):
-        """Register health checks."""
+        """Register health checks (local-first: always add local-store check)."""
         registry = self.health_registry
+
+        # Always: local store writable ($0, no deps)
+        async def _check_local_store() -> bool:
+            try:
+                from .store import get_data_root as _dr
+                p = _dr()
+                probe = p / ".health_probe"
+                probe.write_text("ok", encoding="utf-8")
+                try:
+                    probe.unlink()
+                except Exception:
+                    pass
+                return True
+            except Exception:
+                return False
+
+        try:
+            registry.register_check(name="local_store", check_func=_check_local_store, critical=True)
+        except Exception:
+            pass
         
         # Only setup if not in test mode
         if self.settings.is_production():
@@ -209,6 +256,16 @@ class OmniOneAPIFactory:
                     check_func=lambda: check_weaviate(self.settings.weaviate_url),
                     critical=False,
                 )
+        else:
+            # Non-prod (laptop/dev): optional deps are non-critical, degraded_ok
+            try:
+                registry.register_check(
+                    name="redis_optional",
+                    check_func=lambda: check_redis(self.settings.redis_url),
+                    critical=False,
+                )
+            except Exception:
+                pass
         
         logger.info("health_checks_registered", count=len(registry.checks))
     

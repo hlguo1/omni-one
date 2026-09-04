@@ -1,0 +1,22 @@
+name: seller-ci
+on: [push, pull_request]
+jobs:
+  seller:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: Install tesseract (free OCR)
+        run: sudo apt-get update && sudo apt-get install -y tesseract-ocr
+      - name: Install seller deps ($0 minimal)
+        run: pip install -r requirements-seller.txt
+      - name: Unit + integration (offline, mock LLM)
+        run: PYTHONPATH=src python -m pytest tests/unit tests/integration -q
+        env:
+          SELLER_LLM: mock
+          SELLER_MAX_LLM_USD: "0.0"
+      - name: Seller demo golden KPIs
+        run: PYTHONPATH=src python scripts/demo_seller_os.py --folder /tmp/seller_demo | grep -E "GMV|True Profit|Stockout"
+      - name: Core methodology E2E
+        run: PYTHONPATH=src python scripts/e2e_core_methodology.py --out /tmp/e2e_method

@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 from pydantic import BaseModel, Field
 import hashlib
 import json
+import threading
 
 
 def _coerce_value(ptype: str, value: Any) -> Any:
@@ -140,6 +141,7 @@ class Ontology:
     """
     def __init__(self, name: str = "free-ontology"):
         self.name = name
+        self._lock = threading.RLock()
         self.object_types: Dict[str, ObjectTypeDef] = {}
         self.link_types: Dict[str, LinkTypeDef] = {}
         self.actions: Dict[str, ActionDef] = {}
@@ -153,11 +155,13 @@ class Ontology:
     # --- internal ---
     def _snapshot(self, obj: ObjectInstance, op: str):
         key = f"{obj.object_type}:{obj.primary_key}"
-        self._history.setdefault(key, []).append({
+        snap = {
             "op": op, "version": obj.version, "at": datetime.now().isoformat(),
             "properties": dict(obj.properties), "links": {k: list(v) for k, v in obj.links.items()},
             "lineage": obj.lineage, "markings": list(obj.markings),
-        })
+        }
+        with self._lock:
+            self._history.setdefault(key, []).append(snap)
 
     def history(self, object_type: str, pk: str) -> List[Dict[str, Any]]:
         return list(self._history.get(f"{object_type}:{pk}", []))
@@ -206,9 +210,10 @@ class Ontology:
         obj.version = 1
         obj.lineage = lineage or f"manual:{datetime.now().isoformat()}"
         obj.updated_at = datetime.now().isoformat()
-        self.objects[obj.object_type][obj.primary_key] = obj
+        with self._lock:
+            self.objects[obj.object_type][obj.primary_key] = obj
+            self._edits.append({"op": "create", "type": obj.object_type, "pk": obj.primary_key, "at": obj.updated_at, "lineage": obj.lineage})
         self._snapshot(obj, "create")
-        self._edits.append({"op": "create", "type": obj.object_type, "pk": obj.primary_key, "at": obj.updated_at, "lineage": obj.lineage})
 
     def bulk_create(self, objs: List[ObjectInstance], lineage: str):
         for o in objs:
@@ -238,18 +243,19 @@ class Ontology:
         assert link_type in self.link_types, f"unknown link {link_type}"
         lt = self.link_types[link_type]
         assert from_type == lt.from_type
-        assert from_pk in self.objects.get(from_type, {}), f"from {from_type}:{from_pk} not found"
-        assert to_pk in self.objects.get(lt.to_type, {}), f"to {lt.to_type}:{to_pk} not found"
-        from_obj = self.objects[from_type][from_pk]
-        from_obj.links.setdefault(link_type, [])
-        if to_pk in from_obj.links[link_type]:
-            return
-        self._check_cardinality(lt, from_obj, to_pk)
-        from_obj.links[link_type].append(to_pk)
-        from_obj.version += 1
-        from_obj.updated_at = datetime.now().isoformat()
+        with self._lock:
+            assert from_pk in self.objects.get(from_type, {}), f"from {from_type}:{from_pk} not found"
+            assert to_pk in self.objects.get(lt.to_type, {}), f"to {lt.to_type}:{to_pk} not found"
+            from_obj = self.objects[from_type][from_pk]
+            from_obj.links.setdefault(link_type, [])
+            if to_pk in from_obj.links[link_type]:
+                return
+            self._check_cardinality(lt, from_obj, to_pk)
+            from_obj.links[link_type].append(to_pk)
+            from_obj.version += 1
+            from_obj.updated_at = datetime.now().isoformat()
+            self._edits.append({"op": "link", "from": f"{from_type}:{from_pk}", "link": link_type, "to": to_pk, "at": from_obj.updated_at})
         self._snapshot(from_obj, f"link:{link_type}")
-        self._edits.append({"op": "link", "from": f"{from_type}:{from_pk}", "link": link_type, "to": to_pk, "at": from_obj.updated_at})
 
     def _validate_action_params(self, adef: ActionDef, parameters: Dict[str, Any]):
         # Coerce declared params
@@ -283,17 +289,18 @@ class Ontology:
         adef = self.actions[action_api]
         if adef.requires_approval:
             raise ValueError(f"Action {action_api} requires approval: use propose_action/approve_action")
-        if pk not in self.objects.get(adef.object_type, {}):
-            raise KeyError(f"{adef.object_type}:{pk} not found")
-        obj = self.objects[adef.object_type][pk]
         params = dict(parameters)
         self._validate_action_params(adef, params)
-        for k, v in params.items():
-            obj.properties[k] = v
-        obj.version += 1
-        obj.updated_at = datetime.now().isoformat()
+        with self._lock:
+            if pk not in self.objects.get(adef.object_type, {}):
+                raise KeyError(f"{adef.object_type}:{pk} not found")
+            obj = self.objects[adef.object_type][pk]
+            for k, v in params.items():
+                obj.properties[k] = v
+            obj.version += 1
+            obj.updated_at = datetime.now().isoformat()
+            self._edits.append({"op": "action", "action": action_api, "pk": pk, "params": params, "actor": actor, "at": obj.updated_at, "version": obj.version})
         self._snapshot(obj, f"action:{action_api}")
-        self._edits.append({"op": "action", "action": action_api, "pk": pk, "params": params, "actor": actor, "at": obj.updated_at, "version": obj.version})
         return obj
 
     # --- Approval workflow (methodology: human-in-the-loop, like Palantir Actions) ---
@@ -466,19 +473,94 @@ class Ontology:
 
     # --- Persistence (free: JSON dir, includes edits/proposals for audit parity) ---
     def save(self, path) -> str:
-        """Save ontology to directory (types/links/actions/objects/history/edits). Free."""
+        """Save ontology to directory (types/links/actions/objects/history/edits). Free. Atomic."""
         from pathlib import Path as _P
+        try:
+            from ..infra.store import atomic_write_text as _atomic
+        except Exception:
+            try:
+                from omni_one.infra.store import atomic_write_text as _atomic  # type: ignore
+            except Exception:
+                _atomic = None  # type: ignore
         p = _P(path)
         p.mkdir(parents=True, exist_ok=True)
-        (p / "types.json").write_text(json.dumps({k: v.model_dump() for k, v in self.object_types.items()}, indent=2))
-        (p / "links.json").write_text(json.dumps({k: v.model_dump() for k, v in self.link_types.items()}, indent=2))
-        (p / "actions.json").write_text(json.dumps({k: v.model_dump() for k, v in self.actions.items()}, indent=2))
-        (p / "objects.json").write_text(json.dumps({t: {pk: o.model_dump() for pk, o in objs.items()} for t, objs in self.objects.items()}, indent=2, default=str))
-        (p / "history.json").write_text(json.dumps(self._history, indent=2, default=str))
-        (p / "edits.json").write_text(json.dumps(self._edits[-1000:], indent=2, default=str))
-        (p / "proposals.json").write_text(json.dumps(self._proposals, indent=2, default=str))
-        (p / "meta.json").write_text(json.dumps({"name": self.name, "created_at": self.created_at, "hash": self.lineage_hash(), "proposal_seq": self._proposal_seq}, indent=2))
+
+        def _w(name: str, text: str) -> None:
+            fp = p / name
+            if _atomic is not None:
+                _atomic(fp, text)
+            else:
+                import os as _os, tempfile as _tf
+                fd, tmp = _tf.mkstemp(dir=str(p), prefix=name + ".tmp.")
+                try:
+                    with _os.fdopen(fd, "w", encoding="utf-8") as f:
+                        f.write(text)
+                    _os.replace(tmp, fp)
+                finally:
+                    try:
+                        if _os.path.exists(tmp):
+                            _os.unlink(tmp)
+                    except Exception:
+                        pass
+
+        with self._lock:
+            types_j = json.dumps({k: v.model_dump() for k, v in self.object_types.items()}, indent=2)
+            links_j = json.dumps({k: v.model_dump() for k, v in self.link_types.items()}, indent=2)
+            actions_j = json.dumps({k: v.model_dump() for k, v in self.actions.items()}, indent=2)
+            objects_j = json.dumps({t: {pk: o.model_dump() for pk, o in objs.items()} for t, objs in self.objects.items()}, indent=2, default=str)
+            history_j = json.dumps(self._history, indent=2, default=str)
+            edits_j = json.dumps(self._edits[-1000:], indent=2, default=str)
+            proposals_j = json.dumps(self._proposals, indent=2, default=str)
+            meta_j = json.dumps({"name": self.name, "created_at": self.created_at, "hash": self.lineage_hash(), "proposal_seq": self._proposal_seq}, indent=2)
+        _w("types.json", types_j)
+        _w("links.json", links_j)
+        _w("actions.json", actions_j)
+        _w("objects.json", objects_j)
+        _w("history.json", history_j)
+        _w("edits.json", edits_j)
+        _w("proposals.json", proposals_j)
+        _w("meta.json", meta_j)
         return str(p)
+
+    def persist_to_store(self, store=None) -> str:
+        """Persist objects to LocalStore (DuckDB if available, else JSON). Returns backend."""
+        try:
+            if store is None:
+                try:
+                    from ..infra.store import get_store as _gs
+                except Exception:
+                    from omni_one.infra.store import get_store as _gs  # type: ignore
+                store = _gs()
+            blob = {t: {pk: o.model_dump(mode="json") for pk, o in objs.items()} for t, objs in self.objects.items()}
+            store.ontology_save(blob)
+            return getattr(store, "backend", "unknown")
+        except Exception as e:
+            raise RuntimeError(f"persist_to_store failed: {e}")
+
+    def load_from_store(self, store=None) -> int:
+        """Load objects from LocalStore into this ontology. Returns count."""
+        try:
+            if store is None:
+                try:
+                    from ..infra.store import get_store as _gs
+                except Exception:
+                    from omni_one.infra.store import get_store as _gs  # type: ignore
+                store = _gs()
+            blob = store.ontology_load()
+        except Exception:
+            return 0
+        n = 0
+        with self._lock:
+            for t, mp in blob.items():
+                if t not in self.object_types:
+                    continue
+                for pk, od in mp.items():
+                    try:
+                        self.objects.setdefault(t, {})[pk] = ObjectInstance(**od)
+                        n += 1
+                    except Exception:
+                        continue
+        return n
 
     @classmethod
     def load(cls, path) -> "Ontology":

@@ -5,6 +5,7 @@ Advanced bias detection, fairness monitoring, and explainable AI
 
 import hashlib
 import json
+from collections import deque
 from datetime import datetime
 from typing import Any, Dict, List
 
@@ -15,6 +16,7 @@ class EthicalMonitor:
     """Comprehensive ethical AI monitoring and governance."""
 
     PROTECTED_ATTRIBUTES = {"gender", "race", "age_group", "ethnicity", "disability_status"}
+    MAX_LOG = 1000
 
     def __init__(self):
         self.bias_detectors = {
@@ -24,7 +26,7 @@ class EthicalMonitor:
         }
 
         self.fairness_metrics = {}
-        self.decision_log = []
+        self.decision_log: deque = deque(maxlen=self.MAX_LOG)
 
     def analyze_decision(
         self,
@@ -201,7 +203,7 @@ class EthicalMonitor:
 
     def get_ethical_report(self, time_range: str = "24h") -> Dict[str, Any]:
         """Generate comprehensive ethical performance report."""
-        recent_decisions = self.decision_log[-100:]
+        recent_decisions = list(self.decision_log)[-100:]
 
         if not recent_decisions:
             return {"error": "No decision data available"}

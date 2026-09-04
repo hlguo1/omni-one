@@ -13,7 +13,7 @@ Demonstrates best practices for:
 from typing import Optional
 from uuid import UUID
 
-from fastapi import FastAPI, Depends, Query, Body, status, File, UploadFile, Form
+from fastapi import FastAPI, Depends, Query, Body, status, File, UploadFile, Form, Header, HTTPException
 from fastapi.responses import JSONResponse
 import base64 as _b64
 
@@ -41,6 +41,37 @@ def get_current_user(authorization: Optional[str] = None) -> Optional[str]:
     if authorization and authorization.startswith("Bearer "):
         return authorization[7:]
     return None
+
+
+def _get_api_keys(settings) -> list[str]:
+    try:
+        keys = list(getattr(settings, "api_keys", []) or [])
+        if keys:
+            return keys
+    except Exception:
+        pass
+    try:
+        from ..infra.security import valid_api_keys as _vak
+        return _vak()
+    except Exception:
+        return ["demo-key", "test-key"]
+
+
+def require_admin_key(
+    authorization: Optional[str] = Header(default=None),
+    x_api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
+    settings: Settings = Depends(get_settings),
+) -> str:
+    """Enforce API key on /admin/* (fail closed). Accepts Bearer or X-API-Key."""
+    candidate = None
+    if authorization and authorization.startswith("Bearer "):
+        candidate = authorization[7:].strip()
+    elif x_api_key:
+        candidate = x_api_key.strip()
+    allowed = set(_get_api_keys(settings))
+    if not candidate or candidate not in allowed:
+        raise HTTPException(status_code=401, detail="Invalid or missing API key (use X-API-Key or Bearer)")
+    return candidate
 
 
 # ============================================================================
@@ -350,6 +381,7 @@ def setup_ai_routes(app: FastAPI):
         file: UploadFile = File(..., description="Image file (jpg/png/pdf) — receipt, chart, or photo"),
         lang: str = Form(default="eng", description="OCR language (eng, spa, etc.)"),
         generate_chart: bool = Form(default=True, description="Auto-generate chart PNG from extracted data"),
+        settings: Settings = Depends(get_settings),
     ) -> dict:
         """
         Upload a photo and get everything for free, locally:
@@ -364,8 +396,20 @@ def setup_ai_routes(app: FastAPI):
         """
         with OperationTimer("vision_analyze", logger):
             data = await file.read()
-            if not data or len(data) < 10:
-                raise ValidationError("Empty file")
+            # Free guard: size + type (settings-driven, default 5MB)
+            try:
+                max_mb = int(getattr(settings, "max_upload_mb", 5))
+            except Exception:
+                max_mb = 5
+            try:
+                from ..infra.security import check_upload as _check_upload, get_rate_limiter as _limiter
+                _check_upload(file.filename or "upload.jpg", data, file.content_type, max_mb=max_mb)
+                if not _limiter().allow("vision_analyze"):
+                    raise HTTPException(status_code=429, detail="Rate limited (60/min). Try again shortly.")
+            except HTTPException:
+                raise
+            except ValueError as e:
+                raise ValidationError(str(e))
             if len(data) > 10 * 1024 * 1024:
                 raise ValidationError("File too large (max 10MB)")
             # Detect pdf vs image
@@ -473,12 +517,16 @@ def setup_ai_routes(app: FastAPI):
                     briefing = build_seller_briefing(events)
                     briefing["ingest_report"]["demo"] = True
                     return briefing
+            # Path-traversal guard: must live inside ./data/inbox or /tmp demo
+            try:
+                from ..infra.security import resolve_seller_folder as _resolve
+            except ImportError:
+                from omni_one.infra.security import resolve_seller_folder as _resolve  # type: ignore
+            try:
+                p = _resolve(str(folder))
+            except ValueError as e:
+                raise ValidationError(str(e))
             from ..packs.seller_os import ingest_seller_folder, build_seller_briefing  # type: ignore
-            p = Path(str(folder))
-            if not p.exists():
-                raise ValidationError(f"Folder not found: {folder}")
-            if not str(p.resolve()).startswith("/tmp"):
-                logger.warning("seller_briefing_folder_outside_tmp", folder=str(p))
             events, report = ingest_seller_folder(p)
             if data.get("events") and isinstance(data["events"], list):
                 events.extend(data["events"])
@@ -496,6 +544,7 @@ def setup_ai_routes(app: FastAPI):
     async def seller_photo(
         file: UploadFile = File(..., description="Supplier invoice / product photo (jpg/png)"),
         lang: str = Form(default="eng"),
+        settings: Settings = Depends(get_settings),
     ) -> dict:
         """
         Seller-specific photo upload. Reuses free vision stack but seller-tuned:
@@ -504,8 +553,22 @@ def setup_ai_routes(app: FastAPI):
         """
         with OperationTimer("seller_photo", logger):
             data = await file.read()
-            if not data or len(data) < 10:
-                raise ValidationError("Empty file")
+            try:
+                max_mb = int(getattr(settings, "max_upload_mb", 5))
+            except Exception:
+                max_mb = 5
+            try:
+                from ..infra.security import check_upload as _check2, get_rate_limiter as _lim2
+            except ImportError:
+                from omni_one.infra.security import check_upload as _check2, get_rate_limiter as _lim2  # type: ignore
+            try:
+                _check2(file.filename or "upload.jpg", data, file.content_type, max_mb=max_mb)
+                if not _lim2().allow("seller_photo"):
+                    raise HTTPException(status_code=429, detail="Rate limited (60/min). Try again shortly.")
+            except HTTPException:
+                raise
+            except ValueError as e:
+                raise ValidationError(str(e))
             filename = file.filename or "upload.jpg"
             try:
                 from ..core.vision import analyze_photo  # type: ignore
@@ -687,8 +750,14 @@ def setup_ai_routes(app: FastAPI):
                             "decisions": scen["decisions"][:20], "workshop": app.stats(),
                             "governance": audit.stats(), "free": True}
             p = _P(str(folder))
-            if not p.exists():
-                raise ValidationError(f"Folder not found: {folder}")
+            try:
+                try:
+                    from ..infra.security import resolve_seller_folder as _resolve2
+                except ImportError:
+                    from omni_one.infra.security import resolve_seller_folder as _resolve2  # type: ignore
+                p = _resolve2(str(folder))
+            except ValueError as e:
+                raise ValidationError(str(e))
             from ..packs.seller_os import ingest_seller_folder as _ing  # type: ignore
             events, report = _ing(p)
             from ..packs.seller_scenarios import run_all_scenarios as _run  # type: ignore
@@ -731,16 +800,17 @@ def setup_ai_routes(app: FastAPI):
                     briefing = build_briefing(events)
                     briefing["ingest_report"]["demo"] = True
                     return briefing
-            # Real folder path (must be inside allowed /tmp for demo; in prod use secure storage)
+            # Real folder path (guarded: inbox or /tmp demo)
             from ..packs.micro_biz import ingest_folder, build_briefing  # type: ignore
             from pathlib import Path as _P
-            p = _P(str(folder))
-            if not p.exists():
-                raise ValidationError(f"Folder not found: {folder}")
-            # Security: only allow /tmp for demo
-            if not str(p.resolve()).startswith("/tmp"):
-                # For local dev we allow any, but log
-                logger.warning("micro_briefing_folder_outside_tmp", folder=str(p))
+            try:
+                try:
+                    from ..infra.security import resolve_seller_folder as _resolve3
+                except ImportError:
+                    from omni_one.infra.security import resolve_seller_folder as _resolve3  # type: ignore
+                p = _resolve3(str(folder))
+            except ValueError as e:
+                raise ValidationError(str(e))
             events, report = ingest_folder(p)
             if data.get("events") and isinstance(data["events"], list):
                 # Also merge API-provided events
@@ -793,10 +863,10 @@ def setup_ai_routes(app: FastAPI):
 
 
 def setup_admin_routes(app: FastAPI):
-    """Setup admin/internal routes."""
+    """Setup admin/internal routes (API key required — fail closed)."""
     
     @app.get("/api/v1/admin/services", tags=["Admin"])
-    async def list_services() -> dict:
+    async def list_services(_key: str = Depends(require_admin_key)) -> dict:
         """List all registered services in DI container."""
         services = container.get_registered_services()
         
@@ -812,7 +882,7 @@ def setup_admin_routes(app: FastAPI):
     
     
     @app.post("/api/v1/admin/clear-cache", tags=["Admin"])
-    async def clear_cache() -> dict:
+    async def clear_cache(_key: str = Depends(require_admin_key)) -> dict:
         """Clear request-scoped cache and reset DI container."""
         container.clear_request_scope()
         

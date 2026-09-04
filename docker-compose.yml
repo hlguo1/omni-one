@@ -1,0 +1,23 @@
+# Single-service free deploy: laptop + Docker, no K8s, no paid DB.
+services:
+  api:
+    build: .
+    ports:
+      - "5003:5003"
+    volumes:
+      - ./data:/app/data
+    env_file:
+      - .env
+    environment:
+      PYTHONPATH: /app/src
+      DUCKDB_PATH: /app/data/omni.duckdb
+      AUDIT_PATH: /app/data/audit.jsonl
+      ALLOWED_ROOT: /app/data/inbox
+      SELLER_LLM: mock
+      SELLER_MAX_LLM_USD: "0.0"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5003/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

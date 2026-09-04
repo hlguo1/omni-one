@@ -23,6 +23,13 @@ except Exception as _e1:
                 self.log_level = LogLevel(os.getenv("LOG_LEVEL", "INFO"))
                 self.allowed_origins = ["http://localhost:3000", "http://localhost:5003"]
                 self.api_keys = [k.strip() for k in os.getenv("VALID_API_KEYS", "demo-key,test-key").split(",") if k.strip()]
+                # Fail closed in prod (no demo keys)
+                if self.environment == Environment.PRODUCTION:
+                    bad = {"demo-key", "test-key"}
+                    if any(k in bad for k in self.api_keys):
+                        raise ValueError("Remove demo-key/test-key from VALID_API_KEYS in production")
+                    if not self.api_keys:
+                        raise ValueError("VALID_API_KEYS must be set in production")
                 self.redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
                 self.database_url = os.getenv("DATABASE_URL", "postgresql://user:pass@localhost:5432/omni_one")
                 self.weaviate_url = os.getenv("WEAVIATE_URL", "http://localhost:8080")

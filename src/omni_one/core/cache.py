@@ -10,6 +10,7 @@ Design goals (see docs/STRATEGY.md):
 import hashlib
 import json
 import re
+import threading
 import time
 from collections import OrderedDict
 from typing import Optional, Dict, Any, List, Tuple
@@ -50,6 +51,7 @@ class SemanticCache:
         self.similarity_threshold = similarity_threshold
         self.max_memory_entries = max_memory_entries
         self._stats = {"hits": 0, "misses": 0, "writes": 0}
+        self._lock = threading.RLock()
         # In-memory LRU: key -> {"query": str, "response": dict, "ts": float}
         self._memory: OrderedDict[str, Dict[str, Any]] = OrderedDict()
         self.redis = None
@@ -109,14 +111,17 @@ class SemanticCache:
         # 1) Exact hit
         exact = self._get_exact(key)
         if exact is not None:
-            self._stats["hits"] += 1
+            with self._lock:
+                self._stats["hits"] += 1
             return exact
         # 2) Semantic scan (recent 100 keys only, not full KEYS *)
         similar = self._get_similar(query, context)
         if similar is not None:
-            self._stats["hits"] += 1
+            with self._lock:
+                self._stats["hits"] += 1
             return similar
-        self._stats["misses"] += 1
+        with self._lock:
+            self._stats["misses"] += 1
         return None
 
     def retrieve(self, query: str, k: int = 5) -> List[Any]:
@@ -145,12 +150,14 @@ class SemanticCache:
         except Exception:
             stored_dict = {"response": payload}
         self._put_exact(key, query, stored_dict, ttl=ttl)
-        self._stats["writes"] += 1
+        with self._lock:
+            self._stats["writes"] += 1
 
     def clear(self):
         """Clear all cache (memory + redis)."""
-        self._memory.clear()
-        self._stats = {"hits": 0, "misses": 0, "writes": 0}
+        with self._lock:
+            self._memory.clear()
+            self._stats = {"hits": 0, "misses": 0, "writes": 0}
         if self._redis_available and self.redis is not None:
             try:
                 self.redis.flushdb()
@@ -161,30 +168,32 @@ class SemanticCache:
     # Stats
     # ------------------------------------------------------------------
     def get_stats(self) -> Dict[str, Any]:
-        total = self._stats["hits"] + self._stats["misses"]
-        return {
-            "hits": self._stats["hits"],
-            "misses": self._stats["misses"],
-            "writes": self._stats["writes"],
-            "hit_rate": (self._stats["hits"] / total) if total else 0.0,
-            "backend": "redis" if self._redis_available else "memory",
-            "memory_entries": len(self._memory),
-        }
+        with self._lock:
+            total = self._stats["hits"] + self._stats["misses"]
+            return {
+                "hits": self._stats["hits"],
+                "misses": self._stats["misses"],
+                "writes": self._stats["writes"],
+                "hit_rate": (self._stats["hits"] / total) if total else 0.0,
+                "backend": "redis" if self._redis_available else "memory",
+                "memory_entries": len(self._memory),
+            }
 
     # ------------------------------------------------------------------
     # Internals: exact storage
     # ------------------------------------------------------------------
     def _get_exact(self, key: str) -> Optional[Dict[str, Any]]:
-        # Memory first
-        if key in self._memory:
-            entry = self._memory[key]
-            # TTL check
-            if time.time() - entry["ts"] > self.ttl:
-                del self._memory[key]
-                return None
-            # LRU bump
-            self._memory.move_to_end(key)
-            return entry["response"]
+        # Memory first (guarded)
+        with self._lock:
+            if key in self._memory:
+                entry = self._memory[key]
+                # TTL check
+                if time.time() - entry["ts"] > self.ttl:
+                    del self._memory[key]
+                    return None
+                # LRU bump
+                self._memory.move_to_end(key)
+                return entry["response"]
         # Redis
         if self._redis_available and self.redis is not None:
             try:
@@ -197,11 +206,12 @@ class SemanticCache:
 
     def _put_exact(self, key: str, query: str, response: Dict[str, Any], ttl: Optional[int] = None):
         entry = {"query": query, "response": response, "ts": time.time()}
-        # Memory LRU
-        self._memory[key] = entry
-        self._memory.move_to_end(key)
-        if len(self._memory) > self.max_memory_entries:
-            self._memory.popitem(last=False)
+        # Memory LRU (guarded)
+        with self._lock:
+            self._memory[key] = entry
+            self._memory.move_to_end(key)
+            if len(self._memory) > self.max_memory_entries:
+                self._memory.popitem(last=False)
         # Redis
         if self._redis_available and self.redis is not None:
             try:
@@ -213,7 +223,8 @@ class SemanticCache:
     def _get_similar(self, query: str, context: str = "") -> Optional[Dict[str, Any]]:
         # Only scan in-memory recent entries (bounded); no Redis KEYS *.
         # Keep last 100 entries for similarity scan.
-        candidates = list(self._memory.items())[-100:]
+        with self._lock:
+            candidates = list(self._memory.items())[-100:]
         best = None
         best_score = 0.0
         for _, entry in candidates:

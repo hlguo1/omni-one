@@ -45,12 +45,24 @@ except ImportError:
 class FoundryDataset:
     """Versioned dataset, like Foundry dataset. Parquet on disk, free."""
     def __init__(self, path: Path, name: str):
+        from threading import RLock as _RL
+        self._lock = _RL()
         self.path = Path(path)
         self.name = name
         self.path.mkdir(parents=True, exist_ok=True)
         self.versions_path = self.path / "_versions.json"
         if not self.versions_path.exists():
-            self.versions_path.write_text(json.dumps([]))
+            try:
+                from ..infra.store import atomic_write_text as _atomic
+            except Exception:
+                try:
+                    from omni_one.infra.store import atomic_write_text as _atomic  # type: ignore
+                except Exception:
+                    _atomic = None  # type: ignore
+            if _atomic is not None:
+                _atomic(self.versions_path, json.dumps([]))
+            else:
+                self.versions_path.write_text(json.dumps([]))
 
     def write(self, df, lineage: str):
         """Write new version (like Foundry transaction). df is pandas DataFrame or list[dict]. Free: Parquet if pyarrow else CSV."""
@@ -77,7 +89,31 @@ class FoundryDataset:
             df.to_csv(latest, index=False)
         versions = json.loads(self.versions_path.read_text())
         versions.append({"version": version, "lineage": lineage, "at": datetime.now().isoformat(), "rows": len(df), "path": str(part.name)})
-        self.versions_path.write_text(json.dumps(versions, indent=2))
+        # Atomic versions write (crash-safe)
+        try:
+            from ..infra.store import atomic_write_text as _atomic2
+        except Exception:
+            try:
+                from omni_one.infra.store import atomic_write_text as _atomic2  # type: ignore
+            except Exception:
+                _atomic2 = None  # type: ignore
+        blob = json.dumps(versions, indent=2)
+        with self._lock:
+            if _atomic2 is not None:
+                _atomic2(self.versions_path, blob)
+            else:
+                import os as _os, tempfile as _tf
+                fd, tmp = _tf.mkstemp(dir=str(self.path), prefix="_versions.json.tmp.")
+                try:
+                    with _os.fdopen(fd, "w", encoding="utf-8") as f:
+                        f.write(blob)
+                    _os.replace(tmp, self.versions_path)
+                finally:
+                    try:
+                        if _os.path.exists(tmp):
+                            _os.unlink(tmp)
+                    except Exception:
+                        pass
         return version
 
     def read_latest(self):

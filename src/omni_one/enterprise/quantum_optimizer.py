@@ -4,6 +4,7 @@ Advanced solvers for complex business optimization problems
 """
 
 import numpy as np
+from collections import deque
 from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime
 import random
@@ -21,7 +22,7 @@ class QuantumOptimizer:
             "resource_allocation": self._solve_resource_allocation
         }
 
-        self.optimization_history = []
+        self.optimization_history: deque = deque(maxlen=1000)
 
     def solve_qubo(self, problem: str, constraints: Dict[str, Any] = None,
                   objectives: Dict[str, Any] = None, **kwargs) -> Dict[str, Any]:

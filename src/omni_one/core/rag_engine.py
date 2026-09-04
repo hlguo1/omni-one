@@ -1,22 +1,27 @@
+"""RAG engine (optional, paid deps). NEVER imported by Seller OS path — lazy only.
+
+Kept for enterprise labs. All heavy imports are lazy so `pip install -r requirements-seller.txt`
+works offline without torch/weaviate/langchain.
+"""
 import os
-import weaviate
-from weaviate.classes.config import Configure
-from sentence_transformers import SentenceTransformer
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Weaviate
-from langchain_community.embeddings import SentenceTransformerEmbeddings
-from langchain.chains import RetrievalQA
-from langchain.llms import OpenAI  # or use litellm
+
 
 class RAGEngine:
+    """Lazy RAG. Raises helpful error if optional deps missing (seller path never calls this)."""
+
     def __init__(self):
         self.client = None
         self.embedder = None
         self.text_splitter = None
         self.collection_name = "EnterpriseKnowledge"
         self.connected = False
+        self._error: str | None = None
 
         try:
+            import weaviate  # type: ignore
+            from weaviate.classes.config import Configure  # type: ignore
+            from langchain_community.embeddings import SentenceTransformerEmbeddings  # type: ignore
+            from langchain.text_splitter import RecursiveCharacterTextSplitter  # type: ignore
             # Try to connect to Weaviate
             self.client = weaviate.connect_to_local()
             self.connected = True
@@ -39,14 +44,16 @@ class RAGEngine:
                 )
 
         except Exception as e:
-            print(f"Weaviate connection failed: {e}. RAG features will be limited.")
+            self._error = str(e)
             self.connected = False
 
     def add_documents(self, documents, metadata=None):
         """Add documents to the vector store."""
         if not self.connected:
-            print("Weaviate not connected, skipping document addition")
-            return
+            raise RuntimeError(
+                "RAG not available offline (needs weaviate + sentence-transformers). "
+                f"Install enterprise extras or use free Jaccard cache. Cause: {self._error}"
+            )
 
         try:
             texts = []
@@ -77,9 +84,10 @@ class RAGEngine:
     def retrieve(self, query, k=5):
         """Retrieve relevant documents for a query."""
         if not self.connected:
-            return []  # Return empty list if not connected
+            return []  # Return empty list if not connected (offline-safe)
 
         try:
+            from langchain_community.vectorstores import Weaviate  # type: ignore
             vectorstore = Weaviate(
                 client=self.client,
                 index_name=self.collection_name,
@@ -93,13 +101,16 @@ class RAGEngine:
             return []
 
     def generate_with_rag(self, query, model="gemini-2.5-flash"):
-        """Generate response using RAG."""
+        """Generate response using RAG (requires GOOGLE_API_KEY + enterprise extras)."""
         # Retrieve relevant docs
         docs = self.retrieve(query)
         context = "\n\n".join([doc.page_content for doc in docs])
 
         # Use litellm for multi-model support
-        import litellm
+        try:
+            import litellm  # type: ignore
+        except ImportError as e:
+            raise RuntimeError(f"litellm not installed (enterprise extra): {e}")
         litellm.api_key = os.getenv('GOOGLE_API_KEY')  # or set appropriately
 
         prompt = f"Context:\n{context}\n\nQuery: {query}\n\nAnswer based on the context:"
@@ -111,4 +122,8 @@ class RAGEngine:
         return response.choices[0].message.content
 
     def close(self):
-        self.client.close()
+        try:
+            if self.client is not None:
+                self.client.close()
+        except Exception:
+            pass

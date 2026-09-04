@@ -1,0 +1,18 @@
+# Omni-One Seller OS — minimal free deps (laptop + single Docker, $0)
+# Install: pip install -r requirements-seller.txt
+# Full enterprise extras remain in requirements-modern.txt (torch, weaviate, langchain, celery...)
+
+fastapi==0.104.1
+uvicorn==0.24.0
+python-multipart==0.0.6
+pydantic==2.5.0
+pydantic-settings==2.1.0
+pandas==2.2.1
+numpy==1.26.4
+duckdb==0.10.0
+pillow==10.2.0
+matplotlib==3.8.2
+python-dotenv==1.0.0
+pytest==7.4.4
+pytest-asyncio==0.21.1
+scikit-learn==1.4.2

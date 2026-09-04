@@ -4,10 +4,12 @@ Privacy-preserving distributed machine learning
 """
 
 import numpy as np
+from collections import deque
 from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime
 import hashlib
 import json
+import secrets
 
 class FederatedHub:
     """Federated learning coordinator for privacy-preserving AI"""
@@ -17,7 +19,7 @@ class FederatedHub:
         self.global_model = None
         self.rounds_completed = 0
         self.privacy_budget_used = 0.0
-        self.federated_history = []
+        self.federated_history: deque = deque(maxlen=1000)
 
     def register_participant(self, participant_id: str, data_info: Dict[str, Any],
                            capabilities: List[str] = None) -> str:
@@ -37,8 +39,8 @@ class FederatedHub:
 
         self.participants[participant_id] = participant
 
-        # Generate secure token for authentication
-        token = hashlib.sha256(f"{participant_id}_{datetime.now().isoformat()}".encode()).hexdigest()[:16]
+        # Generate secure token for authentication (secrets, not truncated sha of timestamp)
+        token = secrets.token_hex(16)
 
         return token
 

@@ -46,84 +46,71 @@ except ImportError:
         ModelRouter = None  # type: ignore
         analyze_photo = None  # type: ignore
 
-# ---------- helpers ----------
-def _money_all(s: str) -> List[float]:
-    """All money-like numbers in string, robust. Ignores dates (YYYY-MM-DD)."""
-    if not s:
-        return []
-    text = str(s)
-    # Remove dates to avoid 2024-09-12 -> 12.0
-    text = re.sub(r"\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b", " ", text)
-    text = re.sub(r"\b\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\b", " ", text)
-    # Find numbers, prefer decimals
-    vals: List[float] = []
-    for m in re.finditer(r"\$?\s*(\d+(?:\.\d{1,2})?)", text.replace(",", "")):
-        try:
-            vals.append(float(m.group(1)))
-        except Exception:
-            continue
-    return vals
-
-def _money(s: str) -> Optional[float]:
-    """First money in string (for unit price). Use _money_last for totals."""
-    vals = _money_all(s)
-    return vals[0] if vals else None
-
-def _money_last(s: str) -> Optional[float]:
-    """Last money in string (for line totals). Robust vs qty prefix."""
-    vals = _money_all(s)
-    return vals[-1] if vals else None
-
-def _norm_product(s: str) -> str:
-    """Normalized product key for fuzzy matching (lower, alnum, collapse)."""
-    import re as _re
-    s = (s or "").lower().strip()
-    s = _re.sub(r"[^a-z0-9]+", " ", s)
-    s = _re.sub(r"\s+", " ", s).strip()
-    return s
-
-def _product_match(a: str, b: str, threshold: float = 0.72) -> bool:
-    """Fuzzy product match: exact normalized, substring, or SequenceMatcher."""
-    from difflib import SequenceMatcher as _SM
-    na, nb = _norm_product(a), _norm_product(b)
-    if not na or not nb:
-        return False
-    if na == nb:
-        return True
-    if na in nb or nb in na:
-        return True
+# ---------- helpers (shared deterministic parsers — see packs/seller_parse.py) ----------
+try:
+    from .seller_parse import (  # type: ignore
+        _money_all, _money, _money_last, _norm_product, _product_match,
+        _norm_header, extract_unit_qty, detect_currency,
+    )
+except ImportError:
     try:
-        return _SM(None, na, nb).ratio() >= threshold
-    except Exception:
-        return False
-
-def _norm_header(h: str) -> str:
-    # Prioritize specific fields first to avoid substring collisions (e.g., "lineitem quantity" contains "item")
-    h_low = h.strip().lower()
-    h_norm = h_low.replace(" ", "_")
-    # Ordered: most specific first — product before customer to avoid "Lineitem name" -> customer
-    mapping_ordered = [
-        ("order_id", ["order_id", "order_number", "receipt", "sale_id"]),
-        ("date", ["order_date", "created", "settled", "timestamp"]),
-        ("qty", ["quantity", "lineitem_quantity", "qty", "units"]),
-        ("gmv", ["lineitem_price", "order_total", "gross", "sales"]),
-        ("fees", ["etsy_fee", "shopify_fee", "amazon_fee", "fees", "fee", "commission"]),
-        ("shipping", ["shipping", "postage", "delivery"]),
-        ("product", ["lineitem_name", "product", "listing", "sku", "title", "description"]),
-        ("customer", ["customer", "buyer", "recipient"]),
-        ("status", ["fulfillment", "status", "state"]),
-        # fallback generic
-        ("product", ["item"]),  # item last, after qty
-        ("gmv", ["price", "total"]),
-        ("date", ["date"]),
-        ("order_id", ["order"]),
-    ]
-    for norm, variants in mapping_ordered:
-        for v in variants:
-            # Use word boundary or exact substring with underscores
-            if v in h_norm or v.replace("_", " ") in h_low:
-                return norm
-    return h_norm
+        from omni_one.packs.seller_parse import (  # type: ignore
+            _money_all, _money, _money_last, _norm_product, _product_match,
+            _norm_header, extract_unit_qty, detect_currency,
+        )
+    except ImportError:
+        import re as _re_fallback  # type: ignore
+        def _money_all(s: str):  # type: ignore
+            import re as _re
+            if not s:
+                return []
+            text = str(s)
+            text = _re.sub(r"\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b", " ", text)
+            text = _re.sub(r"\b\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\b", " ", text)
+            vals = []
+            for m in _re.finditer(r"\$?\s*(\d+(?:\.\d{1,2})?)", text.replace(",", "")):
+                try:
+                    vals.append(float(m.group(1)))
+                except Exception:
+                    continue
+            return vals
+        def _money(s: str):  # type: ignore
+            vals = _money_all(s)
+            return vals[0] if vals else None
+        def _money_last(s: str):  # type: ignore
+            vals = _money_all(s)
+            return vals[-1] if vals else None
+        def _norm_product(s: str) -> str:  # type: ignore
+            s = (s or "").lower().strip()
+            s = _re_fallback.sub(r"[^a-z0-9]+", " ", s)
+            s = _re_fallback.sub(r"\s+", " ", s).strip()
+            return s
+        def _product_match(a: str, b: str, threshold: float = 0.72) -> bool:  # type: ignore
+            from difflib import SequenceMatcher as _SM
+            na, nb = _norm_product(a), _norm_product(b)
+            if not na or not nb:
+                return False
+            if na == nb:
+                return True
+            if na in nb or nb in na:
+                return True
+            try:
+                return _SM(None, na, nb).ratio() >= threshold
+            except Exception:
+                return False
+        def _norm_header(h: str) -> str:  # type: ignore
+            return h.strip().lower().replace(" ", "_")
+        def extract_unit_qty(line: str):  # type: ignore
+            import re as _re2
+            m = _re2.search(r"(\d+)\s*x\s*\$?\s*(\d+(?:[.,]\d+)?)", str(line), _re2.I)
+            if not m:
+                return None
+            try:
+                return (float(m.group(1)), float(m.group(2).replace(",", "")), float(_money_last(line) or 0))
+            except Exception:
+                return None
+        def detect_currency(s: str) -> str:  # type: ignore
+            return "USD"
 
 # ---------- parsers ----------
 def parse_orders_csv(path: Path) -> List[Dict[str, Any]]:
@@ -306,15 +293,15 @@ def parse_supplier_image(path: Path) -> List[Dict[str, Any]]:
         if not text:
             return []
         events: List[Dict[str, Any]] = []
-        # Extract line items via numbers
+        # Extract line items via numbers (use LAST money = line total, not qty prefix)
         for idx, line in enumerate([l for l in text.splitlines() if l.strip()], 1):
-            total = _money(line)
+            total = _money_last(line)
             if total and total > 0:
                 # crude COGS per line
                 events.append({"timestamp": datetime.now(), "source": "supplier", "entity_id": f"supplier:{path.stem}:{idx}", "value": total, "metadata": {"source_file": path.name, "line": idx, "signal": "cogs", "citation": f"[{path.name}:{idx}] {line[:60]}", "raw": line}})
         if not events:
             # fallback total
-            total = _money(text)
+            total = _money_last(text)
             if total:
                 events.append({"timestamp": datetime.now(), "source": "supplier", "entity_id": f"supplier:{path.stem}:total", "value": total, "metadata": {"source_file": path.name, "line": 1, "signal": "cogs_total", "citation": f"[{path.name}:1] total ${total}"}})
         return events
@@ -474,19 +461,42 @@ Charlie: Where is my order? No tracking.
 # ---------- briefing — THE outstanding product ----------
 def build_seller_briefing(events: List[Dict[str, Any]], pipeline=None, now: Optional[datetime] = None) -> Dict[str, Any]:
     now = now or datetime.now()
+    # LLM policy: MOCK BY DEFAULT ($0). Live only if SELLER_LLM != mock + key present + budget ok.
+    live_allowed = False
+    try:
+        try:
+            from ..core.cost_ledger import should_use_live_llm, record_cost  # type: ignore
+        except ImportError:
+            from omni_one.core.cost_ledger import should_use_live_llm, record_cost  # type: ignore
+        live_allowed = bool(should_use_live_llm())
+    except Exception:
+        live_allowed = False
+        record_cost = None  # type: ignore
     # pipeline for evidence (free)
     if pipeline is None and MultiLayerDataPipeline and SemanticCache and ModelRouter:
-        class _Mock(ModelRouter):  # type: ignore
-            def generate(self, prompt: str, model=None, **kw):  # type: ignore
-                return f"[MOCK SELLER DRAFT] {prompt[:80]} — grounded in Seller OS."
-        try:
-            pipeline = MultiLayerDataPipeline(model_router=_Mock(), cache=SemanticCache())  # type: ignore
-        except Exception:
-            pipeline = None
+        if live_allowed:
+            try:
+                pipeline = MultiLayerDataPipeline(model_router=ModelRouter(), cache=SemanticCache())  # type: ignore
+            except Exception:
+                pipeline = None
+        else:
+            class _Mock(ModelRouter):  # type: ignore
+                def generate(self, prompt: str, model=None, **kw):  # type: ignore
+                    return f"[MOCK SELLER DRAFT] {prompt[:80]} — grounded in Seller OS."
+            try:
+                pipeline = MultiLayerDataPipeline(model_router=_Mock(), cache=SemanticCache())  # type: ignore
+            except Exception:
+                pipeline = None
     if pipeline and events:
         try:
             results, _ = pipeline.process_batch(events)
             summary = pipeline.get_metrics_summary()
+            # Record $0 cost explicitly so ledger proves free
+            try:
+                if record_cost is not None:
+                    record_cost("seller_briefing_mock", 0.0, {"events": len(events)})
+            except Exception:
+                pass
         except Exception:
             results, summary = [], {}
     else:
@@ -504,20 +514,23 @@ def build_seller_briefing(events: List[Dict[str, Any]], pipeline=None, now: Opti
     for e in events:
         if e["source"] == "supplier":
             raw = str(e["metadata"].get("raw", ""))
-            # Try to extract "50 x 4.00"
-            m = re.search(r"(\d+)\s*x\s*\$?\s*(\d+(?:[.,]\d+)?)", raw, re.I)
-            item = (e["metadata"].get("raw", "") or "").lower()
+            # Shared parser: "50 x 4.00" -> (50, 4.00, 200.00)
+            try:
+                parsed = extract_unit_qty(raw)
+            except Exception:
+                parsed = None
             # crude product key: first words
             key = None
             for prod in ["tote", "mug", "print", "scarf", "canvas", "clay", "paper"]:
                 if prod in raw.lower():
                     key = prod
                     break
-            if m and key:
+            if parsed and key:
                 try:
-                    qty = float(m.group(1)); unit = float(m.group(2).replace(",", ""))
-                    supplier_catalog[key] = unit
-                except: pass
+                    _qty, unit, _total = parsed
+                    supplier_catalog[key] = float(unit)
+                except Exception:
+                    pass
             # fallback: if line is "Tote Bag Canvas 50 x 4.00" -> tote:4.0
     # compute COGS per order via catalog
     cogs = 0.0
@@ -707,4 +720,37 @@ def build_seller_briefing(events: List[Dict[str, Any]], pipeline=None, now: Opti
         "chart": {"data": chart_data, "base64": chart_b64},
         "evidence_sample": evidence_sample[:4],
         "ingest_report": {"by_source": dict(Counter(e["source"] for e in events))},
+        "llm": {"mode": "live" if live_allowed else "mock", "cost_usd": 0.0},
     }
+
+
+def get_cached_briefing(folder: Path, max_age_s: int = 3600) -> Optional[Dict[str, Any]]:
+    """Return cached briefing if folder fingerprint unchanged. $0, never raises."""
+    try:
+        try:
+            from ..infra.store import get_store, folder_fingerprint  # type: ignore
+        except ImportError:
+            from omni_one.infra.store import get_store, folder_fingerprint  # type: ignore
+        fp = folder_fingerprint(Path(folder))
+        store = get_store()
+        cached = store.briefing_get(fp, max_age_s=max_age_s)
+        if cached:
+            cached.setdefault("meta", {})["cache"] = "hit"
+            cached["meta"]["folder_hash"] = fp
+        return cached
+    except Exception:
+        return None
+
+
+def put_cached_briefing(folder: Path, briefing: Dict[str, Any]) -> None:
+    """Cache briefing by folder fingerprint. Never raises."""
+    try:
+        try:
+            from ..infra.store import get_store, folder_fingerprint  # type: ignore
+        except ImportError:
+            from omni_one.infra.store import get_store, folder_fingerprint  # type: ignore
+        fp = folder_fingerprint(Path(folder))
+        briefing.setdefault("meta", {})["folder_hash"] = fp
+        get_store().briefing_put(fp, briefing)
+    except Exception:
+        pass

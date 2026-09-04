@@ -2,112 +2,122 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Omni-One Seller OS — One outstanding product for people selling online</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-<style>body{font-family:Inter,sans-serif;background:#f8fafc}</style>
+<title>Omni-One Seller OS — free, local, no fees</title>
+<!-- Offline-first: zero CDN, zero Google Fonts. All CSS inline. Works with WiFi off. -->
+<style>
+*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#f8fafc;margin:0;color:#111827}
+header{background:#fff;border-bottom:1px solid #e5e7eb;position:sticky;top:0;z-index:10}
+.wrap{max-width:72rem;margin:0 auto;padding:1rem 1.5rem}
+.row{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+.brand{font-size:1.25rem;font-weight:800}.brand .ind{color:#4f46e5}
+.sub{font-size:.75rem;color:#6b7280}
+.card{background:#fff;border-radius:.75rem;box-shadow:0 1px 3px rgba(0,0,0,.08);padding:1.5rem}
+.grid2{display:grid;grid-template-columns:1fr;gap:1.5rem}@media(min-width:1024px){.grid2{grid-template-columns:1fr 1fr}}
+.btn{display:inline-block;padding:.5rem 1rem;border-radius:.5rem;border:1px solid #e5e7eb;background:#fff;cursor:pointer;font-size:.875rem}
+.btn-p{background:#4f46e5;color:#fff;border-color:#4f46e5}.btn-p:hover{background:#4338ca}
+.btn-g{background:#059669;color:#fff;border-color:#059669}.btn-g:hover{background:#047857}
+.muted{color:#6b7280;font-size:.875rem}.tiny{font-size:.75rem;color:#6b7280}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;font-size:.875rem}
+.kpi{background:#f9fafb;padding:.75rem;border-radius:.5rem}.kpi b{display:block;font-size:1.05rem}
+.alert{padding:.5rem;border:1px solid #e5e7eb;border-radius:.5rem;margin-bottom:.5rem;background:#fffbeb}
+.alert.high{background:#fef2f2;border-color:#fecaca}
+.pill{display:inline-block;background:#f3f4f6;border-radius:.375rem;padding:.125rem .5rem;margin:0 .25rem .25rem 0;font-size:.72rem}
+.notice{background:#eef2ff;border:1px solid #c7d2fe;border-radius:.75rem;padding:1rem;margin-bottom:1.5rem}
+code{background:#f3f4f6;padding:.1rem .3rem;border-radius:.25rem;font-size:.8em}
+img.chart{width:100%;border-radius:.5rem;border:1px solid #e5e7eb}
+#status{margin-top:1rem;font-size:.875rem;color:#374151}
+.draft{margin-top:1rem;padding:.75rem;background:#eef2ff;border:1px solid #c7d2fe;border-radius:.5rem;font-size:.875rem}
+.hidden{display:none}
+input[type=file]{font-size:.8rem}
+</style>
 </head>
-<body class="min-h-screen">
-<header class="bg-white border-b sticky top-0 z-10">
-  <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
-    <div><div class="text-xl font-bold"><span class="text-indigo-600">Omni-One</span> <span class="text-gray-900">Seller OS</span></div><div class="text-xs text-gray-500">The ONE outstanding product for people selling stuff online — free, local, no fees</div></div>
-    <div class="text-xs text-gray-500">Drop Shopify/Etsy CSV + supplier photo + DM export → Daily Briefing</div>
-  </div>
-</header>
-<main class="max-w-6xl mx-auto px-6 py-8">
-  <!-- Focus statement -->
-  <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4 mb-6">
-    <div class="font-semibold text-indigo-900">Focused: Seller OS is THE product.</div>
-    <div class="text-sm text-indigo-700">Not a generic AI platform. Not 5 overlapping packs. One concrete product for 1-5 person shops on Shopify/Etsy/Amazon. Revenue Ops & Micro packs moved to <code>_labs</code>. Vision (photo→text+chart→pipeline) powers supplier invoices & product photos — still 100% free, local.</div>
-  </div>
-
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- Left: Drop zone -->
-    <div class="bg-white rounded-xl shadow p-6">
-      <h2 class="font-semibold text-gray-900 mb-2">1. Drop your messy seller folder</h2>
-      <p class="text-sm text-gray-500 mb-4">Shopify/Etsy CSV, inventory.csv, reviews.csv, instagram_dm.txt, supplier_invoice.jpg — any mess. No schema needed.</p>
-      <div class="flex flex-wrap gap-3 mb-4">
-        <button id="demoBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Run Demo Seller Folder (1 click)</button>
-        <button id="scenBtn" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Run 12 Practical Scenarios</button>
-        <button id="photoBtn" class="px-4 py-2 bg-white border rounded-lg hover:bg-gray-50">Upload photo (supplier invoice / product)</button>
-        <input id="photoInput" type="file" accept="image/*" class="hidden">
-      </div>
-      <div id="photoPreview" class="hidden mb-4 text-sm text-gray-600"></div>
-      <div id="scenarios" class="mb-4 text-xs text-gray-600">12 scenarios: STOCKOUT, DEAD_STOCK, UNANSWERED_COMPLAINT, REFUND_RISK, REVIEW_CRISIS, DM_BACKLOG, FEE_CREEP, SHIPPING_LOSS, PROFIT_DIP, COGS_SPIKE, PRICE_MISMATCH, LISTING_GAP — loading…</div>
-      <div class="text-xs text-gray-400">Or API: <code>POST /api/v1/seller/briefing {"demo":true}</code> · <code>POST /api/v1/seller/scenarios/run</code> · <code>POST /api/v1/seller/photo</code> (free)</div>
-      <div id="status" class="mt-4 text-sm text-gray-600"></div>
-    </div>
-    <!-- Right: KPIs -->
-    <div class="bg-white rounded-xl shadow p-6">
-      <h2 class="font-semibold text-gray-900 mb-4">2. Daily Briefing — Outstanding</h2>
-      <div id="kpis" class="grid grid-cols-2 gap-3 text-sm">
-        <div class="bg-gray-50 p-3 rounded">GMV <div id="kpi-gmv" class="font-bold">—</div></div>
-        <div class="bg-gray-50 p-3 rounded">True Profit <div id="kpi-profit" class="font-bold">—</div></div>
-        <div class="bg-gray-50 p-3 rounded">Margin <div id="kpi-margin" class="font-bold">—</div></div>
-        <div class="bg-gray-50 p-3 rounded">Stockout risk <div id="kpi-stock" class="font-bold">—</div></div>
-      </div>
-      <div class="mt-4 text-sm"><div class="font-medium">Best seller</div><div id="kpi-best" class="text-gray-600">—</div></div>
-      <div id="chartWrap" class="mt-4 hidden"><img id="chartImg" class="w-full rounded border" /></div>
-    </div>
-  </div>
-
-  <!-- Alerts / Actions -->
-  <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <div class="bg-white rounded-xl shadow p-6">
-      <h3 class="font-semibold mb-3">Alerts (with citations file:line)</h3>
-      <div id="alerts" class="space-y-2 text-sm text-gray-600">Run demo to see alerts.</div>
-    </div>
-    <div class="bg-white rounded-xl shadow p-6">
-      <h3 class="font-semibold mb-3">Actions — Do today (one-click)</h3>
-      <div id="actions" class="space-y-2 text-sm text-gray-600">—</div>
-      <div id="draft" class="mt-4 p-3 bg-indigo-50 border border-indigo-200 rounded text-sm hidden"></div>
-    </div>
-  </div>
-
-  <div class="mt-6 bg-white rounded-xl shadow p-6">
-    <h3 class="font-semibold mb-2">Evidence (audit trail)</h3>
-    <div id="evidence" class="text-xs text-gray-500">Every number cites file:line. Example: <code>[shopify_orders.csv:5] Tote Bag Handmade qty2 gmv$56</code>, <code>[inventory.csv:2] Tote Bag Handmade 2 left, sold 6/7d</code></div>
-    <div class="mt-2 text-xs text-gray-400">Pipeline: Layer1 &lt;1ms → Layer2 &lt;10ms → Layer3 &lt;100ms → Layer4 gated (100% bypass demo, $0) — see <code>/api/v1/metrics</code></div>
-  </div>
+<body>
+<header><div class="wrap row">
+<div><div class="brand"><span class="ind">Omni-One</span> Seller OS</div><div class="sub">THE product for 1–5 person shops — free, local, no fees</div></div>
+<div class="tiny">Drop Shopify/Etsy CSV + supplier photo + DM export → Daily Briefing</div>
+</div></header>
+<main class="wrap">
+<div class="notice"><b>Focused: Seller OS is THE product.</b><div class="muted">Not a generic AI platform. Revenue Ops &amp; Micro packs are <code>_labs</code>. Vision (photo→text+chart→pipeline) powers supplier invoices — 100% free, offline, mock LLM by default ($0).</div></div>
+<div class="grid2">
+<div class="card">
+<h2>1. Drop your messy seller folder</h2>
+<p class="muted">Shopify/Etsy CSV, inventory.csv, reviews.csv, instagram_dm.txt, supplier_invoice.jpg — any mess. No schema needed.</p>
+<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem">
+<button id="demoBtn" class="btn btn-p">Run Demo Seller Folder (1 click)</button>
+<button id="scenBtn" class="btn btn-g">Run 12 Practical Scenarios</button>
+<button id="photoBtn" class="btn">Upload photo (supplier invoice / product)</button>
+<input id="photoInput" type="file" accept="image/*" class="hidden">
+</div>
+<div id="photoPreview" class="hidden muted" style="margin-bottom:1rem"></div>
+<div id="scenarios" class="tiny">12 scenarios: STOCKOUT, DEAD_STOCK, UNANSWERED_COMPLAINT, REFUND_RISK, REVIEW_CRISIS, DM_BACKLOG, FEE_CREEP, SHIPPING_LOSS, PROFIT_DIP, COGS_SPIKE, PRICE_MISMATCH, LISTING_GAP — loading…</div>
+<div class="tiny">Or API: <code>POST /api/v1/seller/briefing {"demo":true}</code> · <code>POST /api/v1/seller/scenarios/run</code> · <code>POST /api/v1/seller/photo</code> (free)</div>
+<div id="status"></div>
+</div>
+<div class="card">
+<h2>2. Daily Briefing — Outstanding</h2>
+<div class="kpis">
+<div class="kpi">GMV <b id="kpi-gmv">—</b></div>
+<div class="kpi">True Profit <b id="kpi-profit">—</b></div>
+<div class="kpi">Margin <b id="kpi-margin">—</b></div>
+<div class="kpi">Stockout risk <b id="kpi-stock">—</b></div>
+</div>
+<div style="margin-top:1rem"><div><b>Best seller</b></div><div id="kpi-best" class="muted">—</div></div>
+<div id="chartWrap" class="hidden" style="margin-top:1rem"><img id="chartImg" class="chart" alt="units sold chart"></div>
+</div>
+</div>
+<div class="grid2" style="margin-top:1.5rem">
+<div class="card"><h3>Alerts (with citations file:line)</h3><div id="alerts" class="muted">Run demo to see alerts.</div></div>
+<div class="card"><h3>Actions — Do today (one-click)</h3><div id="actions" class="muted">—</div><div id="draft" class="draft hidden"></div></div>
+</div>
+<div class="card" style="margin-top:1.5rem"><h3>Evidence (audit trail)</h3>
+<div id="evidence" class="tiny">Every number cites file:line. Example: <code>[shopify_orders.csv:5] Tote Bag Handmade qty2 gmv$56</code>, <code>[inventory.csv:2] Tote Bag Handmade 2 left, sold 6/7d</code></div>
+<div class="tiny" style="margin-top:.5rem">Pipeline: Layer1 &lt;1ms → Layer2 &lt;10ms → Layer3 &lt;100ms → Layer4 gated (100% bypass demo, $0) — see <code>/api/v1/metrics</code></div>
+</div>
 </main>
 <script>
-const API = "http://127.0.0.1:5003";
+// Offline-first: same-origin API (no hardcoded localhost). Override via ?api= or localStorage.
+const API = (new URLSearchParams(location.search).get("api")) || localStorage.getItem("omni_api") || location.origin;
 const demoBtn = document.getElementById('demoBtn');
 const photoBtn = document.getElementById('photoBtn');
 const photoInput = document.getElementById('photoInput');
 const statusEl = document.getElementById('status');
 async function runSellerDemo(){
   statusEl.textContent = "Running Seller OS demo (free, local)…";
+  try{
   const r = await fetch(API+"/api/v1/seller/briefing", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({demo:true, seed:42})});
-  if(!r.ok){ statusEl.textContent = "Failed — is server running on :5003?"; return; }
+  if(!r.ok){ statusEl.textContent = "Failed ("+r.status+") — is server running? API="+API; return; }
   const j = await r.json();
   render(j);
-  statusEl.textContent = `Ingested ${j.ingest_report?.events||j.meta.events} events — free $0`;
+  statusEl.textContent = "Ingested "+(j.ingest_report?.events||j.meta.events)+" events — free $0 (API "+API+")";
   loadScenarios();
+  }catch(e){ statusEl.textContent = "Failed — is server running at "+API+"? ("+e+")"; }
 }
 async function loadScenarios(){
   try{
     const r = await fetch(API+"/api/v1/seller/scenarios");
     if(!r.ok) return;
     const j = await r.json();
-    document.getElementById('scenarios').innerHTML = `<span class="font-medium">${j.total} practical scenarios:</span> ` + j.scenarios.map(s=>`<span class="inline-block bg-gray-100 rounded px-2 py-0.5 mr-1 mb-1">${s.id}</span>`).join("");
+    document.getElementById('scenarios').innerHTML = "<b>"+j.total+" practical scenarios:</b> " + j.scenarios.map(s=>'<span class="pill">'+s.id+'</span>').join("");
   }catch(e){}
 }
 async function runScenarios(){
   statusEl.textContent = "Running 12 scenarios → Workshop queue (free)…";
+  try{
   const r = await fetch(API+"/api/v1/seller/scenarios/run", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({demo:true})});
   if(!r.ok){ statusEl.textContent = "Scenarios failed — is server running?"; return; }
   const j = await r.json();
-  document.getElementById('alerts').innerHTML = j.decisions.slice(0,8).map(d=>`<div class="p-2 bg-red-50 border rounded"><div class="font-medium">[${d.severity}] ${d.scenario}: ${d.title}</div><div class="text-xs text-gray-500">${(d.evidence[0]||"").slice(0,80)} · id ${d.id}</div></div>`).join("");
-  document.getElementById('actions').innerHTML = `<div>Workshop: ${j.workshop.total} grounded decisions (stable IDs, no phantoms)</div><div>Governance: ${j.governance.total} events verified=${j.governance.verified}</div>`;
-  statusEl.textContent = `Scenarios ${j.total} total (${Object.entries(j.by_scenario).filter(([k,v])=>v>0).map(([k,v])=>k+":"+v).join(", ")}) — free $0`;
+  document.getElementById('alerts').innerHTML = j.decisions.slice(0,8).map(d=>'<div class="alert high"><b>['+d.severity+'] '+d.scenario+': '+d.title+'</b><div class="tiny">'+((d.evidence[0]||"").slice(0,80))+' · id '+d.id+'</div></div>').join("");
+  document.getElementById('actions').innerHTML = "<div>Workshop: "+j.workshop.total+" grounded decisions (stable IDs, no phantoms)</div><div>Governance: "+j.governance.total+" events verified="+j.governance.verified+"</div>";
+  statusEl.textContent = "Scenarios "+j.total+" total ("+Object.entries(j.by_scenario).filter(([k,v])=>v>0).map(([k,v])=>k+":"+v).join(", ")+") — free $0";
+  }catch(e){ statusEl.textContent = "Scenarios failed: "+e; }
 }
 loadScenarios();
 async function runPhoto(file){
   statusEl.textContent = "OCR + chart + pipeline (free Tesseract)…";
+  try{
   const fd = new FormData(); fd.append("file", file); fd.append("lang","eng"); fd.append("generate_chart","true");
   const r = await fetch(API+"/api/v1/seller/photo", {method:"POST", body: fd});
-  if(!r.ok){ statusEl.textContent = "Photo upload failed"; return; }
+  if(!r.ok){ const t=await r.text(); statusEl.textContent = "Photo upload failed ("+r.status+"): "+t.slice(0,200); return; }
   const j = await r.json();
   document.getElementById('photoPreview').classList.remove('hidden');
   document.getElementById('photoPreview').textContent = "OCR: " + (j.ocr.text||"").slice(0,120) + "…";
@@ -115,7 +125,8 @@ async function runPhoto(file){
     document.getElementById('chartWrap').classList.remove('hidden');
     document.getElementById('chartImg').src = "data:image/png;base64,"+j.chart.generated_chart_base64;
   }
-  statusEl.textContent = `Photo analyzed free — OCR ${j.ocr.meta?.chars||0} chars, chart ${j.chart.data? j.chart.data.labels.length+" items":"none"}`;
+  statusEl.textContent = "Photo analyzed free — OCR "+(j.ocr.meta?.chars||0)+" chars, chart "+(j.chart.data? j.chart.data.labels.length+" items":"none");
+  }catch(e){ statusEl.textContent = "Photo failed: "+e; }
 }
 function render(j){
   const k=j.kpis;
@@ -128,11 +139,11 @@ function render(j){
     document.getElementById('chartWrap').classList.remove('hidden');
     document.getElementById('chartImg').src = "data:image/png;base64,"+j.chart.base64;
   }
-  document.getElementById('alerts').innerHTML = j.alerts.map(a=>`<div class="p-2 bg-${a.severity==='high'?'red':'yellow'}-50 border rounded"><div class="font-medium">[${a.severity}] ${a.message}</div><div class="text-xs text-gray-500">${(a.evidence[0]||"").slice(0,80)}</div></div>`).join("");
-  document.getElementById('actions').innerHTML = j.actions.map((a,i)=>`<div>${i+1}. ${a}</div>`).join("");
+  document.getElementById('alerts').innerHTML = j.alerts.map(a=>'<div class="alert '+(a.severity==='high'?'high':'')+'"><b>['+a.severity+'] '+a.message+'</b><div class="tiny">'+((a.evidence[0]||"").slice(0,80))+'</div></div>').join("");
+  document.getElementById('actions').innerHTML = j.actions.map((a,i)=>'<div>'+(i+1)+'. '+a+'</div>').join("");
   if(j.draft_reply && j.draft_reply.text){
     document.getElementById('draft').classList.remove('hidden');
-    document.getElementById('draft').innerHTML = `<div class="font-medium">Draft win-back (cite ${j.draft_reply.citation})</div><div class="mt-1">"${j.draft_reply.text.slice(0,160)}"</div>`;
+    document.getElementById('draft').innerHTML = '<b>Draft win-back (cite '+j.draft_reply.citation+')</b><div style="margin-top:.25rem">"'+j.draft_reply.text.slice(0,160)+'"</div>';
   }
   document.getElementById('evidence').textContent = "Sample: " + (j.evidence_sample[0]?.citation || j.alerts[0]?.evidence[0] || "file:line citations preserved");
 }

@@ -18,6 +18,7 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 import hashlib
 import json
+import threading
 
 from .ontology import Ontology
 
@@ -63,14 +64,16 @@ class WorkshopApp:
     def __init__(self, ontology: Ontology, name: str = "workshop"):
         self.ontology = ontology
         self.name = name
+        self._lock = threading.RLock()
         self.decisions: Dict[str, Decision] = {}
         self._seq = 0
         self.created_at = datetime.now().isoformat()
 
     # --- builders (methodology: queue FROM ontology, not raw) ---
     def _next_id(self, prefix: str = "D") -> str:
-        self._seq += 1
-        return f"{prefix}-{self._seq:04d}"
+        with self._lock:
+            self._seq += 1
+            return f"{prefix}-{self._seq:04d}"
 
     def add_decision(self, title: str, object_ref: str, severity: str = "medium",
                      evidence: Optional[List[str]] = None,
@@ -84,17 +87,22 @@ class WorkshopApp:
         if not self.ontology.get(t, pk):
             raise ValueError(f"Decision object {object_ref} not in ontology (grounding failed)")
         # Idempotent upsert: stable_id reuses existing decision (tech sound)
-        if stable_id and stable_id in self.decisions:
-            existing = self.decisions[stable_id]
-            # Refresh evidence/title if changed (keep status/history)
-            existing.title = title
-            existing.evidence = evidence or existing.evidence
-            existing.proposed_action = proposed_action or existing.proposed_action
-            existing.history.append({"op": "upserted", "at": datetime.now().isoformat(), "source": source})
-            return existing
+        with self._lock:
+            if stable_id and stable_id in self.decisions:
+                existing = self.decisions[stable_id]
+                # Refresh evidence/title if changed (keep status/history)
+                existing.title = title
+                existing.evidence = evidence or existing.evidence
+                existing.proposed_action = proposed_action or existing.proposed_action
+                existing.history.append({"op": "upserted", "at": datetime.now().isoformat(), "source": source})
+                return existing
         did = stable_id or self._next_id()
         d = Decision(did, title, object_ref, severity, "open", evidence, proposed_action, None, source)
-        self.decisions[d.id] = d
+        with self._lock:
+            # double-check after id generation (race-safe)
+            if did in self.decisions:
+                return self.decisions[did]
+            self.decisions[d.id] = d
         return d
 
     def build_from_search(self, object_type: str, where: Dict[str, Any],
@@ -257,7 +265,48 @@ class WorkshopApp:
         }
 
     def to_dict(self) -> Dict[str, Any]:
-        return {"app": self.name, "decisions": {k: v.to_dict() for k, v in self.decisions.items()}}
+        with self._lock:
+            return {"app": self.name, "decisions": {k: v.to_dict() for k, v in self.decisions.items()}}
+
+    def persist_to_store(self, store=None) -> str:
+        try:
+            if store is None:
+                try:
+                    from ..infra.store import get_store as _gs
+                except Exception:
+                    from omni_one.infra.store import get_store as _gs  # type: ignore
+                store = _gs()
+            store.workshop_save({k: v.to_dict() for k, v in self.decisions.items()})
+            return getattr(store, "backend", "unknown")
+        except Exception as e:
+            raise RuntimeError(f"workshop persist failed: {e}")
+
+    def load_from_store(self, store=None) -> int:
+        try:
+            if store is None:
+                try:
+                    from ..infra.store import get_store as _gs
+                except Exception:
+                    from omni_one.infra.store import get_store as _gs  # type: ignore
+                store = _gs()
+            blob = store.workshop_load()
+        except Exception:
+            return 0
+        n = 0
+        with self._lock:
+            for did, d in blob.items():
+                try:
+                    # Only load if grounded (object exists) — skip phantoms
+                    ref = str(d.get("object_ref", ""))
+                    if ":" in ref:
+                        t, pk = ref.split(":", 1)
+                        if not self.ontology.get(t, pk):
+                            continue
+                    self.decisions[did] = Decision.from_dict(d)
+                    n += 1
+                except Exception:
+                    continue
+        return n
 
     def queue_hash(self) -> str:
         canonical = json.dumps(self.to_dict(), sort_keys=True, default=str)

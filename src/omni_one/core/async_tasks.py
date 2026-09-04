@@ -1,18 +1,43 @@
-from celery import Celery
+"""Async tasks (optional Celery). Seller OS never imports this — kept lazy so $0 path has no Redis/Celery dep."""
 import os
+
+try:
+    from celery import Celery  # type: ignore
+    CELERY_AVAILABLE = True
+except ImportError:
+    Celery = None  # type: ignore
+    CELERY_AVAILABLE = False
+
 try:
     from .rag_engine import RAGEngine  # type: ignore
     from .model_router import ModelRouter  # type: ignore
     from .cache import SemanticCache  # type: ignore
 except ImportError:
-    from rag_engine import RAGEngine  # type: ignore
-    from model_router import ModelRouter  # type: ignore
-    from cache import SemanticCache  # type: ignore
+    try:
+        from omni_one.core.rag_engine import RAGEngine  # type: ignore
+        from omni_one.core.model_router import ModelRouter  # type: ignore
+        from omni_one.core.cache import SemanticCache  # type: ignore
+    except ImportError:
+        RAGEngine = None  # type: ignore
+        ModelRouter = None  # type: ignore
+        SemanticCache = None  # type: ignore
 
-# Celery app
-app = Celery('omni_tasks', broker='redis://localhost:6379/0', backend='redis://localhost:6379/0')
+# Celery app (lazy: env REDIS_URL or localhost; only created if celery installed)
+if CELERY_AVAILABLE:
+    app = Celery('omni_tasks', broker=os.getenv("REDIS_URL", "redis://localhost:6379/0"), backend=os.getenv("REDIS_URL", "redis://localhost:6379/0"))  # type: ignore
+else:
+    app = None  # type: ignore
 
-@app.task
+def _task(fn):
+    """No-op decorator when Celery is missing (keeps import safe offline)."""
+    if app is not None:
+        try:
+            return app.task(fn)  # type: ignore
+        except Exception:
+            return fn
+    return fn
+
+@_task
 def synthesize_async(internal_data, external_data, user_prompt, mode):
     """Async synthesis task."""
     rag = RAGEngine()

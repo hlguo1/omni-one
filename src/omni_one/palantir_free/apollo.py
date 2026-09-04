@@ -45,11 +45,17 @@ services:
 ENV_TEMPLATE = """# Free Apollo env — no Palantir license
 ENVIRONMENT=production
 GOOGLE_API_KEY=
-# Leave empty for free mock LLM; set for live
-VALID_API_KEYS=demo-key
-REDIS_URL=redis://redis:6379
+# Leave empty for free mock LLM; set for live (SELLER_LLM=google + key)
+SELLER_LLM=mock
+SELLER_MAX_LLM_USD=0.0
+# PROD: generate random keys — python3 -c "import secrets; print(secrets.token_hex(32))"
+# demo-key is REJECTED in production by settings validator
+VALID_API_KEYS=change-me-to-random-32-chars-min
+SECRET_KEY=change-me-to-random-32-chars-minimum
 # Free: use DuckDB file, no Snowflake fees
 DUCKDB_PATH=/data/omni.duckdb
+AUDIT_PATH=/data/audit.jsonl
+ALLOWED_ROOT=/data/inbox
 """
 
 def generate(out_dir: Path, with_weaviate: bool = False) -> Path:
