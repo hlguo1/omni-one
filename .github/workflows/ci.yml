@@ -1,0 +1,78 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install tesseract (free OCR)
+        run: sudo apt-get update && sudo apt-get install -y tesseract-ocr
+      - name: Install deps
+        run: |
+          pip install -r requirements-seller.txt
+          pip install -e ".[dev]"
+      - name: Lint (ruff, non-blocking on E501)
+        run: ruff check src tests scripts || true
+      - name: Byte-compile
+        run: python3 -m compileall -q src/omni_one
+      - name: Unit + integration (offline, mock LLM)
+        run: PYTHONPATH=src python3 -m pytest tests/unit tests/integration -q --cov=src/omni_one --cov-report=term-missing
+        env:
+          SELLER_LLM: mock
+          SELLER_MAX_LLM_USD: "0.0"
+      - name: Generated-client contracts (py + ts, offline)
+        run: |
+          PYTHONPATH=src python3 -m pytest sdks/gen/python/tests/ -q
+          node sdks/gen/typescript/tests/contract.mjs
+          node sdks/ts/tests/run.mjs
+          python3 sdks/gen/regen.py | tail -n 1
+      - name: Corpus + evals (80 shops + golden set)
+        run: |
+          python3 -c "import csv; rows=list(csv.DictReader(open('evals/corpus_big/manifest.csv'))); assert len(rows)==80, len(rows); print('manifest 80 OK')"
+          PYTHONPATH=src python3 evals/run.py --corpus evals/corpus --out /tmp/eval_res | tail -n 2
+      - name: CLI smoke
+        run: |
+          PYTHONPATH=src python3 -m omni_one.cli doctor
+          PYTHONPATH=src python3 -m omni_one.cli briefing --demo --json /tmp/briefing.json
+          PYTHONPATH=src python3 -m omni_one.cli scenarios --demo | head -n 20
+          PYTHONPATH=src python3 -m omni_one.cli close --demo --out /tmp/close_today
+          ls /tmp/close_today && grep -E "ORDER TODAY|at risk" /tmp/close_today/replies.txt | head -n 5
+      - name: Seller demo golden KPIs
+        run: PYTHONPATH=src python3 scripts/demo_seller_os.py --folder /tmp/seller_demo | grep -E "GMV|True Profit|Stockout"
+      - name: Core methodology E2E
+        run: PYTHONPATH=src python3 scripts/e2e_core_methodology.py --out /tmp/e2e_method
+      - name: Golden KPI assertion (GMV 274.00 / profit 169.09)
+        run: |
+          PYTHONPATH=src python3 -c "
+          import json
+          d = json.load(open('/tmp/briefing.json'))
+          k = d['kpis']
+          assert abs(k['gmv'] - 274.00) < 0.01, k
+          assert abs(k['true_profit'] - 169.09) < 0.05, k
+          print('golden KPIs OK:', k['gmv'], k['true_profit'])
+          "
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t omni-one:ci .
+      - name: Compose up + health
+        run: |
+          docker compose up -d
+          sleep 8
+          curl -sf http://localhost:5003/health
+          curl -sf http://localhost:5003/readiness | head -c 500
+          docker compose down

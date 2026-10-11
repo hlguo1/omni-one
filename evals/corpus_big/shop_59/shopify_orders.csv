@@ -1,0 +1,5 @@
+Order Name,Created at,Lineitem name,Lineitem quantity,Lineitem price,Total,Fees,Shipping,Customer
+#5900,2024-09-12,Silver Ring,3,55.50,166.50,5.13,5.00,Tara
+#5901,2024-09-10,Embroidered Cap,1,24.50,24.50,1.01,0.00,Charlie
+#5902,2024-09-11,Silver Ring,2,56.00,112.00,3.55,3.00,Frank
+#5903,2024-09-12,Embroidered Cap,3,25.00,75.00,2.48,3.50,Ivy

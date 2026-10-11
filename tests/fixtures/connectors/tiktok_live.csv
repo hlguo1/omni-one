@@ -1,0 +1,3 @@
+Order ID,Order Created Time,Product Name,Quantity,Order Amount,Platform Fee,Order Status,Buyer
+TT-LIVE1,2024-09-10 20:05:00,LIVE Exclusive Tote,2,59.80,3.29,Completed,Alice
+TT-LIVE2,2024-09-10 20:12:00,LIVE Flash Mug,1,19.90,1.30,Cancelled,Bob

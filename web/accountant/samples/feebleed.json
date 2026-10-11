@@ -1,0 +1,120 @@
+{
+  "date": "2024-09-12",
+  "shop": "Demo Shop",
+  "headline": "Profit $129.04 (52.7%) \u00b7 $0.00 at risk in 0 angry messages \u00b7 0 reorder(s) TODAY \u00b7 2 leak(s) to plug",
+  "kpis": {
+    "gmv": 245.0,
+    "fees": 30.46,
+    "shipping": 12.0,
+    "net": 202.54,
+    "cogs": 73.5,
+    "true_profit": 129.04,
+    "margin_pct": 52.7,
+    "orders": 3,
+    "aov": 81.67,
+    "best_seller": {
+      "product": "Designer Tote",
+      "qty": 1,
+      "gmv": 120.0
+    },
+    "money_at_risk_usd": 0.0
+  },
+  "do_today": [
+    "Reply to 0 message(s) \u2014 $0.00 at risk (drafts below, cite file:line)",
+    "Stock healthy \u2014 no reorder",
+    "Plug leak: fee_creep \u2014 Fees 12.4% of GMV \u2014 compare Shopify 2.9%+30c vs Etsy 6.5%+$0.20 vs Amazon 15%; shift volum"
+  ],
+  "reorder_sheet": [],
+  "dead_stock_note": [],
+  "reply_queue": [],
+  "money_leaks": [
+    {
+      "leak": "fee_creep",
+      "amount_usd": 30.46,
+      "note": "Fees 12.4% of GMV \u2014 compare Shopify 2.9%+30c vs Etsy 6.5%+$0.20 vs Amazon 15%; shift volume or raise price ~$10.15/order",
+      "evidence": "[orders] fees $30.46 / GMV $245.00"
+    },
+    {
+      "leak": "shipping_loss",
+      "amount_usd": null,
+      "note": "Shipping loss: Bulky Vase ship $12.00 on $40.00 GMV",
+      "evidence": "[shopify_duties.csv:2] Bulky Vase qty1 gmv$40.0 fees$1.46 net$26.54"
+    }
+  ],
+  "listing_fixes": [
+    {
+      "fix": "WORST_SELLER",
+      "title": " worst seller Bulky Vase x1 \u2014 clearance/bundle it",
+      "evidence": "[orders] worst seller"
+    }
+  ],
+  "po_draft": "Stock healthy \u2014 no PO needed today.",
+  "citations": "every number cites [file:line]; audit via /seller/operations",
+  "free": true,
+  "offline": true,
+  "archetype": "feebleed",
+  "generated_by": {
+    "code": "omni_one.packs.seller_close.build_daily_close",
+    "csv_code": "omni_one.packs.seller_close.close_to_csv",
+    "date": "2024-09-12",
+    "shop": "Demo Shop",
+    "repo": "omni-one",
+    "wave": "WAVE3-O"
+  },
+  "how_to_read": [
+    "kpis: GMV, fees, shipping, net, COGS, true_profit, margin_pct, AOV.",
+    "headline: one line for the owner (profit, at-risk, reorders, leaks).",
+    "reorder_sheet: velocity vs on-hand rows with supplier + urgency.",
+    "reply_queue: copy-paste drafts, each with a file:line citation.",
+    "po_draft: supplier email text for the top reorder row.",
+    "money_leaks: fee_creep / shipping_loss / margin_dip with amounts.",
+    "citations: every number traces to [file:line]; audit anytime."
+  ],
+  "inputs": {
+    "n_events": 7,
+    "by_source": {
+      "orders": 3,
+      "inventory": 3,
+      "dm": 1
+    },
+    "orders": [
+      {
+        "product": "Designer Tote",
+        "qty": 1,
+        "gmv": 120.0,
+        "fees": 17.0,
+        "signal": "order_gmv",
+        "citation": "[ebay_authenticity.csv:2] Designer Tote qty1 gmv$120.0 fees$17.0 net$103.00"
+      },
+      {
+        "product": "Sneakers",
+        "qty": 1,
+        "gmv": 85.0,
+        "fees": 12.0,
+        "signal": "order_gmv",
+        "citation": "[ebay_authenticity.csv:3] Sneakers qty1 gmv$85.0 fees$12.0 net$73.00"
+      },
+      {
+        "product": "Bulky Vase",
+        "qty": 1,
+        "gmv": 40.0,
+        "fees": 1.46,
+        "signal": "order_gmv",
+        "citation": "[shopify_duties.csv:2] Bulky Vase qty1 gmv$40.0 fees$1.46 net$26.54"
+      }
+    ]
+  },
+  "expected": {
+    "true_profit": 129.04,
+    "margin_pct": 52.7,
+    "money_at_risk_usd": 0.0,
+    "reply_queue_len": 0,
+    "reorder_today": 0,
+    "leaks": 2
+  },
+  "sample_notes": [
+    "Fees above the 12% creep line: renegotiate channel mix or raise prices.",
+    "Bulky Vase ships at 30% of GMV: shipping-loss leak with citation.",
+    "No angry inbox; the problem is silent margin bleed, not refunds."
+  ]
+}

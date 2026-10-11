@@ -1,0 +1,5 @@
+Order Name,Created at,Lineitem name,Lineitem quantity,Lineitem price,Total,Fees,Shipping,Customer
+#7500,2024-09-10,Tote Bag Handmade,1,27.00,27.00,1.08,4.00,Priya
+#7501,2024-09-11,Embroidered Cap,2,25.50,51.00,1.78,4.50,Sam
+#7502,2024-09-12,Silver Ring,3,54.50,163.50,5.04,5.00,Bob
+#7503,2024-09-10,Tote Bag Handmade,1,29.00,29.00,1.14,0.00,Eve

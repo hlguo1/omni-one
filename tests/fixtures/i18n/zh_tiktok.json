@@ -1,0 +1,52 @@
+[
+  {
+    "channel": "tiktok",
+    "locale": "zh",
+    "citation": "tiktok_dm.json",
+    "raw": {
+      "messages": [
+        {
+          "sender_name": "\u5c0f\u660e",
+          "text": "\u60a8\u597d\uff0c\u6211\u7684\u8ba2\u5355\u5ef6\u8fdf\u4e86\uff0c\u6536\u5230\u65f6\u5df2\u7ecf\u635f\u574f\u3002\n\u8bf7\u5e2e\u6211\u89e3\u51b3\u8fd9\u4e2a\u95ee\u9898\uff0c\u8c22\u8c22\u3002\n\u5305\u88f9\u4e00\u76f4\u6ca1\u6709\u6536\u5230\uff0c\u6211\u8981\u9000\u6b3e\u3002",
+          "createTime": "2026-09-12 10:15"
+        }
+      ]
+    }
+  },
+  {
+    "channel": "tiktok",
+    "locale": "zh",
+    "citation": "tiktok_dm.json",
+    "raw": {
+      "data": {
+        "messages": [
+          {
+            "user": "\u674e\u5a1c",
+            "content": "\u60a8\u597d\uff0c\u53d1\u9519\u8d27\u4e86\uff0c\u6536\u5230\u7684\u5546\u54c1\u4e0d\u5bf9\u3002\n\u8d28\u91cf\u592a\u5dee\uff0c\u4e0e\u63cf\u8ff0\u4e0d\u7b26\uff0c\u975e\u5e38\u5931\u671b\u3002\n\u8bf7\u7ed9\u6211\u9000\u8d27\uff0c\u8c22\u8c22\u3002",
+            "created_at": "2026-09-13 11:02"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "channel": "tiktok",
+    "locale": "zh",
+    "citation": "tiktok_dm.json",
+    "raw": {
+      "sender": "\u738b\u5f3a",
+      "text": "\u60a8\u597d\uff0c\u7f3a\u5c11\u4e00\u4e2a\u914d\u4ef6\uff0c\u4ea7\u54c1\u65e0\u6cd5\u4f7f\u7528\u3002\n\u8fd9\u4e0d\u53ef\u63a5\u53d7\uff0c\u5feb\u9012\u592a\u6162\u4e86\u3002\n\u8bf7\u5e2e\u6211\u5904\u7406\uff0c\u6211\u8981\u9000\u6b3e\u3002",
+      "timestamp": "2026-09-14 09:40"
+    }
+  },
+  {
+    "channel": "tiktok",
+    "locale": "zh",
+    "citation": "tiktok_dm.json",
+    "raw": {
+      "nickname": "\u5c0f\u7ea2",
+      "content": "\u60a8\u597d\uff0c\u5305\u88f9\u4ece\u672a\u5230\u8fbe\uff0c\u5230\u8d27\u65f6\u574f\u4e86\u3002\n\u6211\u8981\u9000\u6b3e\uff0c\u8bf7\u5e2e\u6211\u89e3\u51b3\u8fd9\u4e2a\u95ee\u9898\u3002\n\u8c22\u8c22\u60a8\u7684\u5e2e\u52a9\u3002",
+      "createTime": "2026-09-15 16:20"
+    }
+  }
+]

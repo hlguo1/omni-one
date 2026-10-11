@@ -1,0 +1,22 @@
+{
+  "name": "omni-one dev",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+  "forwardPorts": [5003],
+  "portsAttributes": {
+    "5003": {
+      "label": "omni-one API",
+      "onAutoForward": "notify"
+    }
+  },
+  "postCreateCommand": "pip install -r requirements-seller.txt && pip install -e .",
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python", "redhat.vscode-yaml"],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.testing.pytestEnabled": true
+      }
+    }
+  },
+  "remoteUser": "vscode"
+}

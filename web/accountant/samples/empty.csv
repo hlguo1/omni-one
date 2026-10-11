@@ -1,0 +1,23 @@
+DAILY CLOSE,2024-09-12,Profit $0.00 (0%) · $0.00 at risk in 0 angry messages · 0 reorder(s) TODAY · 0 leak(s) to plug
+
+metric,value
+gmv,0
+fees,0
+shipping,0
+net,0
+cogs,0.0
+true_profit,0.0
+margin_pct,0
+orders,0
+aov,0.0
+best_seller,"{'product': '—', 'qty': 0, 'gmv': 0}"
+money_at_risk_usd,0.0
+
+do_today_n,do_today
+1,"Reply to 0 message(s) — $0.00 at risk (drafts below, cite file:line)"
+2,Stock healthy — no reorder
+3,No money leaks — push best seller
+
+product,on_hand,sold_7d,days_left,reorder_qty_14d,supplier,urgency,citation
+
+leak,amount_usd,note,evidence

@@ -1,0 +1,5 @@
+order_id,order_date,product,qty,price,fees,shipping,buyer
+2600,2024-09-10,Leather Wallet,1,47.58,3.29,0.00,Grace
+2601,2024-09-11,Soy Candle - Vanilla,2,43.92,3.05,3.00,Jack
+2602,2024-09-12,Embroidered Cap,3,91.50,6.15,3.50,Mona
+2603,2024-09-10,Leather Wallet,1,47.58,3.29,4.00,Priya

@@ -1,0 +1,78 @@
+{
+  "date": "2026-10-10",
+  "shop": "our shop",
+  "headline": "Profit $314.63 (59.3%) \u00b7 $106.12 at risk in 2 angry messages \u00b7 0 reorder(s) TODAY \u00b7 0 leak(s) to plug",
+  "kpis": {
+    "gmv": 530.58,
+    "fees": 26.28,
+    "shipping": 30.5,
+    "net": 473.8,
+    "cogs": 159.17,
+    "true_profit": 314.63,
+    "margin_pct": 59.3,
+    "orders": 10,
+    "aov": 53.06,
+    "best_seller": {
+      "product": "Embroidered Cap",
+      "qty": 9,
+      "gmv": 241.5
+    },
+    "money_at_risk_usd": 106.12
+  },
+  "do_today": [
+    "Reply to 2 message(s) \u2014 $106.12 at risk (drafts below, cite file:line)",
+    "Stock healthy \u2014 no reorder",
+    "No money leaks \u2014 push best seller"
+  ],
+  "reorder_sheet": [],
+  "dead_stock_note": [
+    {
+      "title": "Dead stock: Silver Ring \u2014 23 units, zero sales 7d \u2192 bundle/clearance",
+      "evidence": "[inventory.csv:5] Silver Ring on_hand=23"
+    },
+    {
+      "title": "Dead stock: Tote Bag Handmade \u2014 10 units, zero sales 7d \u2192 bundle/clearance",
+      "evidence": "[inventory.csv:6] Tote Bag Handmade on_hand=10"
+    }
+  ],
+  "reply_queue": [
+    {
+      "channel": "dm",
+      "customer": "Mona",
+      "summary": "Mona: Hi! My Leather Wallet hasn't arrived yet, ordered 5 days ago. Worried.",
+      "draft": "Hi Mona! I'm really sorry about your late delivery \u2014 I just pulled your order ([tiktok_dm.json:1] Mona: Hi! My Leather Wallet hasn't arrived yet, ordered ) and I'm checking tracking/supplier right now. I'll update you within 2 hours with a fix (reship/refund \u2014 your choice). Thank you for your patience with our shop!",
+      "citation": "[tiktok_dm.json:1] Mona: Hi! My Leather Wallet hasn't arrived yet, ordered ",
+      "priority": "P0-reply-in-2h"
+    },
+    {
+      "channel": "dm",
+      "customer": "Quinn",
+      "summary": "Quinn: Where is my order? No tracking number received for Embroidered Cap.",
+      "draft": "Hi Quinn! I'm really sorry about your missing tracking \u2014 I just pulled your order ([tiktok_dm.json:3] Quinn: Where is my order? No tracking number received for) and I'm checking tracking/supplier right now. I'll update you within 2 hours with a fix (reship/refund \u2014 your choice). Thank you for your patience with our shop!",
+      "citation": "[tiktok_dm.json:3] Quinn: Where is my order? No tracking number received for",
+      "priority": "P0-reply-in-2h"
+    }
+  ],
+  "money_leaks": [],
+  "listing_fixes": [
+    {
+      "fix": "PRICE_MISMATCH",
+      "title": "Price mismatch: Leather Wallet {'etsy': 47.58, 'shopify': 39.0} (22% diff) \u2014 align to avoid complaints",
+      "evidence": "[orders] Leather Wallet {'etsy': 47.58, 'shopify': 39.0}"
+    },
+    {
+      "fix": "PRICE_MISMATCH",
+      "title": "Price mismatch: Soy Candle - Vanilla {'etsy': 21.96, 'shopify': 18.0} (22% diff) \u2014 align to avoid complaints",
+      "evidence": "[orders] Soy Candle - Vanilla {'etsy': 21.96, 'shopify': 18.0}"
+    },
+    {
+      "fix": "PRICE_MISMATCH",
+      "title": "Price mismatch: Embroidered Cap {'etsy': 30.5, 'shopify': 25.0} (22% diff) \u2014 align to avoid complaints",
+      "evidence": "[orders] Embroidered Cap {'etsy': 30.5, 'shopify': 25.0}"
+    }
+  ],
+  "po_draft": "Stock healthy \u2014 no PO needed today.",
+  "citations": "every number cites [file:line]; audit via /seller/operations",
+  "free": true,
+  "offline": true
+}

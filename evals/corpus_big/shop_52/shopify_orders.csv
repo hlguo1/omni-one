@@ -1,0 +1,6 @@
+Order Name,Created at,Lineitem name,Lineitem quantity,Lineitem price,Total,Fees,Shipping,Customer
+#5200,2024-09-11,Tote Bag Handmade,2,29.00,58.00,1.98,4.50,Mona
+#5201,2024-09-12,Tote Bag Handmade,3,28.00,84.00,2.74,5.00,Priya
+#5202,2024-09-10,Tote Bag Handmade,1,27.00,27.00,1.08,0.00,Sam
+#5203,2024-09-11,Ceramic Mug,2,22.50,45.00,1.61,3.00,Bob
+#5204,2024-09-12,Tote Bag Handmade,3,27.50,82.50,2.69,3.50,Eve

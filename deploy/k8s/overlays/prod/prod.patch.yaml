@@ -1,0 +1,98 @@
+# prod overlay patch — 3 replicas, PDB minAvailable 2, prod ingress + TLS,
+# hardened resources requests/limits and pod anti-affinity.
+# Applied by deploy/k8s/overlays/prod/kustomization.yaml via patchesStrategicMerge.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: omni-one
+  namespace: omni-one
+spec:
+  replicas: 3
+  template:
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/name
+                      operator: In
+                      values:
+                        - omni-one
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: omni-one
+          env:
+            - name: LOG_LEVEL
+              value: "warning"
+            - name: ENVIRONMENT
+              value: "production"
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: omni-one-config
+  namespace: omni-one
+data:
+  LOG_LEVEL: "warning"
+  ENVIRONMENT: "production"
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: omni-one
+  namespace: omni-one
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+    - hosts:
+        - omni-one.example.com
+      secretName: omni-one-tls
+  rules:
+    - host: omni-one.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: omni-one
+                port:
+                  number: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: omni-one
+  namespace: omni-one
+spec:
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: omni-one
+  namespace: omni-one
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: omni-one

@@ -1,0 +1,46 @@
+[
+  {
+    "channel": "amazon",
+    "locale": "de",
+    "citation": "amazon_messages.csv",
+    "raw": {
+      "buyer-name": "Lena",
+      "message": "Hallo, meine Bestellung ist versp\u00e4tet und kaputt angekommen.\nK\u00f6nnen Sie mir bei diesem Problem helfen? Danke.\nBitte um Hilfe mit der Lieferung vom Gesch\u00e4ft.",
+      "date": "2026-09-12 10:15"
+    }
+  },
+  {
+    "channel": "amazon",
+    "locale": "de",
+    "citation": "amazon_messages.csv",
+    "raw": {
+      "Buyer Name": "Jonas",
+      "Message": "Hallo, ich habe es immer noch nicht erhalten.\nIch m\u00f6chte eine Erstattung oder R\u00fccksendung, bitte.\nDanke f\u00fcr Ihre Hilfe mit der Sendung.",
+      "Message Date": "2026-09-13 11:02"
+    }
+  },
+  {
+    "channel": "amazon",
+    "locale": "de",
+    "citation": "amazon_messages.csv",
+    "raw": {
+      "buyerName": "Mia",
+      "buyer-message": "Hallo, ich habe den falschen Artikel in schlechter Qualit\u00e4t erhalten.\nDas ist inakzeptabel, ich bin sehr entt\u00e4uscht.\nWo bleibt meine richtige Bestellung? Entschuldigung.",
+      "timestamp": "2026-09-14 09:40"
+    }
+  },
+  {
+    "channel": "amazon",
+    "locale": "de",
+    "citation": "amazon_messages.csv",
+    "raw": {
+      "messages": [
+        {
+          "buyer-name": "Felix",
+          "message": "Hallo, das Paket ist nie angekommen und das Produkt funktioniert nicht.\nBitte helfen Sie mir, danke.\nBesch\u00e4digt angekommen, Reklamation und Beschwerde.",
+          "date": "2026-09-15 16:20"
+        }
+      ]
+    }
+  }
+]

@@ -1,0 +1,33 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: omni-one-alerts
+  namespace: omni-one
+  labels:
+    app.kubernetes.io/name: omni-one
+    prometheus: kube-prometheus
+spec:
+  groups:
+    - name: omni-one-seller-os
+      interval: 60s
+      rules:
+        - alert: ClosesMissing24h
+          expr: increase(omni_one_requests{op="closes_total"}[24h]) == 0
+          for: 15m
+          labels:
+            severity: warning
+            owner: seller-ops
+          annotations:
+            summary: "No daily close in the last 24h"
+            description: "closes_total did not increase for 24h — the 7am cron (deploy/cron/7am-close.cron) may be broken. Check manifest.csv and cron logs."
+            runbook: "kubectl -n omni-one logs deploy/omni-one | tail; cat data/closes/manifest.csv | tail"
+        - alert: UpDown
+          expr: omni_one_up == 0
+          for: 2m
+          labels:
+            severity: critical
+            owner: seller-ops
+          annotations:
+            summary: "Omni-One process down"
+            description: "omni_one_up == 0 for 2m. Check liveness /health, pod restarts, and the HPA/PDB state."
+            runbook: "kubectl -n omni-one get pods; kubectl -n omni-one describe deploy/omni-one"

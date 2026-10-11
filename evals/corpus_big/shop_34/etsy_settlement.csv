@@ -1,0 +1,9 @@
+order_id,order_date,product,qty,price,fees,shipping,buyer
+5400,2024-09-11,Embroidered Cap,2,51.00,10.63,4.50,Omar
+5401,2024-09-12,Silver Ring,3,163.50,31.45,5.00,Rosa
+5402,2024-09-10,Leather Wallet,1,40.00,8.60,0.00,Alice
+5403,2024-09-11,Soy Candle - Vanilla,2,36.00,7.86,3.00,David
+5404,2024-09-12,Embroidered Cap,3,72.00,14.52,3.50,Grace
+5405,2024-09-10,Silver Ring,1,55.50,11.47,4.00,Jack
+5406,2024-09-11,Leather Wallet,2,77.00,15.44,4.50,Mona
+5407,2024-09-12,Soy Candle - Vanilla,3,57.00,11.74,5.00,Priya

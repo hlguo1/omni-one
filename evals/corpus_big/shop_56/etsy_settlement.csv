@@ -1,0 +1,6 @@
+order_id,order_date,product,qty,price,fees,shipping,buyer
+5600,2024-09-12,Tote Bag Handmade,3,102.48,6.86,3.50,Quinn
+5601,2024-09-10,Ceramic Mug,1,25.62,1.87,4.00,Tara
+5602,2024-09-11,Print - Botanical,2,37.82,2.66,4.50,Charlie
+5603,2024-09-12,Knitted Scarf,3,162.87,10.79,5.00,Frank
+5604,2024-09-10,Tote Bag Handmade,1,35.38,2.50,0.00,Ivy

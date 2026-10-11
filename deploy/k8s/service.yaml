@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: omni-one
+  namespace: omni-one
+  labels:
+    app.kubernetes.io/name: omni-one
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: omni-one
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP

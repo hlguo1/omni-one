@@ -1,0 +1,80 @@
+{
+  "date": "2026-10-10",
+  "shop": "our shop",
+  "headline": "Profit $209.25 (59.2%) \u00b7 $141.40 at risk in 2 angry messages \u00b7 0 reorder(s) TODAY \u00b7 1 leak(s) to plug",
+  "kpis": {
+    "gmv": 353.5,
+    "fees": 11.75,
+    "shipping": 15.5,
+    "net": 326.25,
+    "cogs": 117.0,
+    "true_profit": 209.25,
+    "margin_pct": 59.2,
+    "orders": 5,
+    "aov": 70.7,
+    "best_seller": {
+      "product": "Leather Wallet",
+      "qty": 6,
+      "gmv": 234.0
+    },
+    "money_at_risk_usd": 141.4
+  },
+  "do_today": [
+    "Reply to 2 message(s) \u2014 $141.40 at risk (drafts below, cite file:line)",
+    "Stock healthy \u2014 no reorder",
+    "Plug leak: shipping_loss \u2014 Shipping loss: Print - Botanical ship $4.00 on $15.00 GMV"
+  ],
+  "reorder_sheet": [],
+  "dead_stock_note": [
+    {
+      "title": "Dead stock: Tote Bag Handmade \u2014 38 units, zero sales 7d \u2192 bundle/clearance",
+      "evidence": "[inventory.csv:5] Tote Bag Handmade on_hand=38"
+    },
+    {
+      "title": "Dead stock: Ceramic Mug \u2014 30 units, zero sales 7d \u2192 bundle/clearance",
+      "evidence": "[inventory.csv:6] Ceramic Mug on_hand=30"
+    }
+  ],
+  "reply_queue": [
+    {
+      "channel": "dm",
+      "customer": "Karen",
+      "summary": "Karen: Hi! My Leather Wallet hasn't arrived yet, ordered 5 days ago. Worried.",
+      "draft": "Hi Karen! I'm really sorry about your late delivery \u2014 I just pulled your order ([instagram_dm.txt:1] Karen: Hi! My Leather Wallet hasn't arrived yet, ordered ) and I'm checking tracking/supplier right now. I'll update you within 2 hours with a fix (reship/refund \u2014 your choice). Thank you for your patience with our shop!",
+      "citation": "[instagram_dm.txt:1] Karen: Hi! My Leather Wallet hasn't arrived yet, ordered ",
+      "priority": "P0-reply-in-2h"
+    },
+    {
+      "channel": "dm",
+      "customer": "Omar",
+      "summary": "Omar: Package shows delivered but nothing arrived for Knitted Scarf. Missing?!",
+      "draft": "Hi Omar! I'm really sorry about this \u2014 I just pulled your order ([instagram_dm.txt:3] Omar: Package shows delivered but nothing arrived for Kn) and I'm checking tracking/supplier right now. I'll update you within 2 hours with a fix (reship/refund \u2014 your choice). Thank you for your patience with our shop!",
+      "citation": "[instagram_dm.txt:3] Omar: Package shows delivered but nothing arrived for Kn",
+      "priority": "P1-today"
+    }
+  ],
+  "money_leaks": [
+    {
+      "leak": "shipping_loss",
+      "amount_usd": null,
+      "note": "Shipping loss: Print - Botanical ship $4.00 on $15.00 GMV",
+      "evidence": "[shopify_orders.csv:6] Print - Botanical qty1 gmv$15.0 fees$0.73 net$10.27"
+    }
+  ],
+  "listing_fixes": [
+    {
+      "fix": "LISTING_GAP",
+      "title": "Listing gap: Print - Botanical sold 2 with zero reviews \u2014 request UGC",
+      "evidence": "[orders] Print - Botanical sold 2"
+    },
+    {
+      "fix": "WORST_SELLER",
+      "title": " worst seller Knitted Scarf x2 \u2014 clearance/bundle it",
+      "evidence": "[orders] worst seller"
+    }
+  ],
+  "po_draft": "Stock healthy \u2014 no PO needed today.",
+  "citations": "every number cites [file:line]; audit via /seller/operations",
+  "free": true,
+  "offline": true
+}

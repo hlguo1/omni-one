@@ -1,0 +1,12 @@
+Acme Textiles
+Invoice INV-2224 Date: 2024-09-10
+Bill to: shop_72 (stockout)
+Order ref: shop_72-2024-09
+Print - Botanical 54 x 6.15 332.10
+Knitted Scarf 30 x 18.45 553.50
+Shipping 16.50
+Total $902.10
+Payment terms: Net 30
+Thank you for your business!
+Questions? Contact Acme Textiles
+--- end of invoice ---

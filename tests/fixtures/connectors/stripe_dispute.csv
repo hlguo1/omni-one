@@ -1,0 +1,4 @@
+Charge ID,Created (UTC),Statement Descriptor,Amount,Currency,Fee,Charge Status,Type,Customer
+ch_d1,2024-09-10,ACME TOTE,120.00,USD,3.78,succeeded,charge,Alice
+ch_d2,2024-09-11,ACME MUG,45.00,USD,1.61,disputed,dispute,Bob
+ch_d3,2024-09-12,ACME SCARF,30.00,USD,1.17,succeeded,charge,Charlie

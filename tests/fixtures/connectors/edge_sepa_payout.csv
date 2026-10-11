@@ -1,0 +1,3 @@
+order_id,order_date,product,qty,price,fees,shipping,buyer
+X9001,2024-09-10,Test Product sepa_payout,1,20.00,1.50,3.00,Sam
+X9002,2024-09-11,Test Product sepa_payout,1,20.00,1.50,3.00,Jo

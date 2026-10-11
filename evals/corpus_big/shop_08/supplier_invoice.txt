@@ -1,0 +1,12 @@
+Clay Co 🪺
+Invoice INV-1136 Date: 2024-09-10
+Bill to: shop_08 (unicode)
+Order ref: shop_08-2024-09
+Bougie Noël 🎄 26 x 7.02 182.52
+Tote Bag 🎒✨ 手工包 39 x 9.80 382.20
+Shipping 19.50
+Total $584.22
+Payment terms: Net 30
+Thank you for your business!
+Questions? Contact Clay Co 🪺
+--- end of invoice ---

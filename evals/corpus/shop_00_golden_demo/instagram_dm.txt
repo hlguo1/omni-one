@@ -1,0 +1,4 @@
+Alice: Hi! My tote bag hasn't arrived yet, ordered 5 days ago. Worried.
+Shop: Hi Alice, checking tracking — will update in 1h
+Bob: Amazing mug! Will order again.
+Charlie: Where is my order? No tracking.

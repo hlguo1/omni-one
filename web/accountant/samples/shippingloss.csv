@@ -1,0 +1,26 @@
+DAILY CLOSE,2026-10-10,Profit $101.31 (43.7%) · $232.00 at risk in 4 angry messages · 0 reorder(s) TODAY · 3 leak(s) to plug
+
+metric,value
+gmv,232.0
+fees,7.93
+shipping,52.0
+net,172.07
+cogs,70.76
+true_profit,101.31
+margin_pct,43.7
+orders,4
+aov,58.0
+best_seller,"{'product': 'Embroidered Cap', 'qty': 3, 'gmv': 75.0}"
+money_at_risk_usd,232.0
+
+do_today_n,do_today
+1,"Reply to 4 message(s) — $232.00 at risk (drafts below, cite file:line)"
+2,Stock healthy — no reorder
+3,Plug leak: shipping_loss — Shipping loss: Ceramic Mug ship $13.00 on $46.00 GMV
+
+product,on_hand,sold_7d,days_left,reorder_qty_14d,supplier,urgency,citation
+
+leak,amount_usd,note,evidence
+shipping_loss,,Shipping loss: Ceramic Mug ship $13.00 on $46.00 GMV,[shopify_orders.csv:2] Ceramic Mug qty2 gmv$46.0 fees$1.63 net$31.37
+shipping_loss,,Shipping loss: Silver Ring ship $12.00 on $54.00 GMV,[shopify_orders.csv:4] Silver Ring qty1 gmv$54.0 fees$1.87 net$40.13
+shipping_loss,,Shipping loss: Tote Bag Handmade ship $13.00 on $57.00 GMV,[shopify_orders.csv:5] Tote Bag Handmade qty2 gmv$57.0 fees$1.95 net$42.05

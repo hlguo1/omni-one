@@ -1,0 +1,3 @@
+id,Created (UTC),Description,Amount,Currency,Fee,Customer Email,Status
+ch_eu1,2024-09-10,Canvas Tote,€59.90,EUR,2.04,anna@example.de,succeeded
+ch_eu2,2024-09-11,Ceramic Mug,€24.50,EUR,1.01,pierre@example.fr,succeeded

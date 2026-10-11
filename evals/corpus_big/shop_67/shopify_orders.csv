@@ -1,0 +1,9 @@
+Order Name,Created at,Lineitem name,Lineitem quantity,Lineitem price,Total,Fees,Shipping,Customer
+#6700,2024-09-11,Embroidered Cap,2,26.00,52.00,1.81,13.00,Hank
+#6701,2024-09-12,Silver Ring,3,55.00,165.00,5.08,14.00,Karen
+#6702,2024-09-10,Tote Bag Handmade,1,27.00,27.00,1.08,12.00,Nina
+#6703,2024-09-11,Embroidered Cap,2,25.50,51.00,1.78,13.00,Quinn
+#6704,2024-09-12,Silver Ring,3,54.50,163.50,5.04,14.00,Tara
+#6705,2024-09-10,Tote Bag Handmade,1,29.00,29.00,1.14,12.00,Charlie
+#6706,2024-09-11,Embroidered Cap,2,25.00,50.00,1.75,13.00,Frank
+#6707,2024-09-12,Silver Ring,3,54.00,162.00,5.00,14.00,Ivy

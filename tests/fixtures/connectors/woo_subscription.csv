@@ -1,0 +1,4 @@
+Order ID,Order Date,Product,Quantity,Order Total,Fee Total,Billing Email,Order Status,Payment Method
+W-SUB1,2024-09-01,Mug Club Monthly,1,25.00,1.03,alice@example.com,completed,Stripe
+W-SUB2,2024-09-10,Mug Club Monthly,1,25.00,1.03,bob@example.com,failed,Stripe
+W-SUB3,2024-09-10,Tote Club Quarterly,1,60.00,2.04,carol@example.com,completed,Stripe

@@ -1,0 +1,26 @@
+[
+  {
+    "channel": "whatsapp",
+    "locale": "en",
+    "citation": "whatsapp.txt",
+    "raw": "[12/09 10:15] Mia: Hello, my order arrived late and broken.\nCan you help me with this problem? Thanks.\nPlease help with shipping from the shop."
+  },
+  {
+    "channel": "whatsapp",
+    "locale": "en",
+    "citation": "whatsapp.txt",
+    "raw": "[13/09 11:02] James: Hello, I still have not received it.\nI want a refund or a return, please.\nThanks for your help with my order."
+  },
+  {
+    "channel": "whatsapp",
+    "locale": "en",
+    "citation": "whatsapp.txt",
+    "raw": "14/09/2026 09:40 - Sofia: Hello, I received the wrong item of poor quality.\nThis is unacceptable, I am very disappointed.\nWhere is my correct order from the store?"
+  },
+  {
+    "channel": "whatsapp",
+    "locale": "en",
+    "citation": "whatsapp.txt",
+    "raw": "[15/09/2026, 16:20:05] Liam: Hello, the package never arrived and the product does not work.\nPlease help me, thanks.\nArrived late and damaged, sorry."
+  }
+]

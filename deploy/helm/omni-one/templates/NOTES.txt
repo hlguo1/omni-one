@@ -1,0 +1,14 @@
+omni-one {{ .Chart.Version }} is live in {{ .Release.Namespace }}.
+
+  # health + metrics
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "omni-one.fullname" . }} 5003:{{ .Values.service.port }}
+  curl localhost:5003/health
+  curl localhost:5003/metrics | head -20
+
+  # close demo (5-min morning ritual, $0, no cluster data touched)
+  curl -s -X POST localhost:5003/api/v1/seller/close \
+    -H 'Content-Type: application/json' \
+    -d '{"demo": true, "shop": "demo shop"}' | head -c 600; echo
+
+  # dashboards: import deploy/grafana/dashboard.json into Grafana,
+  # alerts: kubectl apply -f deploy/grafana/prometheus-rules.yaml

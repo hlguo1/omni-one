@@ -1,0 +1,11 @@
+Stitch Supply
+Invoice INV-2003 Date: 2024-09-10
+Bill to: shop_59 (empty-ish)
+Order ref: shop_59-2024-09
+Silver Ring 49 x 20.90 1024.10
+Shipping 16.50
+Total $1040.60
+Payment terms: Net 30
+Thank you for your business!
+Questions? Contact Stitch Supply
+--- end of invoice ---

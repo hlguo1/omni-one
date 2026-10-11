@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: omni-one
+commonLabels:
+  app.kubernetes.io/managed-by: kustomize
+  app.kubernetes.io/part-of: omni-one
+  environment: dev
+# Base is the existing deploy/k8s/*.yaml files, referenced explicitly
+# (there is no deploy/k8s/base/ directory in this repo).
+# NOTE: dev intentionally omits ../../hpa.yaml (single replica, no autoscaling).
+resources:
+  - ../../namespace.yaml
+  - ../../configmap.yaml
+  - ../../deployment.yaml
+  - ../../service.yaml
+  - ../../ingress.yaml
+  - ../../networkpolicy.yaml
+patchesStrategicMerge:
+  - dev.patch.yaml
+images:
+  - name: omni-one
+    newName: omni-one
+    newTag: dev
+configMapGenerator: []

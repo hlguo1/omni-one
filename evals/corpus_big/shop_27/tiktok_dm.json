@@ -1,0 +1,24 @@
+{
+ "messages": [
+  {
+   "from": "Omar",
+   "text": "Hi! My Embroidered Cap hasn't arrived yet, ordered 5 days ago. Worried."
+  },
+  {
+   "from": "Quinn",
+   "text": "Amazing Silver Ring! Will order again. Love it!"
+  },
+  {
+   "from": "Sam",
+   "text": "Do you have the Tote Bag Handmade in blue? Quick question."
+  },
+  {
+   "from": "Shop",
+   "text": "Hi Alice, thanks for asking about Embroidered Cap - replying now!"
+  },
+  {
+   "from": "Charlie",
+   "text": "Package shows delivered but nothing arrived for Silver Ring. Missing?!"
+  }
+ ]
+}

@@ -1,0 +1,63 @@
+# syntax=docker/dockerfile:1
+# Omni-One production image — multi-stage, non-root, tesseract OCR included.
+# Build:  docker build -f deploy/docker/Dockerfile.prod -t omni-one:1.1.0 .
+# Run:    docker run -p 5003:5003 -v omni-data:/app/data -e PORT=5003 omni-one:1.1.0
+
+# ---------- builder: wheels + deps (no runtime bloat leaks down) ----------
+FROM python:3.11-slim AS builder
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
+WORKDIR /build
+COPY requirements.txt ./
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends build-essential \
+ && rm -rf /var/lib/apt/lists/* \
+ && pip install --upgrade pip \
+ && pip wheel --wheel-dir /build/wheels -r requirements.txt
+
+# ---------- runtime: slim + tesseract, app as non-root ----------
+FROM python:3.11-slim AS runtime
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 \
+    PORT=5003 DUCKDB_PATH=/app/data/omni.duckdb AUDIT_PATH=/app/data/audit.jsonl \
+    OMNI_DATA_DIR=/app/data SELLER_INBOX=/app/data/inbox \
+    PYTHONPATH=/app/src PATH="/app/.local/bin:${PATH}"
+WORKDIR /app
+
+# tesseract OCR for the free vision stack (receipt/invoice photos)
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-eng tesseract-ocr-osd \
+ && rm -rf /var/lib/apt/lists/* \
+ && tesseract --version
+
+COPY --from=builder /build/wheels /tmp/wheels
+COPY requirements.txt ./
+RUN pip install --upgrade pip \
+ && pip install --no-index --find-links=/tmp/wheels -r requirements.txt \
+ && rm -rf /tmp/wheels
+
+# app source (needs src/omni_one + pyproject for `omni-one` entrypoint)
+COPY pyproject.toml README.md ./
+COPY src/ ./src/
+RUN pip install --no-deps -e . \
+ && mkdir -p /app/data/inbox /app/data/parquet /app/close_today \
+ && groupadd -r appuser && useradd -r -g appuser -d /app -s /usr/sbin/nologin appuser \
+ && chown -R appuser:appuser /app
+
+COPY deploy/docker/entrypoint.sh /app/entrypoint.sh
+RUN chmod 0755 /app/entrypoint.sh
+
+USER appuser
+EXPOSE 5003
+VOLUME ["/app/data"]
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=25s --retries=3 \
+  CMD python3 -c "import os,urllib.request;urllib.request.urlopen('http://127.0.0.1:'+os.environ.get('PORT','5003')+'/health',timeout=4)"
+
+ENTRYPOINT ["/app/entrypoint.sh"]
+
+LABEL org.opencontainers.image.title="omni-one" \
+      org.opencontainers.image.description="Deterministic-first local intelligence platform + Seller OS ($0, offline-capable)" \
+      org.opencontainers.image.version="1.1.0" \
+      org.opencontainers.image.vendor="Omni-One Contributors" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.source="https://github.com/garyguo123456789/omni-one" \
+      org.opencontainers.image.documentation="https://github.com/garyguo123456789/omni-one#readme"

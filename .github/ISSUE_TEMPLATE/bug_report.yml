@@ -1,0 +1,16 @@
+---
+name: Bug report
+description: Something wrong with pipeline, Seller OS, API, or docs
+labels: [bug]
+---
+**What happened (with citation)?**
+
+**Repro (folder layout or API payload):**
+```bash
+# minimal repro, e.g.:
+PYTHONPATH=src python3 scripts/demo_seller_os.py --folder /tmp/seller_demo
+```
+
+**Expected (numbers + file:line):**
+
+**Environment:** OS / python3 --version / pip freeze | grep -E "fastapi|pandas|duckdb"

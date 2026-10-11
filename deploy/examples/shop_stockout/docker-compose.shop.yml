@@ -1,0 +1,8 @@
+services:
+  api:
+    extends:
+      file: ../../docker-compose.yml
+      service: api
+    environment:
+      SHOP_NAME: "stockout"
+      SELLER_LLM: mock

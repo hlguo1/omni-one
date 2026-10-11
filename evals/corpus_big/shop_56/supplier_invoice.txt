@@ -1,0 +1,12 @@
+Acme Textiles
+Invoice INV-1952 Date: 2024-09-10
+Bill to: shop_56 (pricemismatch)
+Order ref: shop_56-2024-09
+Tote Bag Handmade 51 x 10.92 556.92
+Ceramic Mug 27 x 8.58 231.66
+Shipping 20.50
+Total $809.08
+Payment terms: Net 30
+Thank you for your business!
+Questions? Contact Acme Textiles
+--- end of invoice ---

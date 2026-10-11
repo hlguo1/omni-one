@@ -1,0 +1,6 @@
+order_id,order_date,product,qty,price,fees,shipping,buyer,status
+5300,2024-09-10,Print - Botanical,1,14.50,1.14,4.00,Nina,refunded
+5301,2024-09-11,Knitted Scarf,2,92.00,6.18,4.50,Quinn,chargeback
+5302,2024-09-12,Leather Wallet,3,117.00,7.81,5.00,Tara,refunded
+5303,2024-09-10,Print - Botanical,1,14.00,1.11,0.00,Charlie,chargeback
+5304,2024-09-11,Knitted Scarf,2,91.00,6.12,3.00,Frank,refunded

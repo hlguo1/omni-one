@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "omni-one.fullname" . }}
+  labels:
+    {{- include "omni-one.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "omni-one.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "omni-one.selectorLabels" . | nindent 8 }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: {{ include "omni-one.name" . }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 5003
+          env:
+            - name: SELLER_LLM
+              value: {{ .Values.env.SELLER_LLM | quote }}
+            - name: DUCKDB_PATH
+              value: {{ .Values.env.DUCKDB_PATH | quote }}
+            - name: AUDIT_PATH
+              value: {{ .Values.env.AUDIT_PATH | quote }}
+            - name: OMNI_DATA_DIR
+              value: {{ .Values.env.OMNI_DATA_DIR | quote }}
+            - name: SELLER_INBOX
+              value: {{ .Values.env.SELLER_INBOX | quote }}
+            - name: PORT
+              value: {{ .Values.env.PORT | quote }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 25
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /readiness
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: omni-data
+              mountPath: {{ .Values.persistence.mountPath }}
+      volumes:
+        - name: omni-data
+          persistentVolumeClaim:
+            claimName: {{ include "omni-one.fullname" . }}-data

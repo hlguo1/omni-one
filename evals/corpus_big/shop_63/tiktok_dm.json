@@ -1,0 +1,24 @@
+{
+ "messages": [
+  {
+   "from": "Eve",
+   "text": "I want a refund for my Silver Ring, never arrived."
+  },
+  {
+   "from": "Jack",
+   "text": "Return requested - Tote Bag Handmade arrived damaged, refund please."
+  },
+  {
+   "from": "Omar",
+   "text": "Chargeback filed, where is my refund for Ceramic Mug?"
+  },
+  {
+   "from": "Tara",
+   "text": "My Print - Botanical hasn't arrived yet, refund now. Angry."
+  },
+  {
+   "from": "Shop",
+   "text": "Hi - processing refunds today, sorry for the trouble."
+  }
+ ]
+}

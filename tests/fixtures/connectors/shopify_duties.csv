@@ -1,0 +1,3 @@
+Order Name,Created at,Lineitem name,Lineitem quantity,Total,Fees,Shipping,Customer,Financial Status,Currency
+#D-1001,2024-09-10,Wool Scarf,1,€65.00,2.19,€8.50,Elena Fischer,paid,EUR
+#D-1002,2024-09-11,Ceramic Vase,1,€42.00,1.52,€8.50,Marc Weber,refunded,EUR

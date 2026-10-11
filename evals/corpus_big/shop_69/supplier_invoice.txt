@@ -1,0 +1,11 @@
+Paper Co
+Invoice INV-2173 Date: 2024-09-10
+Bill to: shop_69 (empty-ish)
+Order ref: shop_69-2024-09
+Knitted Scarf 56 x 18.90 1058.40
+Shipping 20.50
+Total $1078.90
+Payment terms: Net 30
+Thank you for your business!
+Questions? Contact Paper Co
+--- end of invoice ---

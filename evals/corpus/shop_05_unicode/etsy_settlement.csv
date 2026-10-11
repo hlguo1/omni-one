@@ -1,0 +1,5 @@
+order_id,order_date,product,qty,price,fees,shipping,buyer
+7100,2024-09-12,Botanical プリント 🌿,2,32.00,2.28,0.00,Bob
+7101,2024-09-06,Café Mug ☕ crème,2,46.32,3.21,4.00,Mona
+7102,2024-09-06,Botanical プリント 🌿,1,15.41,1.20,3.00,Jack
+7103,2024-09-05,Botanical プリント 🌿,1,15.14,1.18,4.50,Sam

@@ -1,0 +1,6 @@
+# 7am daily close — runs close_all.sh every morning, appends to cron log.
+# Install:  crontab deploy/cron/7am-close.cron   (or copy the line via `crontab -e`)
+# SHOPS_DIR: parent dir with one subfolder per shop (defaults to ./data/shops).
+# CLOSE_OUT: where per-shop close bundles + manifest.csv land (defaults to ./data/closes).
+SHELL=/bin/sh
+0 7 * * * cd /srv/omni-one && SHOPS_DIR=./data/shops CLOSE_OUT=./data/closes sh deploy/cron/close_all.sh >> ./data/closes/cron.log 2>&1

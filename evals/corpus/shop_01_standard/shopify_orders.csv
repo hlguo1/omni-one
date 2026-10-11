@@ -1,0 +1,7 @@
+Order Name,Created at,Lineitem name,Lineitem quantity,Lineitem price,Total,Fees,Shipping,Customer
+#1100,2024-09-05,Print - Botanical,1,15.31,15.31,0.74,3.50,Eve
+#1101,2024-09-08,Silver Ring,3,56.48,169.44,5.21,3.50,David
+#1102,2024-09-12,Print - Botanical,2,14.39,28.78,1.13,3.00,Hank
+#1103,2024-09-11,Soy Candle - Vanilla,1,16.57,16.57,0.78,5.00,Uma
+#1104,2024-09-10,Leather Wallet,2,42.70,85.40,2.78,5.00,Mona
+#1105,2024-09-07,Print - Botanical,1,16.15,16.15,0.77,0.00,Leo

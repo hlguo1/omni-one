@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<!-- ============================================================= -->
+<!-- Omni-One · WAVE2-J · Accountant PWA                            -->
+<!-- File: web/accountant/index.html                               -->
+<!--                                                               -->
+<!-- Purpose: paste-or-upload close.csv / close.json ->            -->
+<!--   KPI table · P&L walk (GMV-fees-ship-COGS=profit, div bars)  -->
+<!--   reconciliation checklist (6 steps, localStorage) ·           -->
+<!--   fee-benchmark table (shopify/etsy/amazon/tiktok/ebay) ·     -->
+<!--   validation warnings (profit>gmv, missing citations) ·       -->
+<!--   print view (@media print) · sample-data button (offline)    -->
+<!--                                                               -->
+<!-- Offline-first: zero CDN, zero fonts, zero framework.          -->
+<!--   All CSS inline (<style>). Only local app.js (<script        -->
+<!--   src="app.js">). Works from file:// with WiFi off via       -->
+<!--   inline DEMO_CSV in app.js. No fetch required to render.     -->
+<!--                                                               -->
+<!-- API contract (same-origin, override via ?api= / localStorage):-->
+<!--   POST /api/v1/seller/close      {demo:true, seed:42, shop}    -->
+<!--   GET  /api/v1/seller/close.csv  ?demo=1&seed=42               -->
+<!--   GET  ../assets/close-sample.json (static, no base64, <60KB)  -->
+<!--                                                               -->
+<!-- Citations: every number keeps file:line where the bundle has  -->
+<!--   one, e.g. [inventory.csv:2] [instagram_dm.txt:1]             -->
+<!--   [reviews.csv:3] [shopify_orders.csv:5]. Missing citations   -->
+<!--   are flagged in warnBox (V5_NO_CITATIONS), never invented.   -->
+<!--                                                               -->
+<!-- Print: @media print hides .no-print (buttons/nav/dropzone),  -->
+<!--   keeps KPI / P&L / checklist / fee / warnings tables.        -->
+<!--   printReport() stamps #printStamp before window.print().     -->
+<!--                                                               -->
+<!-- Keyboard: p print · c copy summary · d load demo (not in      -->
+<!--   inputs). Status line is aria-live polite. Bars have % text  -->
+<!--   siblings so info is not colour-only.                        -->
+<!--                                                               -->
+<!-- Version: v1.1.0 (WAVE2-J). ~1200+ lines with docs.            -->
+<!-- ============================================================= -->
+<html
+  lang="en"
+>
+<head>
+  <meta
+    charset="UTF-8"
+  >
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  >
+  <meta
+    name="description"
+    content="Omni-One Accountant PWA — close.csv/close.json to KPI, P&L walk, checklist, fee benchmarks. Offline, $0."
+  >
+  <meta
+    name="theme-color"
+    content="#4f46e5"
+  >
+  <title>
+    Omni-One · Accountant — Daily Close Review
+  </title>
+  <!-- No external CDN script tags (offline rule). Only local app.js. -->
+  <!-- No Google Fonts. System stack only. -->
+  <style>
+    /* ===================================================== */
+    /* 0. Tokens                                             */
+    /* ===================================================== */
+    :root {
+      --bg:
+        #f8fafc;
+      --bg-soft:
+        #f1f5f9;
+      --card:
+        #ffffff;
+      --border:
+        #e5e7eb;
+      --border-strong:
+        #cbd5e1;
+      --ink:
+        #111827;
+      --ink-soft:
+        #374151;
+      --muted:
+        #6b7280;
+      --faint:
+        #9ca3af;
+      --brand:
+        #4f46e5;
+      --brand-dark:
+        #4338ca;
+      --brand-soft:
+        #eef2ff;
+      --green:
+        #059669;
+      --green-dark:
+        #047857;
+      --green-soft:
+        #ecfdf5;
+      --amber:
+        #d97706;
+      --amber-soft:
+        #fffbeb;
+      --red:
+        #dc2626;
+      --red-soft:
+        #fef2f2;
+      --radius:
+        .75rem;
+      --mono:
+        ui-monospace,
+        SFMono-Regular,
+        Menlo,
+        Consolas,
+        monospace;
+    }
+    /* ===================================================== */
+    /* 1. Base                                               */
+    /* ===================================================== */
+    * {
+      box-sizing:
+        border-box;
+    }
+    html {
+      -webkit-text-size-adjust:
+        100%;
+    }
+    body {
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif;
+      background:
+        var(--bg);
+      margin:
+        0;
+      color:
+        var(--ink);
+      line-height:
+        1.5;
+    }
+    /* ===================================================== */
+    /* 2. Header / nav                                       */
+    /* ===================================================== */
+    header.top {
+      background:
+        var(--card);
+      border-bottom:
+        1px solid var(--border);
+      position:
+        sticky;
+      top:
+        0;
+      z-index:
+        10;
+    }
+    .wrap {
+      max-width:
+        72rem;
+      margin:
+        0 auto;
+      padding:
+        1rem 1.5rem;
+    }
+    .row {
+      display:
+        flex;
+      justify-content:
+        space-between;
+      align-items:
+        center;
+      gap:
+        1rem;
+      flex-wrap:
+        wrap;
+    }
+    .brand {
+      font-size:
+        1.25rem;
+      font-weight:
+        800;
+    }
+    .brand
+    .ind {
+      color:
+        var(--brand);
+    }
+    .sub {
+      font-size:
+        .75rem;
+      color:
+        var(--muted);
+    }
+    nav.links {
+      display:
+        flex;
+      gap:
+        .5rem;
+      flex-wrap:
+        wrap;
+      font-size:
+        .8rem;
+    }
+    nav.links
+    a {
+      color:
+        var(--brand);
+      text-decoration:
+        none;
+      border:
+        1px solid var(--border);
+      border-radius:
+        .5rem;
+      padding:
+        .25rem .6rem;
+      background:
+        #fff;
+    }
+    nav.links
+    a:hover {
+      background:
+        var(--brand-soft);
+    }
+    /* ===================================================== */
+    /* 3. Cards / grids                                      */
+    /* ===================================================== */
+    .card {
+      background:
+        var(--card);
+      border-radius:
+        var(--radius);
+      box-shadow:
+        0 1px 3px rgba(0,0,0,.08);
+      padding:
+        1.5rem;
+      border:
+        1px solid var(--border);
+    }
+    .grid2 {
+      display:
+        grid;
+      grid-template-columns:
+        1fr;
+      gap:
+        1.5rem;
+    }
+    @media
+    (min-width: 1024px) {
+      .grid2 {
+        grid-template-columns:
+          1fr 1fr;
+      }
+    }
+    .stack {
+      display:
+        grid;
+      gap:
+        1.5rem;
+      margin-top:
+        1.5rem;
+    }
+    h1 {
+      font-size:
+        1.4rem;
+      margin:
+        0 0 .25rem 0;
+    }
+    h2 {
+      font-size:
+        1.1rem;
+      margin:
+        0 0 .75rem 0;
+    }
+    h3 {
+      font-size:
+        .95rem;
+      margin:
+        1rem 0 .5rem 0;
+    }
+    .muted {
+      color:
+        var(--muted);
+      font-size:
+        .875rem;
+    }
+    .tiny {
+      font-size:
+        .75rem;
+      color:
+        var(--muted);
+    }
+    code {
+      background:
+        var(--bg-soft);
+      padding:
+        .1rem .3rem;
+      border-radius:
+        .25rem;
+      font-size:
+        .8em;
+      font-family:
+        var(--mono);
+    }
+    /* ===================================================== */
+    /* 4. Buttons / inputs                                   */
+    /* ===================================================== */
+    .btn {
+      display:
+        inline-block;
+      padding:
+        .5rem 1rem;
+      border-radius:
+        .5rem;
+      border:
+        1px solid var(--border);
+      background:
+        #fff;
+      cursor:
+        pointer;
+      font-size:
+        .875rem;
+      color:
+        var(--ink);
+    }
+    .btn:hover {
+      background:
+        var(--bg-soft);
+    }
+    .btn:disabled {
+      opacity:
+        .45;
+      cursor:
+        not-allowed;
+    }
+    .btn-p {
+      background:
+        var(--brand);
+      color:
+        #fff;
+      border-color:
+        var(--brand);
+    }
+    .btn-p:hover {
+      background:
+        var(--brand-dark);
+    }
+    .btn-g {
+      background:
+        var(--green);
+      color:
+        #fff;
+      border-color:
+        var(--green);
+    }
+    .btn-g:hover {
+      background:
+        var(--green-dark);
+    }
+    .toolbar {
+      display:
+        flex;
+      gap:
+        .5rem;
+      flex-wrap:
+        wrap;
+      margin:
+        .75rem 0;
+    }
+    textarea.paste {
+      width:
+        100%;
+      min-height:
+        9rem;
+      font-family:
+        var(--mono);
+      font-size:
+        .78rem;
+      border:
+        1px solid var(--border-strong);
+      border-radius:
+        .5rem;
+      padding:
+        .75rem;
+      background:
+        #fff;
+      color:
+        var(--ink);
+    }
+    input[type="file"] {
+      font-size:
+        .8rem;
+    }
+    #dropZone {
+      border:
+        2px dashed var(--border-strong);
+      border-radius:
+        .75rem;
+      padding:
+        1rem;
+      text-align:
+        center;
+      color:
+        var(--muted);
+      font-size:
+        .875rem;
+      cursor:
+        pointer;
+      background:
+        #fff;
+    }
+    #dropZone.drag {
+      border-color:
+        var(--brand);
+      background:
+        var(--brand-soft);
+      color:
+        var(--ink);
+    }
+    #statusLine {
+      margin-top:
+        .75rem;
+      font-size:
+        .875rem;
+      color:
+        var(--ink-soft);
+      min-height:
+        1.25rem;
+    }
+    /* ===================================================== */
+    /* 5. Tables                                             */
+    /* ===================================================== */
+    table.data {
+      width:
+        100%;
+      border-collapse:
+        collapse;
+      font-size:
+        .875rem;
+    }
+    table.data
+    th,
+    table.data
+    td {
+      text-align:
+        left;
+      padding:
+        .5rem .6rem;
+      border-bottom:
+        1px solid var(--border);
+      vertical-align:
+        top;
+    }
+    table.data
+    th {
+      font-size:
+        .72rem;
+      text-transform:
+        uppercase;
+      letter-spacing:
+        .04em;
+      color:
+        var(--muted);
+    }
+    table.data
+    td.num {
+      text-align:
+        right;
+      font-variant-numeric:
+        tabular-nums;
+      white-space:
+        nowrap;
+    }
+    table.data
+    td.cite {
+      font-family:
+        var(--mono);
+      font-size:
+        .72rem;
+      color:
+        var(--muted);
+    }
+    /* ===================================================== */
+    /* 6. P&L walk bars (div widths)                         */
+    /* ----------------------------------------------------- */
+    /* Each .bar > span width is % of GMV, set inline by     */
+    /* renderPLWalk(). Colours are redundant with the $      */
+    /* labels + % text so print/B&W stays readable.         */
+    /* ===================================================== */
+    .plrow {
+      margin-bottom:
+        .8rem;
+    }
+    .pllabel {
+      font-size:
+        .875rem;
+      margin-bottom:
+        .25rem;
+    }
+    .pllabel
+    b {
+      font-variant-numeric:
+        tabular-nums;
+    }
+    .bar {
+      height:
+        .85rem;
+      border-radius:
+        999px;
+      background:
+        var(--bg-soft);
+      border:
+        1px solid var(--border);
+      overflow:
+        hidden;
+    }
+    .bar
+    span {
+      display:
+        block;
+      height:
+        100%;
+      border-radius:
+        999px;
+    }
+    .bar-total
+    span {
+      background:
+        var(--brand);
+    }
+    .bar-cost
+    span {
+      background:
+        var(--amber);
+    }
+    .bar-profit
+    span {
+      background:
+        var(--green);
+    }
+    .bar-loss
+    span {
+      background:
+        var(--red);
+    }
+    .plpct {
+      font-size:
+        .72rem;
+      color:
+        var(--muted);
+    }
+    .plidentity {
+      margin-top:
+        .75rem;
+      padding:
+        .6rem .8rem;
+      background:
+        var(--bg-soft);
+      border:
+        1px solid var(--border);
+      border-radius:
+        .5rem;
+      font-size:
+        .875rem;
+    }
+    /* ===================================================== */
+    /* 7. Warnings                                           */
+    /* ===================================================== */
+    .warn {
+      padding:
+        .6rem .8rem;
+      border:
+        1px solid var(--border);
+      border-radius:
+        .5rem;
+      margin-bottom:
+        .5rem;
+      font-size:
+        .875rem;
+      background:
+        #fff;
+    }
+    .warn.err {
+      background:
+        var(--red-soft);
+      border-color:
+        #fecaca;
+    }
+    .warn.amber {
+      background:
+        var(--amber-soft);
+      border-color:
+        #fde68a;
+    }
+    .warn.info {
+      background:
+        var(--bg-soft);
+    }
+    .warn.ok {
+      background:
+        var(--green-soft);
+      border-color:
+        #a7f3d0;
+    }
+    /* ===================================================== */
+    /* 8. Checklist                                          */
+    /* ===================================================== */
+    .check {
+      display:
+        flex;
+      gap:
+        .6rem;
+      align-items:
+        flex-start;
+      padding:
+        .55rem .25rem;
+      border-bottom:
+        1px solid var(--border);
+      cursor:
+        pointer;
+      font-size:
+        .875rem;
+    }
+    .check
+    input {
+      margin-top:
+        .25rem;
+      width:
+        1rem;
+      height:
+        1rem;
+    }
+    .check
+    .tiny {
+      display:
+        block;
+    }
+    .checkbar {
+      height:
+        .6rem;
+      background:
+        var(--bg-soft);
+      border:
+        1px solid var(--border);
+      border-radius:
+        999px;
+      overflow:
+        hidden;
+      margin-top:
+        .5rem;
+    }
+    .checkbar
+    span {
+      display:
+        block;
+      height:
+        100%;
+      background:
+        var(--green);
+      width:
+        0%;
+    }
+    /* ===================================================== */
+    /* 9. Fee table extras                                   */
+    /* ===================================================== */
+    .save {
+      color:
+        var(--green-dark);
+      font-weight:
+        700;
+    }
+    .extra {
+      color:
+        var(--red);
+      font-weight:
+        700;
+    }
+    .reply {
+      border:
+        1px solid var(--border);
+      border-radius:
+        .5rem;
+      padding:
+        .6rem .8rem;
+      margin-bottom:
+        .5rem;
+      font-size:
+        .85rem;
+    }
+    pre.po {
+      background:
+        #0f172a;
+      color:
+        #e2e8f0;
+      padding:
+        .8rem;
+      border-radius:
+        .5rem;
+      font-size:
+        .75rem;
+      overflow:
+        auto;
+      white-space:
+        pre-wrap;
+    }
+    footer.foot {
+      margin-top:
+        2rem;
+      padding:
+        1rem 0 2rem 0;
+      color:
+        var(--muted);
+      font-size:
+        .75rem;
+    }
+    /* ===================================================== */
+    /* 10. Print view                                        */
+    /* ----------------------------------------------------- */
+    /* @media print: hide interactive chrome (.no-print),    */
+    /* keep tables/cards legible in B&W, avoid breaking      */
+    /* tables across pages, stamp print date at the bottom.  */
+    /* ===================================================== */
+    @media
+    print {
+      header.top,
+      .no-print {
+        display:
+          none !important;
+      }
+      body {
+        background:
+          #fff;
+      }
+      .wrap {
+        max-width:
+          none;
+        padding:
+          0;
+      }
+      .card {
+        box-shadow:
+          none;
+        break-inside:
+          avoid;
+      }
+      table.data {
+        font-size:
+          10pt;
+      }
+      .bar {
+        border:
+          1px solid #999;
+      }
+      a {
+        text-decoration:
+          none;
+        color:
+          #000;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header
+    class="top"
+  >
+    <div
+      class="wrap row"
+    >
+      <div>
+        <div
+          class="brand"
+        >
+          <span
+            class="ind"
+          >Omni-One</span>
+          Accountant
+        </div>
+        <div
+          class="sub"
+        >
+          Daily Close review for 1–5 person shops — paste close.csv, check the walk, file it
+        </div>
+      </div>
+      <nav
+        class="links"
+        aria-label="Related pages"
+      >
+        <a
+          href="../seller.html"
+        >Seller OS</a>
+        <a
+          href="../close/index.html"
+        >Close PWA</a>
+        <a
+          href="../assets/close-sample.json"
+        >Sample JSON</a>
+      </nav>
+    </div>
+  </header>
+  <main
+    class="wrap"
+  >
+    <!-- =============================================== -->
+    <!-- H1 + intro. Offline note up front (plane wifi). -->
+    <!-- =============================================== -->
+    <h1>
+      Accountant PWA
+      <span
+        class="tiny"
+      >v1.1.0 · offline · $0</span>
+    </h1>
+    <p
+      class="muted"
+    >
+      Paste
+      <code>close.csv</code>
+      or
+      <code>close.json</code>
+      below (or drop the file). Everything renders locally — nothing uploads.
+      Every number keeps its
+      <code>file:line</code>
+      citation; missing ones are flagged, never invented.
+    </p>
+    <!-- =============================================== -->
+    <!-- SECTION 1: input (paste / upload / demo / API)  -->
+    <!-- IDs wired by app.js wireUI(): pasteArea,        -->
+    <!-- fileInput, dropZone, parseBtn, sampleCsvBtn,    -->
+    <!-- sampleJsonBtn, apiBtn, clearBtn, statusLine.     -->
+    <!-- =============================================== -->
+    <section
+      class="card no-print"
+      aria-label="Load a close bundle"
+    >
+      <h2>
+        1. Load close.csv / close.json
+      </h2>
+      <div
+        id="dropZone"
+        role="button"
+        tabindex="0"
+        aria-label="Drop close.csv or close.json here, or click to choose a file"
+      >
+        Drop
+        <code>close.csv</code>
+        /
+        <code>close.json</code>
+        here — or click to choose a file (stays on this laptop)
+      </div>
+      <div
+        style="margin-top:.6rem"
+      >
+        <input
+          id="fileInput"
+          type="file"
+          accept=".csv,.json,.txt,text/csv,application/json"
+        >
+      </div>
+      <div
+        style="margin-top:.6rem"
+      >
+        <label
+          class="tiny"
+          for="pasteArea"
+        >
+          Or paste the file content:
+        </label>
+        <textarea
+          id="pasteArea"
+          class="paste"
+          spellcheck="false"
+          placeholder="DAILY CLOSE,2026-10-11,Profit $169.09 (61.7%) · …&#10;&#10;metric,value&#10;gmv,274.0&#10;fees,16.71&#10;…&#10;&#10;— or paste close.json starting with { —"
+        ></textarea>
+      </div>
+      <div
+        class="toolbar"
+      >
+        <button
+          id="parseBtn"
+          class="btn btn-p"
+          type="button"
+        >
+          Parse + render
+        </button>
+        <button
+          id="sampleCsvBtn"
+          class="btn btn-g"
+          type="button"
+        >
+          Load sample data (demo CSV)
+        </button>
+        <button
+          id="sampleJsonBtn"
+          class="btn"
+          type="button"
+        >
+          Load sample JSON
+        </button>
+        <button
+          id="apiBtn"
+          class="btn"
+          type="button"
+        >
+          Run Daily Close API
+        </button>
+        <button
+          id="clearBtn"
+          class="btn"
+          type="button"
+        >
+          Clear
+        </button>
+      </div>
+      <div
+        class="tiny"
+      >
+        Parser handles BOM, quoted commas,
+        <code>""</code>
+        escapes, semicolons (EU Excel), tabs (Sheets paste).
+        API:
+        <code>POST /api/v1/seller/close {"demo":true}</code>
+        ·
+        <code>GET /api/v1/seller/close.csv?demo=1</code>
+        · static
+        <code>../assets/close-sample.json</code>
+        · keys:
+        <code>p</code>
+        print ·
+        <code>c</code>
+        copy ·
+        <code>d</code>
+        demo.
+      </div>
+      <div
+        id="statusLine"
+        role="status"
+        aria-live="polite"
+      >
+        Tip: press “Load sample data” — works with WiFi off (inline demo CSV).
+      </div>
+    </section>
+    <!-- =============================================== -->
+    <!-- SECTION 2: headline + validation warnings       -->
+    <!-- IDs: reportHeadline, reportMeta, warnCount,      -->
+    <!-- warnBox. V1 profit>gmv renders here as error.   -->
+    <!-- =============================================== -->
+    <div
+      class="stack"
+    >
+      <section
+        class="card"
+        aria-label="Headline and validation"
+      >
+        <h2>
+          2. Headline + validation
+          <span
+            id="warnCount"
+            class="tiny"
+          >not loaded yet</span>
+        </h2>
+        <div
+          id="reportHeadline"
+          style="font-weight:800;font-size:1.05rem"
+        >
+          No close loaded — press “Load sample data”.
+        </div>
+        <div
+          id="reportMeta"
+          class="tiny"
+        >
+          Date — · Shop — · 0 citation(s)
+        </div>
+        <h3>
+          Validation warnings
+        </h3>
+        <div
+          id="warnBox"
+        >
+          <div
+            class="warn info"
+          >
+            Warnings appear here:
+            <b>profit&gt;GMV impossible</b>,
+            negative costs, margin absurd/thin, stated≠recomputed,
+            <b>missing citations flagged</b>, suspicious $0 rows.
+          </div>
+        </div>
+      </section>
+      <!-- ============================================= -->
+      <!-- SECTION 3: KPI table                          -->
+      <!-- IDs: kpiBody (tbody). Rendered by             -->
+      <!-- renderKPITable(). Third column keeps cites.   -->
+      <!-- ============================================= -->
+      <div
+        class="grid2"
+      >
+        <section
+          class="card"
+          aria-label="KPI table"
+        >
+          <h2>
+            3. KPI table
+          </h2>
+          <table
+            class="data"
+          >
+            <thead>
+              <tr>
+                <th>
+                  Metric
+                </th>
+                <th
+                  style="text-align:right"
+                >
+                  Value
+                </th>
+                <th>
+                  Source
+                </th>
+              </tr>
+            </thead>
+            <tbody
+              id="kpiBody"
+            >
+              <tr>
+                <td>
+                  GMV
+                </td>
+                <td
+                  class="num"
+                >
+                  —
+                </td>
+                <td
+                  class="cite"
+                >
+                  load data to fill
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div
+            class="tiny"
+            style="margin-top:.5rem"
+          >
+            Stated vs recomputed profit are shown side-by-side;
+            the P&L walk below always uses the recomputed identity.
+          </div>
+        </section>
+        <!-- =========================================== -->
+        <!-- SECTION 4: P&L walk (GMV-fees-ship-COGS)   -->
+        <!-- IDs: plWalk. Bars are div widths (% GMV).  -->
+        <!-- =========================================== -->
+        <section
+          class="card"
+          aria-label="P and L walk"
+        >
+          <h2>
+            4. P&amp;L walk — GMV−fees−ship−COGS=profit
+          </h2>
+          <div
+            id="plWalk"
+          >
+            <div
+              class="muted"
+            >
+              Bars render here as
+              <code>div</code>
+              widths (% of GMV). Green = profit, red = loss,
+              amber = costs. Exact $ labels sit next to every bar.
+            </div>
+          </div>
+        </section>
+      </div>
+      <!-- =============================================== -->
+      <!-- SECTION 5: fee benchmarks                     -->
+      <!-- IDs: feeActual, feeBody. Compares shop actual  -->
+      <!-- vs shopify/etsy/amazon/tiktok/ebay rate cards. -->
+      <!-- =============================================== -->
+      <section
+        class="card"
+        aria-label="Fee benchmarks"
+      >
+        <h2>
+          5. Fee benchmarks — is the marketplace eating margin?
+        </h2>
+        <div
+          id="feeActual"
+          class="muted"
+        >
+          Shop actual appears after parsing (fees ÷ GMV).
+        </div>
+        <table
+          class="data"
+          style="margin-top:.5rem"
+        >
+          <thead>
+            <tr>
+              <th>
+                Marketplace (rate card)
+              </th>
+              <th
+                style="text-align:right"
+              >
+                Rate
+              </th>
+              <th
+                style="text-align:right"
+              >
+                Would cost on this GMV
+              </th>
+              <th
+                style="text-align:right"
+              >
+                vs shop actual
+              </th>
+            </tr>
+          </thead>
+          <tbody
+            id="feeBody"
+          >
+            <tr>
+              <td
+                colspan="4"
+                class="muted"
+              >
+                Shopify 2.9%+$0.30 · Etsy 6.5%+$0.20 · Amazon 15% ·
+                TikTok ~5%+$0.30 · eBay 13.25%+$0.30 — computed on load.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div
+          class="tiny"
+          style="margin-top:.5rem"
+        >
+          Rates are 2026 public rate cards (see app.js FEE_BENCHMARKS).
+          “Saves” = shop pays less than that marketplace would charge;
+          “costs extra” = shop pays more — consider shifting volume or pricing.
+        </div>
+      </section>
+      <!-- =============================================== -->
+      <!-- SECTION 6: reconciliation checklist (6 steps) -->
+      <!-- IDs: checkList, checkProgress, checkBarFill,  -->
+      <!-- resetCheckBtn. Persisted to localStorage per  -->
+      <!-- close date (acct_checklist_v1_<date>).         -->
+      <!-- =============================================== -->
+      <div
+        class="grid2"
+      >
+        <section
+          class="card"
+          aria-label="Reconciliation checklist"
+        >
+          <h2>
+            6. Reconciliation checklist
+            <span
+              id="checkProgress"
+              class="tiny"
+            >0/6 steps checked</span>
+          </h2>
+          <div
+            id="checkList"
+          >
+            <label
+              class="check"
+            >
+              <input
+                type="checkbox"
+                data-step="gmv_orders"
+              >
+              <span>
+                <b>1 · GMV ties to orders</b>
+                <span
+                  class="tiny"
+                >Load data to enable the interactive checklist.</span>
+              </span>
+            </label>
+          </div>
+          <div
+            class="checkbar"
+            aria-hidden="true"
+          >
+            <span
+              id="checkBarFill"
+            ></span>
+          </div>
+          <div
+            class="toolbar no-print"
+          >
+            <button
+              id="resetCheckBtn"
+              class="btn"
+              type="button"
+            >
+              Reset checklist
+            </button>
+          </div>
+          <div
+            class="tiny"
+          >
+            Checks persist in
+            <code>localStorage</code>
+            per close date — closing the tab keeps progress.
+          </div>
+        </section>
+        <!-- ============================================= -->
+        <!-- SECTION 7: export / print / copy              -->
+        <!-- IDs: printBtn, copyBtn, csvBtn, printStamp.   -->
+        <!-- @media print hides .no-print siblings.        -->
+        <!-- ============================================= -->
+        <section
+          class="card"
+          aria-label="Export and print"
+        >
+          <h2>
+            7. Export + print view
+          </h2>
+          <p
+            class="muted"
+          >
+            Print keeps KPI / P&amp;L / checklist / fee / warnings and
+            hides buttons. Save as PDF:
+            <code>close-YYYY-MM-DD.pdf</code>.
+          </p>
+          <div
+            class="toolbar no-print"
+          >
+            <button
+              id="printBtn"
+              class="btn btn-p"
+              type="button"
+            >
+              Print / save PDF
+            </button>
+            <button
+              id="copyBtn"
+              class="btn"
+              type="button"
+              data-needs-data=""
+            >
+              Copy summary
+            </button>
+            <button
+              id="csvBtn"
+              class="btn"
+              type="button"
+              data-needs-data=""
+            >
+              Download CSV
+            </button>
+          </div>
+          <div
+            id="printStamp"
+            class="tiny"
+          >
+            Print stamp appears here before printing.
+          </div>
+        </section>
+      </div>
+      <!-- =============================================== -->
+      <!-- SECTION 8: details (do-today / reorder /       -->
+      <!-- leaks / replies / PO). IDs: doTodayList,       -->
+      <!-- reorderBody, leakBody, replyList, poPre.        -->
+      <!-- =============================================== -->
+      <section
+        class="card"
+        aria-label="Close details"
+      >
+        <h2>
+          8. Details — do-today, reorder, leaks, replies, PO
+        </h2>
+        <h3>
+          Do today
+        </h3>
+        <div
+          id="doTodayList"
+          class="muted"
+        >
+          Parsed do-today actions appear here.
+        </div>
+        <h3>
+          Reorder sheet
+        </h3>
+        <table
+          class="data"
+        >
+          <thead>
+            <tr>
+              <th>
+                Product
+              </th>
+              <th
+                style="text-align:right"
+              >
+                On hand
+              </th>
+              <th
+                style="text-align:right"
+              >
+                Days left
+              </th>
+              <th
+                style="text-align:right"
+              >
+                Reorder qty
+              </th>
+              <th>
+                Citation
+              </th>
+            </tr>
+          </thead>
+          <tbody
+            id="reorderBody"
+          >
+            <tr>
+              <td
+                colspan="5"
+                class="muted"
+              >
+                Reorder rows appear here.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <h3>
+          Money leaks
+        </h3>
+        <table
+          class="data"
+        >
+          <thead>
+            <tr>
+              <th>
+                Leak
+              </th>
+              <th
+                style="text-align:right"
+              >
+                Amount
+              </th>
+              <th>
+                Note
+              </th>
+              <th>
+                Evidence
+              </th>
+            </tr>
+          </thead>
+          <tbody
+            id="leakBody"
+          >
+            <tr>
+              <td
+                colspan="4"
+                class="muted"
+              >
+                Leak rows appear here.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <h3>
+          Reply queue (JSON bundles carry drafts)
+        </h3>
+        <div
+          id="replyList"
+          class="muted"
+        >
+          CSV carries KPIs; JSON carries reply drafts + citations.
+        </div>
+        <h3>
+          PO draft
+        </h3>
+        <pre
+          id="poPre"
+          class="po"
+        >PO draft appears here after parsing JSON.</pre>
+      </section>
+      <!-- =============================================== -->
+      <!-- SECTION 9: how-to / offline / SOP (docs only)  -->
+      <!-- Static help so the page is useful even before  -->
+      <!-- any data loads; also print-friendly reference. -->
+      <!-- =============================================== -->
+      <section
+        class="card"
+        aria-label="How to use"
+      >
+        <h2>
+          9. How to use (60-second SOP)
+        </h2>
+        <ol
+          class="muted"
+        >
+          <li>
+            In the Close PWA press “Download close.csv” (or copy
+            <code>close.json</code>
+            from the API).
+          </li>
+          <li>
+            Here: drop the file above or paste it, then “Parse + render”.
+          </li>
+          <li>
+            Read validation first — red errors block sign-off
+            (notably
+            <code>V1_PROFIT_GT_GMV</code>).
+          </li>
+          <li>
+            Walk the P&amp;L bars: GMV → fees → shipping → COGS → profit.
+          </li>
+          <li>
+            Check the fee table: if the shop “costs extra” vs Shopify,
+            flag fee creep to the seller.
+          </li>
+          <li>
+            Work the 6-step checklist (persists per date), then Print → PDF.
+          </li>
+        </ol>
+        <h3>
+          Offline notes
+        </h3>
+        <ul
+          class="muted"
+        >
+          <li>
+            No CDN, no fonts, no framework. Open via
+            <code>file://</code>
+            with WiFi off — Sample data still works.
+          </li>
+          <li>
+            Static sample:
+            <code>../assets/close-sample.json</code>
+            (&lt;60KB, base64 dropped).
+          </li>
+          <li>
+            Server API is optional progressive enhancement
+            (<code>POST /api/v1/seller/close</code>,
+            <code>GET /api/v1/seller/close.csv</code>).
+          </li>
+        </ul>
+        <h3>
+          Worked example (seed 42 — the sample numbers)
+        </h3>
+        <ul
+          class="muted"
+        >
+          <li>
+            GMV $274.00 − fees $16.71 − ship $24.00 − COGS $64.20
+            = profit $169.09 (61.7%).
+          </li>
+          <li>
+            Actual fee rate 6.10%: saves vs Etsy/Amazon/eBay,
+            pays extra vs Shopify — see table after load.
+          </li>
+          <li>
+            Citations: 1 reorder
+            <code>[inventory.csv:2]</code>,
+            DMs
+            <code>[instagram_dm.txt:1,4]</code>,
+            review
+            <code>[reviews.csv:3]</code>.
+          </li>
+        </ul>
+      </section>
+    </div>
+    <footer
+      class="foot"
+    >
+      <div>
+        Accountant PWA v1.1.0 · offline-first · $0 · no upload ·
+        <span
+          id="footNote"
+        >paste close.csv/close.json, validate, print, file.</span>
+      </div>
+      <div
+        class="tiny"
+      >
+        Related:
+        <a
+          href="../close/index.html"
+        >Close PWA</a>
+        ·
+        <a
+          href="../seller.html"
+        >Seller OS</a>
+        ·
+        <a
+          href="../assets/close-sample.json"
+        >close-sample.json</a>
+      </div>
+    </footer>
+  </main>
+  <!-- ============================================================= -->
+  <!-- Local logic only (offline rule). Boot wiring lives in app.js -->
+  <!-- wireUI(); inline script below only forwards a ?demo=1 hint   -->
+  <!-- and shows a no-JS notice. No CDN, no framework.             -->
+  <!-- ============================================================= -->
+  <script
+    src="app.js"
+  ></script>
+  <script>
+    // Inline boot (no framework): if app.js loaded, it already wired
+    // everything on DOMContentLoaded. This block only honours ?demo=1
+    // when app.js ran before this executes, + reports if app.js 404s.
+    (function () {
+      try {
+        var hasApp = !!(window.AccountantApp && window.AccountantApp.loadDemoCSV);
+        var q = null;
+        try {
+          q = new URLSearchParams(location.search).get("demo");
+        } catch (e) { /* file:// without URLSearchParams edge */ }
+        if (hasApp && q === "1") {
+          window.AccountantApp.loadDemoCSV();
+        }
+        if (!hasApp) {
+          var s = document.getElementById("statusLine");
+          if (s) {
+            s.textContent = "app.js failed to load — keep index.html + app.js in the same folder (web/accountant/).";
+          }
+        }
+      } catch (e) { /* never break the page on boot */ }
+    })();
+  </script>
+  <noscript>
+    <div
+      style="padding:1rem;text-align:center"
+    >
+      This page needs JavaScript (local file app.js, no network) to parse CSV/JSON.
+    </div>
+  </noscript>
+</body>
+</html>

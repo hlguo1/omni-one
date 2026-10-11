@@ -1,0 +1,5 @@
+order_id,order_date,product,qty,price,fees,shipping,buyer
+4600,2024-09-12,Soy Candle - Vanilla,3,65.88,4.48,3.50,Grace
+4601,2024-09-10,Embroidered Cap,1,30.50,2.18,4.00,Jack
+4602,2024-09-11,Silver Ring,2,134.20,8.92,4.50,Mona
+4603,2024-09-12,Tote Bag Handmade,3,102.48,6.86,5.00,Priya

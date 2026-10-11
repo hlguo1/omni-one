@@ -1,0 +1,3 @@
+Order ID,Order Date,Product,Quantity,Item Total,Order Total,Customer,Payment Method
+W1,2024-09-10,Tote Bag,1,30.00,30.00,Alice,Stripe
+W2,2024-09-11,Mug,2,40.00,40.00,Bob,PayPal

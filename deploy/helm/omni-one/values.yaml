@@ -1,0 +1,57 @@
+# Default values for omni-one.
+replicaCount: 2
+
+image:
+  repository: omni-one
+  tag: "1.1.0"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 5003
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/limit-rps: "20"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: omni-one.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: omni-one-tls
+      hosts:
+        - omni-one.example.com
+
+persistence:
+  enabled: true
+  size: 5Gi
+  storageClass: ""
+  mountPath: /app/data
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 60
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+env:
+  SELLER_LLM: "off"
+  DUCKDB_PATH: "/app/data/omni.duckdb"
+  AUDIT_PATH: "/app/data/audit.jsonl"
+  OMNI_DATA_DIR: "/app/data"
+  SELLER_INBOX: "/app/data/inbox"
+  PORT: "5003"

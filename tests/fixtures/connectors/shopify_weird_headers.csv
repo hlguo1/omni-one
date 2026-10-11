@@ -1,0 +1,3 @@
+Order#,Order Date,Product Title,Qty,Line Total,Txn Fee,Postage,Buyer Name
+S-1,2024-09-10,Tote Bag,1,30.00,,2.00,Alice
+S-2,2024-09-11,Mug,2,40.00,,3.00,Bob

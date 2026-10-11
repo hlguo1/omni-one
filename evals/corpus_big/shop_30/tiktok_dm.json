@@ -1,0 +1,20 @@
+{
+ "messages": [
+  {
+   "from": "Alice",
+   "text": "Hi! My Leather Wallet hasn't arrived yet, ordered 5 days ago. Worried."
+  },
+  {
+   "from": "Charlie",
+   "text": "Amazing Soy Candle - Vanilla! Will order again. Love it!"
+  },
+  {
+   "from": "Eve",
+   "text": "Where is my order? No tracking number received for Embroidered Cap."
+  },
+  {
+   "from": "Grace",
+   "text": "Do you have the Leather Wallet in blue? Quick question."
+  }
+ ]
+}

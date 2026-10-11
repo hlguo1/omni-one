@@ -1,0 +1,13 @@
+Paper Co
+Invoice INV-1357 Date: 2024-09-10
+Bill to: shop_21 (healthy)
+Order ref: shop_21-2024-09
+Print - Botanical 46 x 5.70 262.20
+Knitted Scarf 59 x 15.30 902.70
+Leather Wallet 31 x 15.99 495.69
+Shipping 19.50
+Total $1680.09
+Payment terms: Net 30
+Thank you for your business!
+Questions? Contact Paper Co
+--- end of invoice ---

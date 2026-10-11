@@ -1,0 +1,113 @@
+{
+  "date": "2026-10-10",
+  "shop": "our shop",
+  "headline": "Profit $101.31 (43.7%) \u00b7 $232.00 at risk in 4 angry messages \u00b7 0 reorder(s) TODAY \u00b7 3 leak(s) to plug",
+  "kpis": {
+    "gmv": 232.0,
+    "fees": 7.93,
+    "shipping": 52.0,
+    "net": 172.07,
+    "cogs": 70.76,
+    "true_profit": 101.31,
+    "margin_pct": 43.7,
+    "orders": 4,
+    "aov": 58.0,
+    "best_seller": {
+      "product": "Embroidered Cap",
+      "qty": 3,
+      "gmv": 75.0
+    },
+    "money_at_risk_usd": 232.0
+  },
+  "do_today": [
+    "Reply to 4 message(s) \u2014 $232.00 at risk (drafts below, cite file:line)",
+    "Stock healthy \u2014 no reorder",
+    "Plug leak: shipping_loss \u2014 Shipping loss: Ceramic Mug ship $13.00 on $46.00 GMV"
+  ],
+  "reorder_sheet": [],
+  "dead_stock_note": [
+    {
+      "title": "Dead stock: Print - Botanical \u2014 13 units, zero sales 7d \u2192 bundle/clearance",
+      "evidence": "[inventory.csv:6] Print - Botanical on_hand=13"
+    },
+    {
+      "title": "Dead stock: Knitted Scarf \u2014 18 units, zero sales 7d \u2192 bundle/clearance",
+      "evidence": "[inventory.csv:7] Knitted Scarf on_hand=18"
+    }
+  ],
+  "reply_queue": [
+    {
+      "channel": "dm",
+      "customer": "Omar",
+      "summary": "Omar: Hi! My Ceramic Mug hasn't arrived yet, ordered 5 days ago. Worried.",
+      "draft": "Hi Omar! I'm really sorry about your late delivery \u2014 I just pulled your order ([instagram_dm.txt:1] Omar: Hi! My Ceramic Mug hasn't arrived yet, ordered 5 d) and I'm checking tracking/supplier right now. I'll update you within 2 hours with a fix (reship/refund \u2014 your choice). Thank you for your patience with our shop!",
+      "citation": "[instagram_dm.txt:1] Omar: Hi! My Ceramic Mug hasn't arrived yet, ordered 5 d",
+      "priority": "P0-reply-in-2h"
+    },
+    {
+      "channel": "dm",
+      "customer": "Charlie",
+      "summary": "Charlie: Package shows delivered but nothing arrived for Ceramic Mug. Missing?!",
+      "draft": "Hi Charlie! I'm really sorry about this \u2014 I just pulled your order ([instagram_dm.txt:5] Charlie: Package shows delivered but nothing arrived for Ce) and I'm checking tracking/supplier right now. I'll update you within 2 hours with a fix (reship/refund \u2014 your choice). Thank you for your patience with our shop!",
+      "citation": "[instagram_dm.txt:5] Charlie: Package shows delivered but nothing arrived for Ce",
+      "priority": "P1-today"
+    },
+    {
+      "channel": "review",
+      "customer": "customer",
+      "summary": "2024-09-12 Embroidered Cap 2 Arrived chipped, very disappointed.",
+      "draft": "Thank you for flagging this ([reviews.csv:3] 2024-09-12 Embroidered Cap 2 Arrived chipped, very disappoin) \u2014 we're sorry about your customer experience. We've fixed the packing/quality check that caused it. Please DM us for a free replacement or refund \u2014 we want to make this right. \u2014 our shop",
+      "citation": "[reviews.csv:3] 2024-09-12 Embroidered Cap 2 Arrived chipped, very disappoin",
+      "priority": "P0-reply-in-2h"
+    },
+    {
+      "channel": "scenario",
+      "customer": "REFUND_RISK",
+      "summary": "Refund risk \u2014 reply in 2h: 2024-09-11 Silver Ring 1 Terrible - damaged and late, want r",
+      "draft": "",
+      "citation": "[reviews.csv:4] 2024-09-11 Silver Ring 1 Terrible - damaged and late, want r",
+      "priority": "P0-reply-in-2h"
+    }
+  ],
+  "money_leaks": [
+    {
+      "leak": "shipping_loss",
+      "amount_usd": null,
+      "note": "Shipping loss: Ceramic Mug ship $13.00 on $46.00 GMV",
+      "evidence": "[shopify_orders.csv:2] Ceramic Mug qty2 gmv$46.0 fees$1.63 net$31.37"
+    },
+    {
+      "leak": "shipping_loss",
+      "amount_usd": null,
+      "note": "Shipping loss: Silver Ring ship $12.00 on $54.00 GMV",
+      "evidence": "[shopify_orders.csv:4] Silver Ring qty1 gmv$54.0 fees$1.87 net$40.13"
+    },
+    {
+      "leak": "shipping_loss",
+      "amount_usd": null,
+      "note": "Shipping loss: Tote Bag Handmade ship $13.00 on $57.00 GMV",
+      "evidence": "[shopify_orders.csv:5] Tote Bag Handmade qty2 gmv$57.0 fees$1.95 net$42.05"
+    }
+  ],
+  "listing_fixes": [
+    {
+      "fix": "REVIEW_CRISIS",
+      "title": "Bad review \u2014 fix + public reply: 2024-09-12 Embroidered Cap 2 Arrived chipped, very disappoin",
+      "evidence": "[reviews.csv:3] 2024-09-12 Embroidered Cap 2 Arrived chipped, very disappoin"
+    },
+    {
+      "fix": "REVIEW_CRISIS",
+      "title": "Bad review \u2014 fix + public reply: 2024-09-11 Silver Ring 1 Terrible - damaged and late, want r",
+      "evidence": "[reviews.csv:4] 2024-09-11 Silver Ring 1 Terrible - damaged and late, want r"
+    },
+    {
+      "fix": "LISTING_GAP",
+      "title": "Listing gap: Tote Bag Handmade sold 2 with zero reviews \u2014 request UGC",
+      "evidence": "[orders] Tote Bag Handmade sold 2"
+    }
+  ],
+  "po_draft": "Stock healthy \u2014 no PO needed today.",
+  "citations": "every number cites [file:line]; audit via /seller/operations",
+  "free": true,
+  "offline": true
+}

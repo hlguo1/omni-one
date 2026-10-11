@@ -1,0 +1,74 @@
+[
+  {
+    "locale": "es",
+    "channel": "instagram",
+    "citation": "reviews.csv",
+    "row": {
+      "product": "Tote de lona",
+      "stars": 1,
+      "text": "Hola, muy decepcionada. Lleg\u00f3 roto y tarde.\nMala calidad, no es como se describ\u00eda.\nGracias, pero quiero un reembolso."
+    },
+    "expected_product": "Tote de lona",
+    "expected_stars": 1
+  },
+  {
+    "locale": "zh",
+    "channel": "tiktok",
+    "citation": "reviews.csv",
+    "row": {
+      "product": "\u5e06\u5e03\u888b",
+      "stars": "\u2605",
+      "text": "\u975e\u5e38\u5931\u671b\uff0c\u5230\u8d27\u65f6\u574f\u4e86\uff0c\u5feb\u9012\u592a\u6162\u3002\n\u8d28\u91cf\u592a\u5dee\uff0c\u4e0e\u63cf\u8ff0\u4e0d\u7b26\u3002\n\u8bf7\u7ed9\u6211\u9000\u6b3e\uff0c\u8c22\u8c22\u3002"
+    },
+    "expected_product": "\u5e06\u5e03\u888b",
+    "expected_stars": 1
+  },
+  {
+    "locale": "fr",
+    "channel": "etsy",
+    "citation": "reviews.csv",
+    "row": {
+      "title": "Tote en toile",
+      "rating": "one star",
+      "body": "Bonjour, tr\u00e8s d\u00e9\u00e7u. Arriv\u00e9 cass\u00e9 et en retard.\nMauvaise qualit\u00e9, non conforme \u00e0 la description.\nMerci, je veux un remboursement."
+    },
+    "expected_product": "Tote en toile",
+    "expected_stars": 1
+  },
+  {
+    "locale": "de",
+    "channel": "amazon",
+    "citation": "reviews.csv",
+    "row": {
+      "product_name": "Canvas-Tasche",
+      "Star Rating": "★★★★★",
+      "Review Text": "Hallo, sehr entt\u00e4uscht. Kaputt und versp\u00e4tet angekommen.\nSchlechte Qualit\u00e4t, nicht wie beschrieben.\nDanke, ich m\u00f6chte eine Erstattung."
+    },
+    "expected_product": "Canvas-Tasche",
+    "expected_stars": 5
+  },
+  {
+    "locale": "en",
+    "channel": "amazon",
+    "citation": "reviews.csv",
+    "row": {
+      "product": "Canvas Tote",
+      "stars": "5 stars",
+      "text": "Hello, very disappointed. Arrived broken and late.\nPoor quality, not as described.\nThanks, but I want a refund."
+    },
+    "expected_product": "Canvas Tote",
+    "expected_stars": 5
+  },
+  {
+    "locale": "en",
+    "channel": "etsy",
+    "citation": "reviews.csv",
+    "row": {
+      "product": "Canvas Tote",
+      "rating": "two stars",
+      "review": "Hello, disappointed. Wrong item and late.\nPoor quality from the shop.\nPlease help with a return, thanks."
+    },
+    "expected_product": "Canvas Tote",
+    "expected_stars": 2
+  }
+]

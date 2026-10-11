@@ -1,0 +1,11 @@
+Subject: Reorder request — Acme Textiles
+
+Hi Acme Textiles!
+
+Please send the following for our shop:
+  - Tote Bag Handmade: 10 units (have 2, 2.3d left) [[inventory.csv:2] Tote Bag Handmade on_hand=2]
+
+Please confirm price + ETA. Last invoice numbers are cited above from our records.
+
+Thanks!
+our shop

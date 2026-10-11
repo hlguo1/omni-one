@@ -1,0 +1,11 @@
+Order Name,Created at,Lineitem name,Lineitem quantity,Lineitem price,Total,Fees,Shipping,Customer
+#1200,2024-09-12,Leather Wallet,3,40.00,120.00,3.78,3.50,Charlie
+#1201,2024-09-10,Leather Wallet,1,39.00,39.00,1.43,4.00,Frank
+#1202,2024-09-11,Leather Wallet,2,38.00,76.00,2.50,4.50,Ivy
+#1203,2024-09-12,Tote Bag Handmade,3,28.50,85.50,2.78,5.00,Leo
+#1204,2024-09-10,Leather Wallet,1,38.50,38.50,1.42,0.00,Omar
+#1205,2024-09-11,Leather Wallet,2,40.00,80.00,2.62,3.00,Rosa
+#1206,2024-09-12,Leather Wallet,3,39.00,117.00,3.69,3.50,Alice
+#1207,2024-09-10,Silver Ring,1,54.00,54.00,1.87,4.00,David
+#1208,2024-09-11,Leather Wallet,2,39.50,79.00,2.59,4.50,Grace
+#1209,2024-09-12,Leather Wallet,3,38.50,115.50,3.65,5.00,Jack

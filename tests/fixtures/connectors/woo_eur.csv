@@ -1,0 +1,3 @@
+Order ID;Order Date;Product;Quantity;Order Total;Fee Total;Shipping Total;Billing Email;Currency;Order Status
+W-EU1;2024-09-10;Segeltuchtasche;1;€49.90;1.75;€4.90;anna@example.de;EUR;completed
+W-EU2;2024-09-11;Keramiktasse;2;€39.80;1.45;€4.90;pierre@example.fr;EUR;completed

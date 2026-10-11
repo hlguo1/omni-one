@@ -1,0 +1,48 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: omni-one
+  namespace: omni-one
+  labels:
+    app.kubernetes.io/name: omni-one
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: omni-one
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # ingress-nginx -> app :5003 (pod port published via Service targetPort)
+    - ports:
+        - port: 5003
+          protocol: TCP
+      from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: omni-one
+    # kubelet probes (liveness/readiness on /health//readiness) must reach pods
+    - ports:
+        - port: 5003
+          protocol: TCP
+  egress:
+    # DNS + HTTPS egress (no LLM by default, but allow provider calls when enabled)
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 443
+          protocol: TCP

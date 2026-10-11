@@ -1,0 +1,4 @@
+Order Name,Created at,Lineitem name,Lineitem quantity,Lineitem price,Total,Fees,Customer,Financial Status,Fulfillment Status
+#POS-1001,2024-09-10 11:00:00,Canvas Tote,1,32.00,32.00,1.23,Alice,paid,fulfilled
+#POS-1002,2024-09-10 11:20:00,Speckled Mug,2,14.00,28.00,1.11,Bob,paid,fulfilled
+#POS-1003,2024-09-10 12:05:00,Botanical Print,1,18.00,18.00,0.82,Charlie,paid,fulfilled

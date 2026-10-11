@@ -1,0 +1,2927 @@
+<!DOCTYPE html>
+<!-- ============================================================= -->
+<!-- Omni-One · WORKSTREAM B · web PWA Close dashboard             -->
+<!-- File: web/close/index.html                                    -->
+<!-- Purpose: daily 5-min close for 1–5 person shops               -->
+<!--   Header headline KPIs · Tabs: Today / Reorder+PO / Replies / -->
+<!--   Leaks / Listings / Files · folder-drop + demo button        -->
+<!-- API contract (same-origin, override via ?api= or settings):   -->
+<!--   POST /api/v1/seller/close      {demo, seed, shop, folder}    -->
+<!--   GET  /api/v1/seller/close.csv  ?demo=1&seed=42&shop=...      -->
+<!-- Offline: no CDN, no fonts, no framework. Vanilla + inline CSS -->
+<!-- Citations: every number shows file:line, e.g.                -->
+<!--   [shopify_orders.csv:5] [inventory.csv:2] [reviews.csv:3]     -->
+<!-- Print: @media print hides buttons/nav, keeps tables/cards     -->
+<!-- Theme: dark-friendly via prefers-color-scheme + [data-theme]  -->
+<!-- ============================================================= -->
+<html
+  lang="en"
+  data-theme="auto"
+>
+<head>
+  <meta
+    charset="UTF-8"
+  >
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  >
+  <meta
+    name="description"
+    content="Omni-One Daily Close — profit, reorder+PO, replies, leaks. Offline-first PWA, $0."
+  >
+  <meta
+    name="theme-color"
+    content="#4f46e5"
+    media="(prefers-color-scheme: light)"
+  >
+  <meta
+    name="theme-color"
+    content="#111827"
+    media="(prefers-color-scheme: dark)"
+  >
+  <meta
+    name="mobile-web-app-capable"
+    content="yes"
+  >
+  <meta
+    name="apple-mobile-web-app-capable"
+    content="yes"
+  >
+  <meta
+    name="apple-mobile-web-app-status-bar-style"
+    content="black-translucent"
+  >
+  <meta
+    name="apple-mobile-web-app-title"
+    content="Close"
+  >
+  <title>
+    Omni-One · Daily Close
+  </title>
+  <!-- PWA manifest: web/close/manifest.webmanifest -->
+  <link
+    rel="manifest"
+    href="manifest.webmanifest"
+  >
+  <link
+    rel="icon"
+    type="image/svg+xml"
+    href="icon.svg"
+  >
+  <link
+    rel="apple-touch-icon"
+    href="icon.svg"
+  >
+  <!-- No external CDN script tags (offline rule). Only local app.js -->
+  <!-- No Google Fonts. System stack only. -->
+  <style>
+    /* ======================================================= */
+    /* 0. Tokens                                               */
+    /* ======================================================= */
+    :root {
+      --bg: #f8fafc;
+      --bg-soft: #f1f5f9;
+      --card: #ffffff;
+      --border: #e5e7eb;
+      --border-strong: #cbd5e1;
+      --ink: #111827;
+      --ink-soft: #374151;
+      --muted: #6b7280;
+      --faint: #9ca3af;
+      --brand: #4f46e5;
+      --brand-dark: #4338ca;
+      --brand-soft: #eef2ff;
+      --green: #059669;
+      --green-dark: #047857;
+      --green-soft: #ecfdf5;
+      --amber: #d97706;
+      --amber-soft: #fffbeb;
+      --red: #dc2626;
+      --red-soft: #fef2f2;
+      --radius: 0.75rem;
+      --radius-sm: 0.5rem;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.10);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --max: 76rem;
+      --tap: 2.75rem;
+    }
+    /* ======================================================= */
+    /* 1. Dark theme tokens (prefers-color-scheme + override)   */
+    /* ======================================================= */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b1220;
+        --bg-soft: #111a2e;
+        --card: #131c33;
+        --border: #24304d;
+        --border-strong: #334155;
+        --ink: #e5e7eb;
+        --ink-soft: #cbd5e1;
+        --muted: #94a3b8;
+        --faint: #64748b;
+        --brand: #818cf8;
+        --brand-dark: #a5b4fc;
+        --brand-soft: #1e1b4b;
+        --green: #34d399;
+        --green-dark: #6ee7b7;
+        --green-soft: #064e3b;
+        --amber: #fbbf24;
+        --amber-soft: #451a03;
+        --red: #f87171;
+        --red-soft: #450a0a;
+        --shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+        --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+      }
+    }
+    /* Manual override: [data-theme="dark"] forces dark */
+    :root[data-theme="dark"] {
+      --bg: #0b1220;
+      --bg-soft: #111a2e;
+      --card: #131c33;
+      --border: #24304d;
+      --border-strong: #334155;
+      --ink: #e5e7eb;
+      --ink-soft: #cbd5e1;
+      --muted: #94a3b8;
+      --faint: #64748b;
+      --brand: #818cf8;
+      --brand-dark: #a5b4fc;
+      --brand-soft: #1e1b4b;
+      --green: #34d399;
+      --green-dark: #6ee7b7;
+      --green-soft: #064e3b;
+      --amber: #fbbf24;
+      --amber-soft: #451a03;
+      --red: #f87171;
+      --red-soft: #450a0a;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+      --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+    }
+    /* Manual override: [data-theme="light"] forces light */
+    :root[data-theme="light"] {
+      --bg: #f8fafc;
+      --bg-soft: #f1f5f9;
+      --card: #ffffff;
+      --border: #e5e7eb;
+      --border-strong: #cbd5e1;
+      --ink: #111827;
+      --ink-soft: #374151;
+      --muted: #6b7280;
+      --faint: #9ca3af;
+      --brand: #4f46e5;
+      --brand-dark: #4338ca;
+      --brand-soft: #eef2ff;
+      --green: #059669;
+      --green-dark: #047857;
+      --green-soft: #ecfdf5;
+      --amber: #d97706;
+      --amber-soft: #fffbeb;
+      --red: #dc2626;
+      --red-soft: #fef2f2;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.10);
+    }
+    /* ======================================================= */
+    /* 2. Base                                                 */
+    /* ======================================================= */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+    html {
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    a {
+      color: var(--brand);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    a:hover {
+      color: var(--brand-dark);
+    }
+    a:focus-visible {
+      outline: 3px solid var(--brand);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+    button:focus-visible {
+      outline: 3px solid var(--brand);
+      outline-offset: 2px;
+    }
+    input:focus-visible {
+      outline: 3px solid var(--brand);
+      outline-offset: 1px;
+    }
+    select:focus-visible {
+      outline: 3px solid var(--brand);
+      outline-offset: 1px;
+    }
+    code {
+      font-family: var(--mono);
+      font-size: 0.82em;
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      padding: 0.1rem 0.35rem;
+      border-radius: 0.3rem;
+      word-break: break-word;
+    }
+    pre {
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.55;
+    }
+    .mono {
+      font-family: var(--mono);
+    }
+    .muted {
+      color: var(--muted);
+    }
+    .tiny {
+      font-size: 0.75rem;
+      line-height: 1.5;
+    }
+    .small {
+      font-size: 0.875rem;
+    }
+    .hidden {
+      display: none !important;
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    /* ======================================================= */
+    /* 3. Layout shell                                         */
+    /* ======================================================= */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(8px);
+    }
+    .wrap {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+    .wrap-narrow {
+      max-width: 60rem;
+      margin: 0 auto;
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+    .topbar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      padding-top: 0.75rem;
+      padding-bottom: 0.75rem;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .brand-mark {
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 0.6rem;
+      background: var(--brand);
+      display: grid;
+      place-items: center;
+      flex: none;
+    }
+    .brand-mark img {
+      width: 1.4rem;
+      height: 1.4rem;
+      display: block;
+    }
+    .brand-name {
+      font-weight: 800;
+      font-size: 1.05rem;
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+    }
+    .brand-sub {
+      font-size: 0.72rem;
+      color: var(--muted);
+      line-height: 1.3;
+    }
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    main {
+      padding-top: 1.25rem;
+      padding-bottom: 4rem;
+    }
+    footer {
+      border-top: 1px solid var(--border);
+      padding-top: 1.5rem;
+      padding-bottom: 2.5rem;
+      color: var(--muted);
+    }
+    /* ======================================================= */
+    /* 4. Headline + KPI cards                                 */
+    /* ======================================================= */
+    .headline-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .headline-eyebrow {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 0.35rem 0;
+    }
+    .headline {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      margin: 0 0 0.35rem 0;
+      line-height: 1.4;
+    }
+    .headline-meta {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+    @media (min-width: 720px) {
+      .kpi-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+    @media (min-width: 1024px) {
+      .kpi-grid {
+        grid-template-columns: repeat(6, 1fr);
+      }
+    }
+    .kpi {
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.7rem 0.8rem;
+      min-width: 0;
+    }
+    .kpi-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 0.2rem 0;
+    }
+    .kpi-value {
+      font-size: 1.05rem;
+      font-weight: 800;
+      margin: 0;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
+    }
+    .kpi-cite {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--muted);
+      margin: 0.25rem 0 0 0;
+      overflow-wrap: anywhere;
+    }
+    .do-today {
+      margin-top: 1rem;
+      border: 1px dashed var(--border-strong);
+      border-radius: var(--radius-sm);
+      padding: 0.8rem 1rem;
+      background: var(--brand-soft);
+    }
+    .do-today h2 {
+      font-size: 0.8rem;
+      margin: 0 0 0.4rem 0;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .do-today ol {
+      margin: 0;
+      padding-left: 1.2rem;
+      font-size: 0.875rem;
+    }
+    .do-today li {
+      margin-bottom: 0.25rem;
+    }
+    /* ======================================================= */
+    /* 5. Controls bar (shop, seed, api, buttons)              */
+    /* ======================================================= */
+    .controls {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .controls-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+    @media (min-width: 860px) {
+      .controls-grid {
+        grid-template-columns: 1.2fr 0.6fr 1.4fr auto;
+        align-items: end;
+      }
+    }
+    .field label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.3rem;
+    }
+    .field input[type="text"] {
+      width: 100%;
+      min-height: var(--tap);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-strong);
+      background: var(--bg);
+      color: var(--ink);
+      padding: 0.5rem 0.7rem;
+      font-size: 0.9rem;
+    }
+    .field input[type="number"] {
+      width: 100%;
+      min-height: var(--tap);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-strong);
+      background: var(--bg);
+      color: var(--ink);
+      padding: 0.5rem 0.7rem;
+      font-size: 0.9rem;
+    }
+    .field input::placeholder {
+      color: var(--faint);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      min-height: var(--tap);
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-strong);
+      background: var(--card);
+      color: var(--ink);
+      font-size: 0.875rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn:hover {
+      border-color: var(--brand);
+      color: var(--brand);
+    }
+    .btn:active {
+      transform: translateY(1px);
+    }
+    .btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    .btn-primary {
+      background: var(--brand);
+      border-color: var(--brand);
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background: var(--brand-dark);
+      border-color: var(--brand-dark);
+      color: #fff;
+    }
+    .btn-green {
+      background: var(--green);
+      border-color: var(--green);
+      color: #fff;
+    }
+    .btn-green:hover {
+      background: var(--green-dark);
+      border-color: var(--green-dark);
+      color: #fff;
+    }
+    .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .hint {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.35rem;
+    }
+    /* ======================================================= */
+    /* 6. Dropzone                                             */
+    /* ======================================================= */
+    .dropzone {
+      border: 2px dashed var(--border-strong);
+      border-radius: var(--radius);
+      padding: 1rem;
+      text-align: center;
+      background: var(--bg-soft);
+      cursor: pointer;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+    .dropzone:hover {
+      border-color: var(--brand);
+    }
+    .dropzone:focus-visible {
+      outline: 3px solid var(--brand);
+      outline-offset: 2px;
+    }
+    .dropzone.drag {
+      border-color: var(--brand);
+      background: var(--brand-soft);
+    }
+    .dropzone-title {
+      font-weight: 800;
+      margin: 0 0 0.2rem 0;
+    }
+    .dropzone-sub {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin: 0;
+    }
+    /* ======================================================= */
+    /* 7. Tabs                                                 */
+    /* ======================================================= */
+    .tabs {
+      display: flex;
+      gap: 0.4rem;
+      overflow-x: auto;
+      padding-bottom: 0.35rem;
+      margin-bottom: 0.9rem;
+      -webkit-overflow-scrolling: touch;
+    }
+    .tab {
+      flex: none;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--ink-soft);
+      border-radius: 999px;
+      padding: 0.5rem 0.95rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      min-height: 2.5rem;
+    }
+    .tab:hover {
+      border-color: var(--brand);
+      color: var(--brand);
+    }
+    .tab[aria-selected="true"] {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: var(--bg);
+    }
+    @media (prefers-color-scheme: dark) {
+      .tab[aria-selected="true"] {
+        background: var(--brand-soft);
+        border-color: var(--brand);
+        color: var(--ink);
+      }
+    }
+    :root[data-theme="dark"] .tab[aria-selected="true"] {
+      background: var(--brand-soft);
+      border-color: var(--brand);
+      color: var(--ink);
+    }
+    .tab-count {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 800;
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.05rem 0.45rem;
+      margin-left: 0.35rem;
+      vertical-align: middle;
+    }
+    .tab[aria-selected="true"] .tab-count {
+      background: transparent;
+      border-color: currentColor;
+    }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.1rem 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .panel h2 {
+      font-size: 1rem;
+      margin: 0 0 0.4rem 0;
+    }
+    .panel-desc {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin: 0 0 0.9rem 0;
+    }
+    /* ======================================================= */
+    /* 8. Tables (reorder)                                     */
+    /* ======================================================= */
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      min-width: 42rem;
+    }
+    thead th {
+      text-align: left;
+      font-size: 0.7rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--bg-soft);
+      padding: 0.6rem 0.7rem;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+    thead th:hover {
+      color: var(--brand);
+    }
+    tbody td {
+      padding: 0.6rem 0.7rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tbody tr:last-child td {
+      border-bottom: 0;
+    }
+    tbody tr:hover td {
+      background: var(--bg-soft);
+    }
+    /* Urgency badges */
+    .badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border-radius: 999px;
+      padding: 0.2rem 0.6rem;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .badge-urgent {
+      background: var(--red-soft);
+      color: var(--red);
+      border-color: currentColor;
+    }
+    .badge-week {
+      background: var(--amber-soft);
+      color: var(--amber);
+      border-color: currentColor;
+    }
+    .badge-watch {
+      background: var(--bg-soft);
+      color: var(--muted);
+      border-color: var(--border-strong);
+    }
+    .badge-p0 {
+      background: var(--red-soft);
+      color: var(--red);
+      border-color: currentColor;
+    }
+    .badge-p1 {
+      background: var(--amber-soft);
+      color: var(--amber);
+      border-color: currentColor;
+    }
+    .badge-sev-high {
+      background: var(--red-soft);
+      color: var(--red);
+      border-color: currentColor;
+    }
+    .badge-sev-med {
+      background: var(--amber-soft);
+      color: var(--amber);
+      border-color: currentColor;
+    }
+    .badge-sev-low {
+      background: var(--green-soft);
+      color: var(--green);
+      border-color: currentColor;
+    }
+    .cite {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--muted);
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: 0.3rem;
+      padding: 0.05rem 0.35rem;
+      white-space: nowrap;
+    }
+    /* ======================================================= */
+    /* 9. Cards (replies, leaks, listings)                     */
+    /* ======================================================= */
+    .cards {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.8rem;
+    }
+    @media (min-width: 860px) {
+      .cards-2 {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    .reply-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.9rem 1rem;
+      background: var(--bg);
+    }
+    .reply-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 0.45rem;
+    }
+    .reply-who {
+      font-weight: 800;
+      font-size: 0.88rem;
+    }
+    .reply-summary {
+      font-size: 0.82rem;
+      color: var(--ink-soft);
+      margin: 0 0 0.5rem 0;
+    }
+    .reply-draft {
+      font-size: 0.84rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--brand);
+      border-radius: 0.4rem;
+      padding: 0.6rem 0.75rem;
+      margin: 0 0 0.6rem 0;
+      line-height: 1.55;
+    }
+    .reply-meta {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .leak {
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--amber);
+      border-radius: var(--radius-sm);
+      padding: 0.8rem 1rem;
+      background: var(--bg);
+    }
+    .leak + .leak {
+      margin-top: 0.7rem;
+    }
+    .leak-title {
+      font-weight: 800;
+      margin: 0 0 0.2rem 0;
+      font-size: 0.88rem;
+    }
+    .leak-note {
+      font-size: 0.82rem;
+      color: var(--ink-soft);
+      margin: 0 0 0.4rem 0;
+    }
+    .fix {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.8rem 1rem;
+      background: var(--bg);
+    }
+    .fix + .fix {
+      margin-top: 0.7rem;
+    }
+    .fix-title {
+      font-weight: 700;
+      margin: 0 0 0.25rem 0;
+      font-size: 0.86rem;
+    }
+    /* ======================================================= */
+    /* 10. Filter / search row                                 */
+    /* ======================================================= */
+    .toolbar {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 0.9rem;
+    }
+    .toolbar input[type="search"] {
+      flex: 1 1 12rem;
+      min-height: 2.5rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-strong);
+      background: var(--bg);
+      color: var(--ink);
+      padding: 0.45rem 0.7rem;
+      font-size: 0.86rem;
+      min-width: 10rem;
+    }
+    .toolbar select {
+      min-height: 2.5rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-strong);
+      background: var(--bg);
+      color: var(--ink);
+      padding: 0.45rem 0.6rem;
+      font-size: 0.84rem;
+    }
+    .toolbar .btn {
+      min-height: 2.5rem;
+    }
+    .result-meta {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin: 0 0 0.6rem 0;
+    }
+    /* ======================================================= */
+    /* 11. Status / offline / error                            */
+    /* ======================================================= */
+    .status {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-top: 0.7rem;
+      min-height: 1.4em;
+    }
+    .status.error {
+      color: var(--red);
+      font-weight: 700;
+    }
+    .status.ok {
+      color: var(--green);
+    }
+    .banner {
+      border-radius: var(--radius-sm);
+      padding: 0.7rem 1rem;
+      font-size: 0.84rem;
+      margin-bottom: 0.9rem;
+      border: 1px solid var(--border);
+    }
+    .banner-offline {
+      background: var(--amber-soft);
+      border-color: var(--amber);
+      color: var(--ink);
+    }
+    .banner-error {
+      background: var(--red-soft);
+      border-color: var(--red);
+      color: var(--ink);
+    }
+    .banner-ok {
+      background: var(--green-soft);
+      border-color: var(--green);
+      color: var(--ink);
+    }
+    .spinner {
+      display: inline-block;
+      width: 1rem;
+      height: 1rem;
+      border: 2px solid var(--border-strong);
+      border-top-color: var(--brand);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      vertical-align: -2px;
+      margin-right: 0.4rem;
+    }
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .spinner {
+        animation: none;
+      }
+      * {
+        transition: none !important;
+      }
+    }
+    /* ======================================================= */
+    /* 12. PO + ingest + files                                 */
+    /* ======================================================= */
+    .po-wrap {
+      position: relative;
+    }
+    .po-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.6rem;
+    }
+    .ingest-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.6rem;
+      font-size: 0.82rem;
+    }
+    @media (min-width: 720px) {
+      .ingest-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    .ingest-box {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 0.9rem;
+      background: var(--bg);
+    }
+    .ingest-box h3 {
+      margin: 0 0 0.35rem 0;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+    .file-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      font-size: 0.82rem;
+    }
+    .file-list li {
+      padding: 0.45rem 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+    .file-list li:last-child {
+      border-bottom: 0;
+    }
+    kbd {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      background: var(--bg-soft);
+      border: 1px solid var(--border-strong);
+      border-bottom-width: 2px;
+      border-radius: 0.3rem;
+      padding: 0.05rem 0.4rem;
+    }
+    .kbd-table {
+      width: 100%;
+      min-width: 0;
+      font-size: 0.8rem;
+    }
+    .kbd-table td {
+      padding: 0.35rem 0.4rem;
+    }
+    /* ======================================================= */
+    /* 13. Print                                               */
+    /* Printable: hides buttons/nav/tabs; keeps tables/cards.  */
+    /* Flow: open Today tab → Cmd/Ctrl+P → Save as PDF.        */
+    /* ======================================================= */
+    .print-only {
+      display: none;
+    }
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      .print-only {
+        display: block !important;
+      }
+      body {
+        background: #fff !important;
+        color: #000 !important;
+      }
+      .topbar {
+        position: static;
+      }
+      .headline-card {
+        box-shadow: none !important;
+        border: 1px solid #000 !important;
+      }
+      .panel {
+        box-shadow: none !important;
+        border: 1px solid #999 !important;
+        break-inside: avoid;
+      }
+      .reply-card {
+        break-inside: avoid;
+      }
+      .leak {
+        break-inside: avoid;
+      }
+      table {
+        font-size: 10pt;
+      }
+      a {
+        color: #000 !important;
+        text-decoration: none !important;
+      }
+      .tab {
+        display: none !important;
+      }
+      .panel {
+        display: block !important;
+      }
+      main {
+        padding-bottom: 0 !important;
+      }
+    }
+    /* ======================================================= */
+    /* 14. Footer + help details                               */
+    /* ======================================================= */
+    details {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.7rem 1rem;
+      background: var(--card);
+      margin-bottom: 0.6rem;
+    }
+    details summary {
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.86rem;
+    }
+    details summary:focus-visible {
+      outline: 3px solid var(--brand);
+      outline-offset: 2px;
+    }
+    details p {
+      font-size: 0.82rem;
+      color: var(--ink-soft);
+    }
+    .foot-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.4rem;
+      font-size: 0.78rem;
+    }
+    @media (min-width: 720px) {
+      .foot-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    /* ======================================================= */
+    /* 15. Toast (copy feedback, offline-safe)                 */
+    /* ======================================================= */
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 1.2rem;
+      transform: translateX(-50%);
+      background: var(--ink);
+      color: var(--bg);
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 0.6rem 1rem;
+      border-radius: 999px;
+      box-shadow: var(--shadow-lg);
+      z-index: 99;
+      max-width: min(92vw, 32rem);
+      text-align: center;
+    }
+    /* End inline CSS (dependency-free, no @import, no CDN).    */
+  </style>
+</head>
+<body>
+  <!-- ============ SKIP LINK (a11y) ============ -->
+  <a
+    class="sr-only"
+    href="#main"
+  >
+    Skip to close dashboard
+  </a>
+  <!-- ============ TOP BAR ============ -->
+  <header
+    class="topbar no-print"
+    role="banner"
+  >
+    <div
+      class="wrap topbar-inner"
+    >
+      <div
+        class="brand"
+      >
+        <span
+          class="brand-mark"
+          aria-hidden="true"
+        >
+          <img
+            src="icon.svg"
+            alt=""
+            width="22"
+            height="22"
+          >
+        </span>
+        <span>
+          <span
+            class="brand-name"
+          >
+            Omni-One · Daily Close
+          </span>
+          <br>
+          <span
+            class="brand-sub"
+          >
+            5-min morning ritual · profit + reorder + replies + leaks · $0 offline
+          </span>
+        </span>
+      </div>
+      <nav
+        class="top-actions"
+        aria-label="Close actions"
+      >
+        <button
+          id="btnDemoTop"
+          class="btn btn-primary"
+          type="button"
+          title="Load demo close (POST /api/v1/seller/close demo:true)"
+        >
+          ▶ Demo close
+        </button>
+        <button
+          id="btnCSVTop"
+          class="btn"
+          type="button"
+          title="Download accountant CSV (GET /api/v1/seller/close.csv)"
+        >
+          ⬇ CSV
+        </button>
+        <button
+          id="btnPrintTop"
+          class="btn"
+          type="button"
+          title="Print / Save as PDF"
+        >
+          🖨 Print
+        </button>
+        <button
+          id="btnTheme"
+          class="btn"
+          type="button"
+          title="Toggle light/dark"
+          aria-label="Toggle theme"
+        >
+          ◐
+        </button>
+      </nav>
+    </div>
+  </header>
+  <!-- ============ MAIN ============ -->
+  <main
+    id="main"
+    class="wrap"
+    role="main"
+    aria-label="Daily close dashboard"
+  >
+    <!-- Print-only header (visible only in @media print) -->
+    <div
+      class="print-only"
+      aria-hidden="true"
+    >
+      <h1>
+        Daily Close — printout
+      </h1>
+      <p>
+        Generated from web/close PWA · every number cites file:line ·
+        POST /api/v1/seller/close · GET /api/v1/seller/close.csv
+      </p>
+    </div>
+    <!-- Offline + error banners (graceful offline/error states) -->
+    <div
+      id="offlineBanner"
+      class="banner banner-offline hidden no-print"
+      role="status"
+      aria-live="polite"
+    >
+      ⚠ You are offline. Showing last cached close (localStorage, 24h).
+      Demo still works. API calls will retry when back online.
+      Citations: <span class="mono">[app.js:offline]</span>
+    </div>
+    <div
+      id="errorBanner"
+      class="banner banner-error hidden"
+      role="alert"
+      aria-live="assertive"
+    >
+      <b>
+        Couldn't reach the API.
+      </b>
+      <span
+        id="errorText"
+      >
+        Is the server running?
+      </span>
+      <span
+        class="mono tiny"
+      >
+        [index.html:error-banner] [app.js:api-client]
+      </span>
+      <div
+        class="btn-row no-print"
+        style="margin-top:0.5rem"
+      >
+        <button
+          id="btnRetry"
+          class="btn"
+          type="button"
+        >
+          Retry
+        </button>
+        <button
+          id="btnLoadDemoFallback"
+          class="btn"
+          type="button"
+        >
+          Load demo instead
+        </button>
+      </div>
+    </div>
+    <!-- ============ HEADLINE + KPIs ============ -->
+    <section
+      class="headline-card"
+      aria-labelledby="headlineTitle"
+    >
+      <p
+        class="headline-eyebrow"
+      >
+        Today's headline · <span id="closeDate">—</span> · <span id="closeShop">our shop</span>
+      </p>
+      <h1
+        id="headlineTitle"
+        class="headline"
+      >
+        Run a close to see profit, risk &amp; reorders.
+      </h1>
+      <div
+        class="headline-meta"
+      >
+        <span
+          id="ingestLine"
+          class="mono tiny"
+        >
+          ingest: — [ingest_report]
+        </span>
+        <span
+          aria-hidden="true"
+        >
+          ·
+        </span>
+        <span
+          id="cacheLine"
+          class="tiny"
+        >
+          cache: empty
+        </span>
+        <span
+          aria-hidden="true"
+        >
+          ·
+        </span>
+        <span
+          class="tiny mono"
+        >
+          [index.html:headline] [app.js:renderClose]
+        </span>
+      </div>
+      <!-- Headline KPI cards: gmv / profit / margin / risk / reorders / leaks -->
+      <div
+        class="kpi-grid"
+        role="list"
+        aria-label="Headline KPIs"
+      >
+        <div
+          class="kpi"
+          role="listitem"
+        >
+          <p
+            class="kpi-label"
+          >
+            GMV
+          </p>
+          <p
+            id="kpiGmv"
+            class="kpi-value"
+          >
+            —
+          </p>
+          <p
+            class="kpi-cite"
+          >
+            [shopify_orders.csv:5] [etsy_settlement.csv:2]
+          </p>
+        </div>
+        <div
+          class="kpi"
+          role="listitem"
+        >
+          <p
+            class="kpi-label"
+          >
+            True profit
+          </p>
+          <p
+            id="kpiProfit"
+            class="kpi-value"
+          >
+            —
+          </p>
+          <p
+            class="kpi-cite"
+          >
+            [orders] gmv − fees − ship − cogs
+          </p>
+        </div>
+        <div
+          class="kpi"
+          role="listitem"
+        >
+          <p
+            class="kpi-label"
+          >
+            Margin
+          </p>
+          <p
+            id="kpiMargin"
+            class="kpi-value"
+          >
+            —
+          </p>
+          <p
+            class="kpi-cite"
+          >
+            [seller_close.py:build_daily_close]
+          </p>
+        </div>
+        <div
+          class="kpi"
+          role="listitem"
+        >
+          <p
+            class="kpi-label"
+          >
+            $ at risk
+          </p>
+          <p
+            id="kpiRisk"
+            class="kpi-value"
+          >
+            —
+          </p>
+          <p
+            class="kpi-cite"
+          >
+            [instagram_dm.txt:1] [reviews.csv:2]
+          </p>
+        </div>
+        <div
+          class="kpi"
+          role="listitem"
+        >
+          <p
+            class="kpi-label"
+          >
+            Reorder today
+          </p>
+          <p
+            id="kpiReorder"
+            class="kpi-value"
+          >
+            —
+          </p>
+          <p
+            class="kpi-cite"
+          >
+            [inventory.csv:2] urgency=ORDER TODAY
+          </p>
+        </div>
+        <div
+          class="kpi"
+          role="listitem"
+        >
+          <p
+            class="kpi-label"
+          >
+            Leaks
+          </p>
+          <p
+            id="kpiLeaks"
+            class="kpi-value"
+          >
+            —
+          </p>
+          <p
+            class="kpi-cite"
+          >
+            [seller_close.py:money_leaks]
+          </p>
+        </div>
+      </div>
+      <div
+        class="kpi-grid"
+        style="margin-top:0.75rem"
+        role="list"
+        aria-label="More KPIs"
+      >
+        <div
+          class="kpi"
+          role="listitem"
+        >
+          <p
+            class="kpi-label"
+          >
+            Orders · AOV
+          </p>
+          <p
+            id="kpiOrders"
+            class="kpi-value small"
+          >
+            —
+          </p>
+          <p
+            class="kpi-cite"
+          >
+            [shopify_orders.csv:1..5]
+          </p>
+        </div>
+        <div
+          class="kpi"
+          role="listitem"
+        >
+          <p
+            class="kpi-label"
+          >
+            Best seller
+          </p>
+          <p
+            id="kpiBest"
+            class="kpi-value small"
+          >
+            —
+          </p>
+          <p
+            class="kpi-cite"
+          >
+            [briefing] best_seller
+          </p>
+        </div>
+        <div
+          class="kpi"
+          role="listitem"
+        >
+          <p
+            class="kpi-label"
+          >
+            Fees · Ship · COGS
+          </p>
+          <p
+            id="kpiCosts"
+            class="kpi-value small"
+          >
+            —
+          </p>
+          <p
+            class="kpi-cite"
+          >
+            [etsy_settlement.csv:*] [supplier_invoice.*]
+          </p>
+        </div>
+        <div
+          class="kpi"
+          role="listitem"
+        >
+          <p
+            class="kpi-label"
+          >
+            Reply queue
+          </p>
+          <p
+            id="kpiReplies"
+            class="kpi-value small"
+          >
+            —
+          </p>
+          <p
+            class="kpi-cite"
+          >
+            [reply_queue] P0-reply-in-2h first
+          </p>
+        </div>
+        <div
+          class="kpi"
+          role="listitem"
+        >
+          <p
+            class="kpi-label"
+          >
+            Net
+          </p>
+          <p
+            id="kpiNet"
+            class="kpi-value small"
+          >
+            —
+          </p>
+          <p
+            class="kpi-cite"
+          >
+            [briefing] kpis.net
+          </p>
+        </div>
+        <div
+          class="kpi"
+          role="listitem"
+        >
+          <p
+            class="kpi-label"
+          >
+            Source
+          </p>
+          <p
+            id="kpiSource"
+            class="kpi-value small"
+          >
+            —
+          </p>
+          <p
+            class="kpi-cite"
+          >
+            [app.js:cache] live|cache|demo
+          </p>
+        </div>
+      </div>
+      <div
+        class="do-today"
+        aria-label="Do today"
+      >
+        <h2>
+          ☀ Do today (3 things)
+        </h2>
+        <ol
+          id="doToday"
+        >
+          <li>
+            Run demo or drop a folder to generate today's close.
+            <span class="cite">[index.html:do-today]</span>
+          </li>
+        </ol>
+      </div>
+      <p
+        id="loadStatus"
+        class="status"
+        role="status"
+        aria-live="polite"
+      >
+        Idle. Press “Demo close” or drop a seller folder. [index.html:status]
+      </p>
+    </section>
+    <!-- ============ CONTROLS ============ -->
+    <section
+      class="controls no-print"
+      aria-label="Close controls"
+    >
+      <div
+        class="controls-grid"
+      >
+        <div
+          class="field"
+        >
+          <label
+            for="shopInput"
+          >
+            Shop name
+          </label>
+          <input
+            id="shopInput"
+            type="text"
+            value="our shop"
+            maxlength="60"
+            autocomplete="organization"
+            placeholder="e.g. Sunny Ceramics"
+          >
+          <div
+            class="hint"
+          >
+            Used in PO + reply drafts. Stored locally. <span class="mono">[app.js:shop]</span>
+          </div>
+        </div>
+        <div
+          class="field"
+        >
+          <label
+            for="seedInput"
+          >
+            Demo seed
+          </label>
+          <input
+            id="seedInput"
+            type="number"
+            value="42"
+            min="0"
+            max="999999"
+            step="1"
+          >
+          <div
+            class="hint"
+          >
+            Same seed → same demo close. <span class="mono">[app.js:seed]</span>
+          </div>
+        </div>
+        <div
+          class="field"
+        >
+          <label
+            for="localeInput"
+          >
+            Draft language
+          </label>
+          <select
+            id="localeInput"
+          >
+            <option value="en" selected>English</option>
+            <option value="es">Español</option>
+            <option value="zh">中文</option>
+            <option value="fr">Français</option>
+            <option value="de">Deutsch</option>
+          </select>
+          <div
+            class="hint"
+          >
+            Reply + PO drafts only — numbers never change. <span class="mono">[app.js:locale]</span>
+          </div>
+        </div>
+        <div
+          class="field"
+        >
+          <label
+            for="apiInput"
+          >
+            API base URL
+          </label>
+          <input
+            id="apiInput"
+            type="text"
+            value=""
+            maxlength="200"
+            inputmode="url"
+            placeholder="same-origin (empty = this server)"
+          >
+          <div
+            class="hint"
+          >
+            Saved to localStorage <code>close_api_base</code>. ?api= overrides.
+            POST <code>/api/v1/seller/close</code> · GET <code>/api/v1/seller/close.csv</code>
+          </div>
+        </div>
+        <div
+          class="btn-row"
+        >
+          <button
+            id="btnDemo"
+            class="btn btn-primary"
+            type="button"
+          >
+            ▶ Demo close
+          </button>
+          <button
+            id="btnFetch"
+            class="btn"
+            type="button"
+          >
+            ↻ Fetch close
+          </button>
+          <button
+            id="btnCSV"
+            class="btn"
+            type="button"
+          >
+            ⬇ CSV
+          </button>
+        </div>
+      </div>
+      <div
+        class="btn-row"
+        style="margin-top:0.75rem"
+      >
+        <button
+          id="btnFolder"
+          class="btn"
+          type="button"
+          title="Explain folder mode (browsers cannot send local paths)"
+        >
+          📁 Folder hint
+        </button>
+        <button
+          id="btnCopyPO"
+          class="btn"
+          type="button"
+        >
+          ⧉ Copy PO
+        </button>
+        <button
+          id="btnCopyReplies"
+          class="btn"
+          type="button"
+        >
+          ⧉ Copy replies
+        </button>
+        <button
+          id="btnClearCache"
+          class="btn"
+          type="button"
+        >
+          ✕ Clear cache
+        </button>
+      </div>
+      <!-- Folder dropzone -->
+      <div
+        id="dropzone"
+        class="dropzone"
+        tabindex="0"
+        role="button"
+        aria-label="Drop seller folder files here (hint only — browser cannot upload a server path)"
+        style="margin-top:0.8rem"
+      >
+        <p
+          class="dropzone-title"
+        >
+          📥 Drop seller files here (or click for hint)
+        </p>
+        <p
+          class="dropzone-sub"
+        >
+          shopify_orders.csv · inventory.csv · reviews.csv · instagram_dm.txt · supplier_invoice.jpg —
+          browsers can't send a server <code>folder</code> path, so drop shows a hint with the exact
+          <code>POST /api/v1/seller/close {"folder": "/path"}</code> + CLI to run.
+          File names + <code>file:line</code> citations stay visible. <span class="mono">[index.html:dropzone]</span>
+        </p>
+        <input
+          id="fileInput"
+          class="hidden"
+          type="file"
+          multiple
+          accept=".csv,.txt,.json,.jpg,.jpeg,.png,.pdf,.tsv"
+          aria-hidden="true"
+          tabindex="-1"
+        >
+      </div>
+      <div
+        id="folderHint"
+        class="hint"
+        role="status"
+        aria-live="polite"
+      >
+        Tip: quickest daily flow is Demo → CSV → Print. Folder mode is for the API/CLI on your laptop.
+        <span class="mono">[app.js:loadFolderHint]</span>
+      </div>
+    </section>
+    <!-- ============ TABS ============ -->
+    <!-- Tabs: Today / Reorder+PO / Replies / Leaks / Listings / Files -->
+    <!-- Keyboard: 1..6 switch tabs, d demo, c csv, p print, / search -->
+    <nav
+      class="tabs no-print"
+      role="tablist"
+      aria-label="Close sections"
+      id="tabs"
+    >
+      <button
+        class="tab"
+        role="tab"
+        id="tab-today"
+        aria-selected="true"
+        aria-controls="panel-today"
+        data-tab="today"
+        type="button"
+      >
+        ☀ Today
+        <span
+          class="tab-count"
+          id="countToday"
+        >
+          3
+        </span>
+      </button>
+      <button
+        class="tab"
+        role="tab"
+        id="tab-reorder"
+        aria-selected="false"
+        aria-controls="panel-reorder"
+        data-tab="reorder"
+        type="button"
+        tabindex="-1"
+      >
+        📦 Reorder+PO
+        <span
+          class="tab-count"
+          id="countReorder"
+        >
+          —
+        </span>
+      </button>
+      <button
+        class="tab"
+        role="tab"
+        id="tab-replies"
+        aria-selected="false"
+        aria-controls="panel-replies"
+        data-tab="replies"
+        type="button"
+        tabindex="-1"
+      >
+        💬 Replies
+        <span
+          class="tab-count"
+          id="countReplies"
+        >
+          —
+        </span>
+      </button>
+      <button
+        class="tab"
+        role="tab"
+        id="tab-leaks"
+        aria-selected="false"
+        aria-controls="panel-leaks"
+        data-tab="leaks"
+        type="button"
+        tabindex="-1"
+      >
+        💸 Leaks
+        <span
+          class="tab-count"
+          id="countLeaks"
+        >
+          —
+        </span>
+      </button>
+      <button
+        class="tab"
+        role="tab"
+        id="tab-listings"
+        aria-selected="false"
+        aria-controls="panel-listings"
+        data-tab="listings"
+        type="button"
+        tabindex="-1"
+      >
+        🏷 Listings
+        <span
+          class="tab-count"
+          id="countListings"
+        >
+          —
+        </span>
+      </button>
+      <button
+        class="tab"
+        role="tab"
+        id="tab-files"
+        aria-selected="false"
+        aria-controls="panel-files"
+        data-tab="files"
+        type="button"
+        tabindex="-1"
+      >
+        🗂 Files
+        <span
+          class="tab-count"
+          id="countFiles"
+        >
+          —
+        </span>
+      </button>
+    </nav>
+    <!-- ============ PANEL: TODAY ============ -->
+    <section
+      class="panel"
+      id="panel-today"
+      role="tabpanel"
+      aria-labelledby="tab-today"
+      data-panel="today"
+    >
+      <h2>
+        ☀ Today — close in 3 steps
+      </h2>
+      <p
+        class="panel-desc"
+      >
+        1) Reply (money at risk) · 2) Reorder (stockouts kill tomorrow) · 3) Plug one leak.
+        Every line cites <span class="mono">file:line</span>.
+        <span class="cite">[index.html:panel-today]</span>
+      </p>
+      <div
+        class="toolbar no-print"
+      >
+        <input
+          id="searchToday"
+          type="search"
+          placeholder="Search today (product, customer, leak)…  ( / )"
+          aria-label="Search today"
+        >
+        <button
+          id="btnTodayDemo"
+          class="btn btn-primary"
+          type="button"
+        >
+          ▶ Demo
+        </button>
+        <button
+          id="btnTodayCSV"
+          class="btn"
+          type="button"
+        >
+          ⬇ CSV
+        </button>
+        <button
+          id="btnTodayPrint"
+          class="btn"
+          type="button"
+        >
+          🖨 Print
+        </button>
+      </div>
+      <p
+        id="todayMeta"
+        class="result-meta"
+      >
+        No close yet. [index.html:today-meta]
+      </p>
+      <div
+        class="ingest-grid"
+      >
+        <div
+          class="ingest-box"
+        >
+          <h3>
+            Top replies (P0 first)
+          </h3>
+          <div
+            id="todayReplies"
+            class="small muted"
+          >
+            Run demo — drafts appear here with copy buttons + citations
+            <span class="mono">[instagram_dm.txt:1]</span>.
+          </div>
+        </div>
+        <div
+          class="ingest-box"
+        >
+          <h3>
+            Top reorders (ORDER TODAY first)
+          </h3>
+          <div
+            id="todayReorders"
+            class="small muted"
+          >
+            Run demo — urgency badges appear here
+            <span class="mono">[inventory.csv:2]</span>.
+          </div>
+        </div>
+      </div>
+      <div
+        class="ingest-box"
+        style="margin-top:0.6rem"
+      >
+        <h3>
+          Biggest leak
+        </h3>
+        <div
+          id="todayLeak"
+          class="small muted"
+        >
+          Run demo — dollar-amount leak appears here
+          <span class="mono">[seller_close.py:money_leaks]</span>.
+        </div>
+      </div>
+      <details
+        class="no-print"
+      >
+        <summary>
+          How to read Today (30 sec)
+        </summary>
+        <p>
+          Headline = profit + $ at risk + # ORDER TODAY + # leaks.
+          Do the 3 bullets top-down. Copy-paste drafts — each cites
+          <code>file:line</code> like <code>[instagram_dm.txt:3]</code>.
+          API: <code>POST /api/v1/seller/close</code>.
+          <span class="mono">[index.html:help-today]</span>
+        </p>
+      </details>
+    </section>
+    <!-- ============ PANEL: REORDER+PO ============ -->
+    <section
+      class="panel hidden"
+      id="panel-reorder"
+      role="tabpanel"
+      aria-labelledby="tab-reorder"
+      data-panel="reorder"
+    >
+      <h2>
+        📦 Reorder sheet + supplier PO
+      </h2>
+      <p
+        class="panel-desc"
+      >
+        14-day cover · velocity = sold_7d / 7 · urgency:
+        <span class="badge badge-urgent">ORDER TODAY</span>
+        <span class="badge badge-week">this week</span>
+        <span class="badge badge-watch">watch</span>
+        Click headers to sort. Filter by urgency. Citations per row.
+        <span class="cite">[inventory.csv:2]</span>
+        <span class="cite">[index.html:panel-reorder]</span>
+      </p>
+      <div
+        class="toolbar no-print"
+      >
+        <input
+          id="searchReorder"
+          type="search"
+          placeholder="Search product / supplier…"
+          aria-label="Search reorder sheet"
+        >
+        <select
+          id="filterUrgency"
+          aria-label="Filter by urgency"
+        >
+          <option
+            value="all"
+          >
+            All urgencies
+          </option>
+          <option
+            value="ORDER TODAY"
+          >
+            ORDER TODAY
+          </option>
+          <option
+            value="this week"
+          >
+            this week
+          </option>
+          <option
+            value="watch"
+          >
+            watch
+          </option>
+        </select>
+        <select
+          id="sortReorder"
+          aria-label="Sort reorder sheet"
+        >
+          <option
+            value="days_left"
+          >
+            Sort: days left ↑
+          </option>
+          <option
+            value="reorder_qty"
+          >
+            Sort: reorder qty ↓
+          </option>
+          <option
+            value="sold_7d"
+          >
+            Sort: sold 7d ↓
+          </option>
+          <option
+            value="product"
+          >
+            Sort: product A–Z
+          </option>
+        </select>
+        <button
+          id="btnCopyReorderCSV"
+          class="btn"
+          type="button"
+        >
+          ⧉ Copy CSV rows
+        </button>
+      </div>
+      <p
+        id="reorderMeta"
+        class="result-meta"
+      >
+        No rows yet. [index.html:reorder-meta]
+      </p>
+      <div
+        class="table-wrap"
+      >
+        <table
+          aria-label="Reorder sheet"
+        >
+          <thead>
+            <tr>
+              <th
+                data-sort="product"
+                scope="col"
+                title="Click to sort"
+              >
+                Product ↕
+              </th>
+              <th
+                data-sort="on_hand"
+                scope="col"
+                title="Click to sort"
+              >
+                Have ↕
+              </th>
+              <th
+                data-sort="sold_7d"
+                scope="col"
+                title="Click to sort"
+              >
+                Sold 7d ↕
+              </th>
+              <th
+                data-sort="days_left"
+                scope="col"
+                title="Click to sort"
+              >
+                Days left ↕
+              </th>
+              <th
+                data-sort="reorder_qty"
+                scope="col"
+                title="Click to sort"
+              >
+                Reorder (14d) ↕
+              </th>
+              <th
+                scope="col"
+              >
+                Supplier
+              </th>
+              <th
+                scope="col"
+              >
+                Urgency
+              </th>
+              <th
+                scope="col"
+              >
+                Citation
+              </th>
+            </tr>
+          </thead>
+          <tbody
+            id="reorderBody"
+          >
+            <tr>
+              <td
+                colspan="8"
+                class="muted"
+              >
+                No close yet — press Demo close.
+                Example row would cite
+                <span class="cite">[inventory.csv:2]</span>
+                with badge
+                <span class="badge badge-urgent">ORDER TODAY</span>.
+                [index.html:reorder-empty]
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div
+        id="deadStock"
+        class="small muted"
+        style="margin-top:0.6rem"
+      >
+        Dead-stock note: — <span class="cite">[seller_close.py:dead_stock]</span>
+      </div>
+      <h3
+        style="margin-top:1rem;font-size:0.9rem"
+      >
+        ✉ Supplier PO draft (copy-paste to email)
+        <span class="cite">[index.html:po]</span>
+      </h3>
+      <div
+        class="po-wrap"
+      >
+        <div
+          class="po-actions no-print"
+        >
+          <button
+            id="btnCopyPO2"
+            class="btn"
+            type="button"
+          >
+            ⧉ Copy PO
+          </button>
+          <button
+            id="btnDownloadPO"
+            class="btn"
+            type="button"
+          >
+            ⬇ po.txt
+          </button>
+        </div>
+        <pre
+          id="poPre"
+          aria-label="Purchase order draft"
+        >Stock healthy — no PO needed today. Run demo for a real PO draft citing [inventory.csv:2]. [index.html:po-pre]</pre>
+      </div>
+    </section>
+    <!-- ============ PANEL: REPLIES ============ -->
+    <section
+      class="panel hidden"
+      id="panel-replies"
+      role="tabpanel"
+      aria-labelledby="tab-replies"
+      data-panel="replies"
+    >
+      <h2>
+        💬 Reply queue — who is angry RIGHT NOW
+      </h2>
+      <p
+        class="panel-desc"
+      >
+        P0-reply-in-2h first. Each card has a copy button + <span class="mono">file:line</span> citation.
+        Money at risk ≈ queue × AOV. Filter P0/P1, search customer text.
+        <span class="cite">[instagram_dm.txt:1]</span>
+        <span class="cite">[reviews.csv:2]</span>
+        <span class="cite">[index.html:panel-replies]</span>
+      </p>
+      <div
+        class="toolbar no-print"
+      >
+        <input
+          id="searchReplies"
+          type="search"
+          placeholder="Search customer / text…"
+          aria-label="Search replies"
+        >
+        <select
+          id="filterPriority"
+          aria-label="Filter by priority"
+        >
+          <option
+            value="all"
+          >
+            All priorities
+          </option>
+          <option
+            value="P0-reply-in-2h"
+          >
+            P0-reply-in-2h
+          </option>
+          <option
+            value="P1-today"
+          >
+            P1-today
+          </option>
+        </select>
+        <select
+          id="filterChannel"
+          aria-label="Filter by channel"
+        >
+          <option
+            value="all"
+          >
+            All channels
+          </option>
+          <option
+            value="dm"
+          >
+            dm
+          </option>
+          <option
+            value="review"
+          >
+            review
+          </option>
+          <option
+            value="scenario"
+          >
+            scenario
+          </option>
+        </select>
+        <button
+          id="btnCopyAllReplies"
+          class="btn"
+          type="button"
+        >
+          ⧉ Copy all drafts
+        </button>
+      </div>
+      <p
+        id="repliesMeta"
+        class="result-meta"
+      >
+        No replies yet. [index.html:replies-meta]
+      </p>
+      <div
+        id="replyCards"
+        class="cards cards-2"
+        aria-live="polite"
+      >
+        <article
+          class="reply-card"
+        >
+          <div
+            class="reply-top"
+          >
+            <span
+              class="reply-who"
+            >
+              Example — no data yet
+            </span>
+            <span
+              class="badge badge-p0"
+            >
+              P0-reply-in-2h
+            </span>
+          </div>
+          <p
+            class="reply-summary"
+          >
+            “Where is my order? No tracking…” — example text.
+          </p>
+          <p
+            class="reply-draft"
+          >
+            Hi there! I'm really sorry about your missing tracking — …
+          </p>
+          <div
+            class="reply-meta"
+          >
+            <span
+              class="cite"
+            >
+              [instagram_dm.txt:3]
+            </span>
+            <button
+              class="btn"
+              type="button"
+              disabled
+            >
+              ⧉ Copy
+            </button>
+          </div>
+          <p
+            class="tiny muted"
+          >
+            Real cards render here via <code>renderClose</code> in
+            <code>app.js</code>. [index.html:reply-empty]
+          </p>
+        </article>
+      </div>
+    </section>
+    <!-- ============ PANEL: LEAKS ============ -->
+    <section
+      class="panel hidden"
+      id="panel-leaks"
+      role="tabpanel"
+      aria-labelledby="tab-leaks"
+      data-panel="leaks"
+    >
+      <h2>
+        💸 Money leaks — dollar amounts, not charts
+      </h2>
+      <p
+        class="panel-desc"
+      >
+        fee_creep · shipping_loss · margin_dip. Each leak shows $ + evidence
+        <span class="mono">file:line</span>. Fix one per day.
+        <span class="cite">[seller_close.py:money_leaks]</span>
+        <span class="cite">[index.html:panel-leaks]</span>
+      </p>
+      <div
+        class="toolbar no-print"
+      >
+        <input
+          id="searchLeaks"
+          type="search"
+          placeholder="Search leaks…"
+          aria-label="Search leaks"
+        >
+        <select
+          id="filterLeak"
+          aria-label="Filter leaks"
+        >
+          <option
+            value="all"
+          >
+            All leaks
+          </option>
+          <option
+            value="fee_creep"
+          >
+            fee_creep
+          </option>
+          <option
+            value="shipping_loss"
+          >
+            shipping_loss
+          </option>
+          <option
+            value="margin_dip"
+          >
+            margin_dip
+          </option>
+        </select>
+      </div>
+      <p
+        id="leaksMeta"
+        class="result-meta"
+      >
+        No leaks yet. [index.html:leaks-meta]
+      </p>
+      <div
+        id="leaksList"
+      >
+        <div
+          class="leak"
+        >
+          <p
+            class="leak-title"
+          >
+            No close yet
+          </p>
+          <p
+            class="leak-note"
+          >
+            Run demo — e.g. “Fees 14.2% of GMV — compare Shopify 2.9%+30c…”
+            with evidence <span class="cite">[orders] fees $.. / GMV $..</span>.
+          </p>
+          <span
+            class="cite"
+          >
+            [index.html:leak-empty]
+          </span>
+        </div>
+      </div>
+    </section>
+    <!-- ============ PANEL: LISTINGS ============ -->
+    <section
+      class="panel hidden"
+      id="panel-listings"
+      role="tabpanel"
+      aria-labelledby="tab-listings"
+      data-panel="listings"
+    >
+      <h2>
+        🏷 Listing fixes — tomorrow's sales
+      </h2>
+      <p
+        class="panel-desc"
+      >
+        LISTING_GAP · REVIEW_CRISIS · PRICE_MISMATCH · WORST_SELLER.
+        Each fix cites evidence. Bundle/clearance the worst seller.
+        <span class="cite">[index.html:panel-listings]</span>
+      </p>
+      <div
+        class="toolbar no-print"
+      >
+        <input
+          id="searchListings"
+          type="search"
+          placeholder="Search fixes…"
+          aria-label="Search listing fixes"
+        >
+      </div>
+      <p
+        id="listingsMeta"
+        class="result-meta"
+      >
+        No fixes yet. [index.html:listings-meta]
+      </p>
+      <div
+        id="listingFixes"
+      >
+        <div
+          class="fix"
+        >
+          <p
+            class="fix-title"
+          >
+            No close yet
+          </p>
+          <p
+            class="small muted"
+          >
+            Run demo — fixes cite like
+            <span class="cite">[reviews.csv:4]</span>.
+          </p>
+          <span
+            class="cite"
+          >
+            [index.html:listing-empty]
+          </span>
+        </div>
+      </div>
+    </section>
+    <!-- ============ PANEL: FILES ============ -->
+    <section
+      class="panel hidden"
+      id="panel-files"
+      role="tabpanel"
+      aria-labelledby="tab-files"
+      data-panel="files"
+    >
+      <h2>
+        🗂 Files + ingest report
+      </h2>
+      <p
+        class="panel-desc"
+      >
+        What the server saw: files_seen, files_ingested, by_source, errors, events.
+        Deterministic + idempotent: same folder → same close (minus timestamp).
+        <span class="cite">[seller_os.py:ingest_seller_folder]</span>
+        <span class="cite">[index.html:panel-files]</span>
+      </p>
+      <div
+        class="ingest-grid"
+      >
+        <div
+          class="ingest-box"
+        >
+          <h3>
+            Ingest report (JSON)
+          </h3>
+          <pre
+            id="ingestReport"
+            aria-label="Ingest report JSON"
+          >{ "status": "no close yet — press Demo close", "hint": "POST /api/v1/seller/close {\"demo\": true}", "cite": "[index.html:ingest-empty]" }</pre>
+        </div>
+        <div
+          class="ingest-box"
+        >
+          <h3>
+            Drop log (this browser)
+          </h3>
+          <ul
+            id="fileList"
+            class="file-list"
+          >
+            <li>
+              <span>
+                No files dropped yet
+              </span>
+              <span
+                class="cite"
+              >
+                [index.html:files-empty]
+              </span>
+            </li>
+          </ul>
+          <p
+            class="tiny muted"
+          >
+            Browsers cannot reveal a server-side <code>folder</code> path, so drops
+            are logged here + a copy-paste <code>curl</code> is shown.
+            Real ingest runs server-side via
+            <code>POST /api/v1/seller/close</code>.
+          </p>
+          <pre
+            id="curlHint"
+            class="tiny"
+          ># folder mode (run on the machine that HAS the folder):
+curl -X POST http://localhost:5003/api/v1/seller/close \
+  -H 'Content-Type: application/json' \
+  -d '{"folder": "/tmp/my_shop", "shop": "our shop"}'
+# CSV:
+curl 'http://localhost:5003/api/v1/seller/close.csv?demo=true&seed=42' -o close.csv
+# CLI:
+# omni-one close --folder /tmp/my_shop --out ./close_2026-10-11
+# cites: [index.html:curl-hint] [README.md]</pre>
+        </div>
+      </div>
+      <div
+        class="ingest-box"
+        style="margin-top:0.6rem"
+      >
+        <h3>
+          Raw close JSON (audit)
+        </h3>
+        <div
+          class="po-actions no-print"
+        >
+          <button
+            id="btnCopyJSON"
+            class="btn"
+            type="button"
+          >
+            ⧉ Copy JSON
+          </button>
+          <button
+            id="btnDownloadJSON"
+            class="btn"
+            type="button"
+          >
+            ⬇ close.json
+          </button>
+        </div>
+        <pre
+          id="rawJSON"
+          aria-label="Raw close JSON"
+        >{ "hint": "run demo — full close.json appears here", "cite": "[index.html:raw-empty]" }</pre>
+      </div>
+    </section>
+    <!-- ============ HELP / API CONTRACT ============ -->
+    <section
+      class="panel no-print"
+      aria-label="Help and API contract"
+    >
+      <h2>
+        ❓ Help · API contract · Shortcuts
+      </h2>
+      <div
+        class="foot-grid"
+      >
+        <details
+          open
+        >
+          <summary>
+            API contract (same-origin)
+          </summary>
+          <p>
+            <code>POST /api/v1/seller/close</code>
+            body <code>{"demo": true, "seed": 42, "shop": "our shop"}</code>
+            or <code>{"folder": "/tmp/my_shop", "shop": "…"}</code>.
+            Returns <code>close.json</code> bundle: headline, kpis, do_today[3],
+            reorder_sheet[], reply_queue[], money_leaks[], listing_fixes[],
+            po_draft, ingest_report.
+            <br>
+            <code>GET /api/v1/seller/close.csv?demo=true&amp;seed=42&amp;shop=…</code>
+            returns accountant-ready CSV.
+            <span class="mono">[index.html:api-contract]</span>
+          </p>
+        </details>
+        <details
+          open
+        >
+          <summary>
+            Keyboard shortcuts
+          </summary>
+          <div
+            class="table-wrap"
+          >
+            <table
+              class="kbd-table"
+              aria-label="Keyboard shortcuts"
+            >
+              <tbody>
+                <tr>
+                  <td>
+                    <kbd>1</kbd>…<kbd>6</kbd>
+                  </td>
+                  <td>
+                    Today / Reorder+PO / Replies / Leaks / Listings / Files
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <kbd>d</kbd>
+                  </td>
+                  <td>
+                    Demo close (POST demo:true)
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <kbd>c</kbd>
+                  </td>
+                  <td>
+                    Download CSV (GET close.csv)
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <kbd>p</kbd>
+                  </td>
+                  <td>
+                    Print / Save as PDF
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <kbd>/</kbd>
+                  </td>
+                  <td>
+                    Focus search in current tab
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <kbd>←</kbd><kbd>→</kbd>
+                  </td>
+                  <td>
+                    Prev / next tab (when tab focused)
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <kbd>Esc</kbd>
+                  </td>
+                  <td>
+                    Blur / close toast
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p
+            class="tiny"
+          >
+            Full list in <code>web/close/README.md</code>.
+            <span class="mono">[index.html:shortcuts]</span>
+          </p>
+        </details>
+      </div>
+      <details>
+        <summary>
+          Print flow (accountant / fridge)
+        </summary>
+        <p>
+          Open <b>Today</b> tab → <b>Print</b> (or <kbd>p</kbd>) → Save as PDF.
+          Buttons, tabs and search hide in print; tables, reply drafts, PO and
+          citations stay. File: <code>web/close/index.html @media print</code>.
+          <span class="mono">[index.html:print-flow]</span>
+        </p>
+      </details>
+      <details>
+        <summary>
+          Offline + cache (24h)
+        </summary>
+        <p>
+          Service worker <code>sw.js</code> (<code>CLOSE_V1</code>, cache-first) keeps
+          the shell offline. Last close is cached in
+          <code>localStorage close_last (24h)</code> and shown with a banner when
+          offline. No CDN — works with WiFi off.
+          <span class="mono">[sw.js:CLOSE_V1] [app.js:cache]</span>
+        </p>
+      </details>
+      <details>
+        <summary>
+          Citations everywhere (audit)
+        </summary>
+        <p>
+          Every KPI, reorder row, reply, leak and fix shows
+          <code>file:line</code> like <code>[shopify_orders.csv:5]</code>,
+          <code>[inventory.csv:2]</code>, <code>[reviews.csv:3]</code>,
+          <code>[instagram_dm.txt:1]</code>. Raw JSON in Files tab is the audit trail.
+          <span class="mono">[index.html:citations]</span>
+        </p>
+      </details>
+    </section>
+  </main>
+  <!-- ============ FOOTER ============ -->
+  <footer>
+    <div
+      class="wrap-narrow foot-grid"
+    >
+      <div>
+        <b>
+          Omni-One · Daily Close PWA
+        </b>
+        <br>
+        <span>
+          Free · local · $0 · offline-first · no build step.
+        </span>
+        <br>
+        <span
+          class="mono tiny"
+        >
+          web/close/index.html · web/close/app.js · web/close/sw.js CLOSE_V1
+        </span>
+      </div>
+      <div>
+        <span>
+          Serve: <code>python3 -m http.server 8080 -d web/close</code>
+          or via API static. Open <code>file://…/web/close/index.html</code> for shell
+          (API needs http). Docs: <code>web/close/README.md</code>.
+        </span>
+        <br>
+        <span
+          class="tiny"
+        >
+          Endpoints: <code>POST /api/v1/seller/close</code> ·
+          <code>GET /api/v1/seller/close.csv</code> · SW: <code>sw.js</code> ·
+          Manifest: <code>manifest.webmanifest</code>.
+        </span>
+      </div>
+    </div>
+  </footer>
+  <!-- ============ TOAST ============ -->
+  <div
+    id="toast"
+    class="toast hidden no-print"
+    role="status"
+    aria-live="polite"
+  >
+  </div>
+  <!-- ============ SCRIPTS (dependency-free, offline) ============ -->
+  <!-- Main app: vanilla JS, no framework, no CDN. -->
+  <script
+    src="app.js"
+    defer
+  ></script>
+  <!-- Service-worker registration (cache-first shell, CLOSE_V1). -->
+  <!-- References sw.js so smoke test + offline shell pass. -->
+  <script>
+    // Inline boot: theme + service worker (sw.js). Main logic lives in app.js.
+    // File: web/close/index.html (boot) — citations [index.html:boot] [sw.js:CLOSE_V1].
+    (function () {
+      "use strict";
+      try {
+        var root = document.documentElement;
+        var saved = null;
+        try { saved = localStorage.getItem("close_theme"); } catch (e) { saved = null; }
+        if (saved === "light" || saved === "dark") { root.setAttribute("data-theme", saved); }
+      } catch (e) { /* private mode — ignore [index.html:theme] */ }
+      // Register service worker for offline shell: sw.js (CLOSE_V1, cache-first).
+      // Serves index.html + app.js + manifest.webmanifest offline.
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+          try {
+            navigator.serviceWorker.register("sw.js").then(function (reg) {
+              // ok [index.html:sw-register] [sw.js:CLOSE_V1]
+              if (reg && reg.scope) { /* registered */ }
+            }).catch(function () { /* file:// or no SW — still works online */ });
+          } catch (e) { /* ignore */ }
+        });
+      }
+    })();
+  </script>
+  <noscript>
+    <div
+      class="wrap"
+      style="padding:1rem"
+    >
+      <p>
+        <b>Daily Close needs JavaScript</b> for tabs, fetch
+        (<code>POST /api/v1/seller/close</code>,
+        <code>GET /api/v1/seller/close.csv</code>) and copy buttons.
+        Print flow and API still work: <code>curl</code> the endpoints above.
+        [index.html:noscript]
+      </p>
+    </div>
+  </noscript>
+
+  </main>
+</body>
+</html>

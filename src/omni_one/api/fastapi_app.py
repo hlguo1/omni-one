@@ -32,6 +32,20 @@ logger = get_logger(__name__)
 container = get_container()
 
 
+def _bump(op: str) -> None:
+    try:
+        from .ops import bump as _b
+    except ImportError:
+        try:
+            from omni_one.api.ops import bump as _b  # type: ignore
+        except Exception:
+            return
+    try:
+        _b(op)
+    except Exception:
+        pass
+
+
 # ============================================================================
 # DEPENDENCY INJECTION
 # ============================================================================
@@ -265,6 +279,7 @@ def setup_ai_routes(app: FastAPI):
         """
         
         with OperationTimer("data_analysis", logger):
+            _bump("analyzes_total")
             if not isinstance(data, dict) or "records" not in data:
                 raise ValidationError("Request must contain 'records' field")
             records = data.get("records", [])
@@ -395,6 +410,7 @@ def setup_ai_routes(app: FastAPI):
         - Falls back gracefully if deps missing (returns OCR hint + mock analysis, still free).
         """
         with OperationTimer("vision_analyze", logger):
+            _bump("vision_total")
             data = await file.read()
             # Free guard: size + type (settings-driven, default 5MB)
             try:
@@ -505,6 +521,7 @@ def setup_ai_routes(app: FastAPI):
         100% free, offline, citations file:line. This is the ONLY primary pack.
         """
         with OperationTimer("seller_briefing", logger):
+            _bump("briefings_total")
             from pathlib import Path
             folder = data.get("folder")
             use_demo = data.get("demo", False) or not folder
@@ -552,6 +569,7 @@ def setup_ai_routes(app: FastAPI):
         Returns same as /vision/analyze but with seller briefing attached.
         """
         with OperationTimer("seller_photo", logger):
+            _bump("vision_total")
             data = await file.read()
             try:
                 max_mb = int(getattr(settings, "max_upload_mb", 5))
@@ -598,6 +616,7 @@ def setup_ai_routes(app: FastAPI):
         Proves the suite surrounding core tech, not just a briefing.
         """
         with OperationTimer("seller_operations", logger):
+            _bump("operations_total")
             from ..packs.seller_os import make_seller_demo_folder, ingest_seller_folder, build_seller_briefing  # type: ignore
             from ..palantir_free.ontology import Ontology, ObjectTypeDef, PropertyDef, ActionDef  # type: ignore
             from ..palantir_free.workshop import WorkshopApp  # type: ignore
@@ -705,6 +724,7 @@ def setup_ai_routes(app: FastAPI):
     ) -> dict:
         """Deterministic, idempotent, O(n). Returns decisions sorted critical→low with stable IDs."""
         with OperationTimer("seller_scenarios_run", logger):
+            _bump("scenarios_runs_total")
             from pathlib import Path as _P
             import tempfile
             try:
@@ -915,6 +935,11 @@ def create_omni_one_app() -> FastAPI:
         """Setup all application routes."""
         setup_ai_routes(app)
         setup_admin_routes(app)
+        try:
+            from .ops import setup_ops_routes as _ops
+        except ImportError:
+            from omni_one.api.ops import setup_ops_routes as _ops  # type: ignore
+        _ops(app)
     
     app = create_app(setup_routes=setup_routes)
     

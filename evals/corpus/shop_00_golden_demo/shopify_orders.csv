@@ -1,0 +1,6 @@
+Order Name,Created at,Lineitem name,Lineitem quantity,Lineitem price,Total,Fees,Shipping,Customer
+#1001,2024-09-10,Tote Bag Handmade,2,28.00,56.00,,4.00,Alice
+#1002,2024-09-11,Ceramic Mug,1,22.00,22.00,,3.50,Bob
+#1003,2024-09-11,Tote Bag Handmade,1,28.00,28.00,,0.00,Charlie
+#1004,2024-09-12,Print - Botanical,3,15.00,45.00,,5.00,Alice
+#1005,2024-09-12,Tote Bag Handmade,1,28.00,28.00,,4.00,David

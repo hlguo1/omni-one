@@ -1,0 +1,24 @@
+DAILY CLOSE,2026-10-10,Profit $169.09 (61.7%) · $102.75 at risk in 3 angry messages · 1 reorder(s) TODAY · 0 leak(s) to plug
+
+metric,value
+gmv,274.0
+fees,16.71
+shipping,24.0
+net,233.29
+cogs,64.2
+true_profit,169.09
+margin_pct,61.7
+orders,8
+aov,34.25
+best_seller,"{'product': 'Tote Bag Handmade', 'qty': 6, 'gmv': 140.0}"
+money_at_risk_usd,102.75
+
+do_today_n,do_today
+1,"Reply to 3 message(s) — $102.75 at risk (drafts below, cite file:line)"
+2,Reorder Tote Bag Handmade x10 from Acme Textiles (2.3d left)
+3,No money leaks — push best seller
+
+product,on_hand,sold_7d,days_left,reorder_qty_14d,supplier,urgency,citation
+Tote Bag Handmade,2,6,2.3,10,Acme Textiles,ORDER TODAY,[inventory.csv:2] Tote Bag Handmade on_hand=2
+
+leak,amount_usd,note,evidence

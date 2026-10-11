@@ -1,0 +1,36 @@
+[
+  {
+    "channel": "email",
+    "locale": "en",
+    "citation": "email.mbox",
+    "raw": "From: Emma <emma@example.com>\nDate: 12 Sep 2026 10:15\nSubject: Late order\n\nHello, my order arrived late and broken.\nCan you help me with this problem? Thanks.\nPlease help with shipping from the shop."
+  },
+  {
+    "channel": "email",
+    "locale": "en",
+    "citation": "email.mbox",
+    "raw": "From: Noah <noah@example.com>\nDate: 13 Sep 2026 11:02\nSubject: Refund request\n\nHello, I still have not received it.\nI want a refund or a return, please.\nThanks for your help with my order."
+  },
+  {
+    "channel": "email",
+    "locale": "en",
+    "citation": "email.mbox",
+    "raw": {
+      "From": "Ava",
+      "Subject": "Wrong item",
+      "Body": "Hello, I received the wrong item of poor quality.\nThis is unacceptable, I am very disappointed.\nWhere is my correct order from the store?",
+      "Date": "2026-09-14 09:40"
+    }
+  },
+  {
+    "channel": "email",
+    "locale": "en",
+    "citation": "email.mbox",
+    "raw": {
+      "from": "William <william@example.com>",
+      "subject": "Package never arrived",
+      "body": "Hello, the package never arrived and the product does not work.\nPlease help me, thanks.\nArrived late and damaged, sorry.",
+      "date": "2026-09-15 16:20"
+    }
+  }
+]

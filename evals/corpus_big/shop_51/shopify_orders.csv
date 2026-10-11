@@ -1,0 +1,10 @@
+Order Name,Created at,Lineitem name,Lineitem quantity,Lineitem price,Total,Fees,Shipping,Customer
+#5100,2024-09-10,Silver Ring,1,55.00,55.00,1.90,4.00,Leo
+#5101,2024-09-11,Tote Bag Handmade,2,27.00,54.00,1.87,4.50,Omar
+#5102,2024-09-12,Ceramic Mug,3,22.50,67.50,2.26,5.00,Rosa
+#5103,2024-09-10,Print - Botanical,1,14.50,14.50,0.72,0.00,Alice
+#5104,2024-09-11,Embroidered Cap,2,26.00,52.00,1.81,3.00,David
+#5105,2024-09-12,Silver Ring,3,55.00,165.00,5.08,3.50,Grace
+#5106,2024-09-10,Tote Bag Handmade,1,27.00,27.00,1.08,4.00,Jack
+#5107,2024-09-11,Ceramic Mug,2,22.50,45.00,1.61,4.50,Mona
+#5108,2024-09-12,Print - Botanical,3,14.50,43.50,1.56,5.00,Priya

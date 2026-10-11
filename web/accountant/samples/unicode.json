@@ -1,0 +1,77 @@
+{
+  "date": "2026-10-10",
+  "shop": "our shop",
+  "headline": "Profit $183.42 (54.8%) \u00b7 $143.58 at risk in 3 angry messages \u00b7 0 reorder(s) TODAY \u00b7 0 leak(s) to plug",
+  "kpis": {
+    "gmv": 335.0,
+    "fees": 23.18,
+    "shipping": 23.5,
+    "net": 288.32,
+    "cogs": 104.9,
+    "true_profit": 183.42,
+    "margin_pct": 54.8,
+    "orders": 7,
+    "aov": 47.86,
+    "best_seller": {
+      "product": "Bougie No\u00ebl \ud83c\udf84",
+      "qty": 5,
+      "gmv": 87.5
+    },
+    "money_at_risk_usd": 143.58
+  },
+  "do_today": [
+    "Reply to 3 message(s) \u2014 $143.58 at risk (drafts below, cite file:line)",
+    "Stock healthy \u2014 no reorder",
+    "No money leaks \u2014 push best seller"
+  ],
+  "reorder_sheet": [],
+  "dead_stock_note": [],
+  "reply_queue": [
+    {
+      "channel": "dm",
+      "customer": "\u00c9lodie",
+      "summary": "\u00c9lodie: Hi! My Bougie No\u00ebl \ud83c\udf84 hasn't arrived yet. Worried.",
+      "draft": "Hi \u00c9lodie! I'm really sorry about your late delivery \u2014 I just pulled your order ([instagram_dm.txt:1] \u00c9lodie: Hi! My Bougie No\u00ebl \ud83c\udf84 hasn't arrived yet. Worried.) and I'm checking tracking/supplier right now. I'll update you within 2 hours with a fix (reship/refund \u2014 your choice). Thank you for your patience with our shop!",
+      "citation": "[instagram_dm.txt:1] \u00c9lodie: Hi! My Bougie No\u00ebl \ud83c\udf84 hasn't arrived yet. Worried.",
+      "priority": "P0-reply-in-2h"
+    },
+    {
+      "channel": "review",
+      "customer": "customer",
+      "summary": "2024-09-11 Bougie No\u00ebl \ud83c\udf84 1 Terrible - damaged and late, want refund. merci",
+      "draft": "Thank you for flagging this ([reviews.csv:2] 2024-09-11 Bougie No\u00ebl \ud83c\udf84 1 Terrible - damaged and late, want) \u2014 we're sorry about your customer experience. We've fixed the packing/quality check that caused it. Please DM us for a free replacement or refund \u2014 we want to make this right. \u2014 our shop",
+      "citation": "[reviews.csv:2] 2024-09-11 Bougie No\u00ebl \ud83c\udf84 1 Terrible - damaged and late, want",
+      "priority": "P0-reply-in-2h"
+    },
+    {
+      "channel": "review",
+      "customer": "customer",
+      "summary": "2024-09-12 Tote Bag \ud83c\udf92\u2728 \u624b\u5de5\u5305 1 Awful experience, never arrived, no tracking. ok",
+      "draft": "Thank you for flagging this ([reviews.csv:3] 2024-09-12 Tote Bag \ud83c\udf92\u2728 \u624b\u5de5\u5305 1 Awful experience, never arrived) \u2014 we're sorry about your customer experience. We've fixed the packing/quality check that caused it. Please DM us for a free replacement or refund \u2014 we want to make this right. \u2014 our shop",
+      "citation": "[reviews.csv:3] 2024-09-12 Tote Bag \ud83c\udf92\u2728 \u624b\u5de5\u5305 1 Awful experience, never arrived",
+      "priority": "P0-reply-in-2h"
+    }
+  ],
+  "money_leaks": [],
+  "listing_fixes": [
+    {
+      "fix": "REVIEW_CRISIS",
+      "title": "Bad review \u2014 fix + public reply: 2024-09-11 Bougie No\u00ebl \ud83c\udf84 1 Terrible - damaged and late, want",
+      "evidence": "[reviews.csv:2] 2024-09-11 Bougie No\u00ebl \ud83c\udf84 1 Terrible - damaged and late, want"
+    },
+    {
+      "fix": "REVIEW_CRISIS",
+      "title": "Bad review \u2014 fix + public reply: 2024-09-12 Tote Bag \ud83c\udf92\u2728 \u624b\u5de5\u5305 1 Awful experience, never arrived",
+      "evidence": "[reviews.csv:3] 2024-09-12 Tote Bag \ud83c\udf92\u2728 \u624b\u5de5\u5305 1 Awful experience, never arrived"
+    },
+    {
+      "fix": "WORST_SELLER",
+      "title": " worst seller Schal \ud83e\udde3 na\u00efve x1 \u2014 clearance/bundle it",
+      "evidence": "[orders] worst seller"
+    }
+  ],
+  "po_draft": "Stock healthy \u2014 no PO needed today.",
+  "citations": "every number cites [file:line]; audit via /seller/operations",
+  "free": true,
+  "offline": true
+}

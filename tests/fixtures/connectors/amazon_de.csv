@@ -1,0 +1,3 @@
+﻿order-id;purchase-date;product-name;quantity;currency;item-price;Referral Fee;shipping-price;order-status
+105-1111111-2222222;2024-09-10;Segeltuchtasche;1;EUR;€29.90;4.49;€3.90;Shipped
+105-1111111-3333333;2024-09-11;Keramiktasse;2;EUR;€39.80;5.97;€3.90;Shipped

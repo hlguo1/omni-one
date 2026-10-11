@@ -1,0 +1,12 @@
+Hide Works
+Invoice INV-1714 Date: 2024-09-10
+Bill to: shop_42 (stockout)
+Order ref: shop_42-2024-09
+Embroidered Cap 33 x 10.00 330.00
+Silver Ring 50 x 22.00 1100.00
+Shipping 17.50
+Total $1447.50
+Payment terms: Net 30
+Thank you for your business!
+Questions? Contact Hide Works
+--- end of invoice ---

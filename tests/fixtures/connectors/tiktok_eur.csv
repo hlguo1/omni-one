@@ -1,0 +1,4 @@
+Order ID,Order Created Time,Product Name,Quantity,Order Amount,Seller SKU,Platform Fee,Currency,Order Status,Buyer
+TT-EU1,2024-09-10 12:00:00,Canvas Tote,2,€59.90,SKU-EU1,3.30,EUR,Completed,Anna Müller
+TT-EU2,2024-09-11 13:30:00,Ceramic Mug,1,€24.50,SKU-EU2,1.53,EUR,Completed,Pierre Dubois
+TT-EU3,2024-09-12 09:15:00,Botanical Print,3,€44.70,SKU-EU3,2.54,EUR,Completed,Sofia Rossi

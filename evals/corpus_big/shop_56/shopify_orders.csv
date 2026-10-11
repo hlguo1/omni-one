@@ -1,0 +1,8 @@
+Order Name,Created at,Lineitem name,Lineitem quantity,Lineitem price,Total,Fees,Shipping,Customer
+#5600,2024-09-12,Tote Bag Handmade,3,28.00,84.00,2.74,3.50,Quinn
+#5601,2024-09-10,Ceramic Mug,1,21.00,21.00,0.91,4.00,Tara
+#5602,2024-09-11,Print - Botanical,2,15.50,31.00,1.20,4.50,Charlie
+#5603,2024-09-12,Knitted Scarf,3,44.50,133.50,4.17,5.00,Frank
+#5604,2024-09-10,Tote Bag Handmade,1,29.00,29.00,1.14,0.00,Ivy
+#5605,2024-09-11,Ceramic Mug,2,22.00,44.00,1.58,3.00,Leo
+#5606,2024-09-12,Print - Botanical,3,14.00,42.00,1.52,3.50,Omar

@@ -29,6 +29,10 @@ img.chart{width:100%;border-radius:.5rem;border:1px solid #e5e7eb}
 .draft{margin-top:1rem;padding:.75rem;background:#eef2ff;border:1px solid #c7d2fe;border-radius:.5rem;font-size:.875rem}
 .hidden{display:none}
 input[type=file]{font-size:.8rem}
+#close-banner{border:2px solid #4f46e5}
+#close-headline{font-weight:800;font-size:1rem;margin:.25rem 0}
+.close-btns{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.6rem}
+footer.seller-foot{margin-top:2rem;padding:1rem 0 2rem;color:#6b7280;font-size:.75rem;text-align:center}
 </style>
 </head>
 <body>
@@ -37,6 +41,18 @@ input[type=file]{font-size:.8rem}
 <div class="tiny">Drop Shopify/Etsy CSV + supplier photo + DM export → Daily Briefing</div>
 </div></header>
 <main class="wrap">
+<div id="close-banner" class="card" style="margin-bottom:1.5rem">
+<h2 style="margin-top:0">Daily Close — 5-minute ritual</h2>
+<div id="close-headline" class="muted">Profit — · — at risk · — reorder(s) TODAY · — leak(s). Press “Run Daily Close demo”.</div>
+<div class="close-btns">
+<button id="closeRunBtn" class="btn btn-p">Run Daily Close demo</button>
+<button id="closeCsvBtn" class="btn">Download close.csv</button>
+<a id="closeOpenBtn" class="btn" href="../close/index.html">Open Close PWA</a>
+<a id="acctOpenBtn" class="btn" href="../accountant/index.html">Open Accountant</a>
+</div>
+<div class="tiny" style="margin-top:.4rem">API: <code>POST /seller/close {"demo":true}</code> (served at <code>/api/v1/seller/close</code>) · CSV: <code>GET /api/v1/seller/close.csv?demo=1</code> · Works via file:// for old sections; Close buttons need the server.</div>
+<div id="close-status" class="tiny" style="margin-top:.3rem"></div>
+</div>
 <div class="notice"><b>Focused: Seller OS is THE product.</b><div class="muted">Not a generic AI platform. Revenue Ops &amp; Micro packs are <code>_labs</code>. Vision (photo→text+chart→pipeline) powers supplier invoices — 100% free, offline, mock LLM by default ($0).</div></div>
 <div class="grid2">
 <div class="card">
@@ -151,6 +167,41 @@ demoBtn.addEventListener('click', runSellerDemo);
 document.getElementById('scenBtn').addEventListener('click', runScenarios);
 photoBtn.addEventListener('click', ()=> photoInput.click());
 photoInput.addEventListener('change', e=>{ if(e.target.files[0]) runPhoto(e.target.files[0]); });
+// WAVE2-J: Daily Close banner (ADD-only; old sections untouched; file:// safe).
+async function runDailyCloseDemo(){
+  const el = document.getElementById('close-status');
+  const hl = document.getElementById('close-headline');
+  if(el) el.textContent = "Running Daily Close demo (free, local)…";
+  try{
+    const r = await fetch(API+"/api/v1/seller/close", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({demo:true, seed:42, shop:"our shop"})});
+    if(!r.ok){ if(el) el.textContent = "Close failed ("+r.status+") — is server running? API="+API; return; }
+    const j = await r.json();
+    if(hl && j.headline) hl.textContent = j.headline;
+    if(el) el.textContent = "Headline: "+(j.headline||"ok")+" — KPIs GMV $"+((j.kpis&&j.kpis.gmv)||"—")+" profit $"+((j.kpis&&j.kpis.true_profit)||"—")+" ($0)";
+  }catch(e){ if(el) el.textContent = "Close failed — is server running at "+API+"? ("+e+") Old demo above still works via file://."; }
+}
+async function downloadCloseCSV(){
+  const el = document.getElementById('close-status');
+  try{
+    const r = await fetch(API+"/api/v1/seller/close.csv?demo=1&seed=42");
+    if(!r.ok){ if(el) el.textContent = "CSV failed ("+r.status+") — is server running?"; return; }
+    const t = await r.text();
+    const blob = new Blob([t], {type:"text/csv"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = "close.csv"; document.body.appendChild(a); a.click();
+    setTimeout(()=>{ try{ document.body.removeChild(a); URL.revokeObjectURL(a.href); }catch(e){} }, 800);
+    if(el) el.textContent = "Downloaded close.csv ("+t.length+" chars) — hand it to the Accountant PWA.";
+  }catch(e){ if(el) el.textContent = "CSV failed: "+e; }
+}
+(function(){
+  try{
+    const b1 = document.getElementById('closeRunBtn');
+    if(b1) b1.addEventListener('click', runDailyCloseDemo);
+    const b2 = document.getElementById('closeCsvBtn');
+    if(b2) b2.addEventListener('click', downloadCloseCSV);
+  }catch(e){}
+})();
 </script>
+<footer class="seller-foot">Seller OS v1.1.0 · offline-first · $0 · Daily Close: <a href="../close/index.html">Close PWA</a> · <a href="../accountant/index.html">Accountant PWA</a></footer>
 </body>
 </html>

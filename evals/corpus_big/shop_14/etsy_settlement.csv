@@ -1,0 +1,5 @@
+order_id,order_date,product,qty,price,fees,shipping,buyer
+3400,2024-09-12,Tote Bag Handmade,3,85.50,17.02,3.50,Omar
+3401,2024-09-10,Leather Wallet,1,38.50,8.32,4.00,Rosa
+3402,2024-09-11,Soy Candle - Vanilla,2,38.00,8.23,4.50,Alice
+3403,2024-09-12,Embroidered Cap,3,75.00,15.07,5.00,David

@@ -1,0 +1,3 @@
+Order Number,Order Date,Product,Quantity,Order Total,Fee Total,Customer,Order Status,Payment Method
+W-R1,2024-09-10,Canvas Tote,1,59.90,1.74,Alice,completed,Stripe
+W-R2,2024-09-11,Stoneware Mug Set,2,64.00,1.86,Bob,refunded,Stripe

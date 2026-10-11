@@ -1,0 +1,83 @@
+{
+  "top_level": [
+    "citations",
+    "date",
+    "dead_stock_note",
+    "do_today",
+    "free",
+    "headline",
+    "kpis",
+    "listing_fixes",
+    "locale",
+    "money_leaks",
+    "offline",
+    "po_draft",
+    "reorder_sheet",
+    "reply_queue",
+    "shop"
+  ],
+  "required_top": [
+    "headline",
+    "kpis",
+    "reorder_sheet",
+    "reply_queue",
+    "po_draft"
+  ],
+  "kpis": [
+    "aov",
+    "best_seller",
+    "cogs",
+    "fees",
+    "gmv",
+    "margin_pct",
+    "money_at_risk_usd",
+    "net",
+    "orders",
+    "shipping",
+    "true_profit"
+  ],
+  "required_kpis": [
+    "gmv",
+    "true_profit",
+    "money_at_risk_usd"
+  ],
+  "reorder_sheet_0": [
+    "citation",
+    "cover_days",
+    "daily_velocity",
+    "days_left",
+    "on_hand",
+    "product",
+    "reorder_qty",
+    "sold_7d",
+    "supplier",
+    "urgency"
+  ],
+  "required_reorder": [
+    "product",
+    "reorder_qty",
+    "citation"
+  ],
+  "reply_queue_0": [
+    "channel",
+    "citation",
+    "customer",
+    "draft",
+    "priority",
+    "summary"
+  ],
+  "required_reply": [
+    "draft",
+    "citation"
+  ],
+  "has_po_draft": true,
+  "samples": {
+    "headline": "Profit $169.09 (61.7%) \u00b7 $102.75 at risk in 3 angry messages \u00b7 1 reorder(s) TODAY \u00b7 0 leak(s) to plug",
+    "true_profit": 169.09,
+    "money_at_risk_usd": 102.75,
+    "reorder_product": "Tote Bag Handmade",
+    "reorder_qty": 10,
+    "reorder_citation": "[inventory.csv:2] Tote Bag Handmade on_hand=2",
+    "reply_citation": "[instagram_dm.txt:1] Alice: Hi! My tote bag hasn't arrived yet, ordered 5 days"
+  }
+}

@@ -1,0 +1,3 @@
+Date,Transaction ID,Item Title,Quantity,Gross,Fee,Currency,Payment Status,From Email
+2024-09-10,TXN-GB1,Canvas Tote,1,£34.00,1.68,GBP,Completed,alice@example.co.uk
+2024-09-11,TXN-GB2,Speckled Mug,2,£27.00,1.43,GBP,Completed,bob@example.co.uk

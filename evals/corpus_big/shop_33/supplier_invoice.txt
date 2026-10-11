@@ -1,0 +1,13 @@
+Paper Co
+Invoice INV-1561 Date: 2024-09-10
+Bill to: shop_33 (refundstorm)
+Order ref: shop_33-2024-09
+Print - Botanical 55 x 4.80 264.00
+Knitted Scarf 27 x 17.55 473.85
+Leather Wallet 40 x 13.65 546.00
+Shipping 16.50
+Total $1300.35
+Payment terms: Net 30
+Thank you for your business!
+Questions? Contact Paper Co
+--- end of invoice ---

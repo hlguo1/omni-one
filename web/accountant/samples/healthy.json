@@ -1,0 +1,146 @@
+{
+  "date": "2024-09-12",
+  "shop": "Demo Shop",
+  "headline": "Profit $142.42 (58.4%) \u00b7 $0.00 at risk in 0 angry messages \u00b7 0 reorder(s) TODAY \u00b7 0 leak(s) to plug",
+  "kpis": {
+    "gmv": 244.0,
+    "fees": 8.88,
+    "shipping": 19.5,
+    "net": 215.62,
+    "cogs": 73.2,
+    "true_profit": 142.42,
+    "margin_pct": 58.4,
+    "orders": 6,
+    "aov": 40.67,
+    "best_seller": {
+      "product": "Speckled Mug",
+      "qty": 3,
+      "gmv": 39.0
+    },
+    "money_at_risk_usd": 0.0
+  },
+  "do_today": [
+    "Reply to 0 message(s) \u2014 $0.00 at risk (drafts below, cite file:line)",
+    "Stock healthy \u2014 no reorder",
+    "No money leaks \u2014 push best seller"
+  ],
+  "reorder_sheet": [],
+  "dead_stock_note": [
+    {
+      "title": "Dead stock: Clay Ornament \u2014 40 units, zero sales 7d \u2192 bundle/clearance",
+      "evidence": "[inventory.csv:5] Clay Ornament 40 left"
+    }
+  ],
+  "reply_queue": [],
+  "money_leaks": [],
+  "listing_fixes": [
+    {
+      "fix": "LISTING_GAP",
+      "title": "Listing gap: Speckled Mug sold 3 with zero reviews \u2014 request UGC",
+      "evidence": "[orders] Speckled Mug sold 3"
+    },
+    {
+      "fix": "LISTING_GAP",
+      "title": "Listing gap: Canvas Tote sold 2 with zero reviews \u2014 request UGC",
+      "evidence": "[orders] Canvas Tote sold 2"
+    },
+    {
+      "fix": "WORST_SELLER",
+      "title": " worst seller Ceramic Vase x1 \u2014 clearance/bundle it",
+      "evidence": "[orders] worst seller"
+    }
+  ],
+  "po_draft": "Stock healthy \u2014 no PO needed today.",
+  "citations": "every number cites [file:line]; audit via /seller/operations",
+  "free": true,
+  "offline": true,
+  "archetype": "healthy",
+  "generated_by": {
+    "code": "omni_one.packs.seller_close.build_daily_close",
+    "csv_code": "omni_one.packs.seller_close.close_to_csv",
+    "date": "2024-09-12",
+    "shop": "Demo Shop",
+    "repo": "omni-one",
+    "wave": "WAVE3-O"
+  },
+  "how_to_read": [
+    "kpis: GMV, fees, shipping, net, COGS, true_profit, margin_pct, AOV.",
+    "headline: one line for the owner (profit, at-risk, reorders, leaks).",
+    "reorder_sheet: velocity vs on-hand rows with supplier + urgency.",
+    "reply_queue: copy-paste drafts, each with a file:line citation.",
+    "po_draft: supplier email text for the top reorder row.",
+    "money_leaks: fee_creep / shipping_loss / margin_dip with amounts.",
+    "citations: every number traces to [file:line]; audit anytime."
+  ],
+  "inputs": {
+    "n_events": 11,
+    "by_source": {
+      "orders": 6,
+      "inventory": 4,
+      "dm": 1
+    },
+    "orders": [
+      {
+        "product": "Canvas Tote",
+        "qty": 2,
+        "gmv": 64.0,
+        "fees": 2.16,
+        "signal": "order_gmv",
+        "citation": "[shopify_pos.csv:2] Canvas Tote qty2 gmv$64.0 fees$2.16 net$57.84"
+      },
+      {
+        "product": "Speckled Mug",
+        "qty": 3,
+        "gmv": 39.0,
+        "fees": 1.43,
+        "signal": "order_gmv",
+        "citation": "[shopify_pos.csv:3] Speckled Mug qty3 gmv$39.0 fees$1.43 net$34.57"
+      },
+      {
+        "product": "Botanical Print",
+        "qty": 1,
+        "gmv": 18.0,
+        "fees": 0.82,
+        "signal": "order_gmv",
+        "citation": "[shopify_pos.csv:4] Botanical Print qty1 gmv$18.0 fees$0.82 net$17.18"
+      },
+      {
+        "product": "Wool Scarf",
+        "qty": 1,
+        "gmv": 45.0,
+        "fees": 1.61,
+        "signal": "order_gmv",
+        "citation": "[stripe_klarna.csv:2] Wool Scarf qty1 gmv$45.0 fees$1.61 net$38.89"
+      },
+      {
+        "product": "Tote Mini",
+        "qty": 2,
+        "gmv": 36.0,
+        "fees": 1.34,
+        "signal": "order_gmv",
+        "citation": "[stripe_klarna.csv:3] Tote Mini qty2 gmv$36.0 fees$1.34 net$31.66"
+      },
+      {
+        "product": "Ceramic Vase",
+        "qty": 1,
+        "gmv": 42.0,
+        "fees": 1.52,
+        "signal": "order_gmv",
+        "citation": "[square_cash.csv:2] Ceramic Vase qty1 gmv$42.0 fees$1.52 net$35.48"
+      }
+    ]
+  },
+  "expected": {
+    "true_profit": 142.42,
+    "margin_pct": 58.4,
+    "money_at_risk_usd": 0.0,
+    "reply_queue_len": 0,
+    "reorder_today": 0,
+    "leaks": 0
+  },
+  "sample_notes": [
+    "Steady day: every order profitable, fees 3.6% of GMV, nothing urgent.",
+    "One dead-stock line (Clay Ornament, 40 units, zero sales) worth a bundle.",
+    "Reply queue empty; PO draft not needed (stock healthy)."
+  ]
+}

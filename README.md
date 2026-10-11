@@ -1,131 +1,127 @@
-# Omni-One — Deterministic-First Intelligence Platform
+# Omni-One — the 5-minute Daily Close for sellers (free, offline, cited)
 
-**Core: 4-layer pipeline + ontology-centered suite (methodology like Palantir, not a clone). Highlight: Seller OS for people selling stuff online.**
+![ci](https://github.com/garyguo123456789/omni-one/actions/workflows/ci/badge.svg)
+![license](https://img.shields.io/badge/license-Apache--2.0-blue)
+![python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-green)
+![cost](https://img.shields.io/badge/cost-%240%20default-brightgreen)
+![tests](https://img.shields.io/badge/tests-1350%2B%20passing-success)
 
-Omni-One is local-first, free ($0): ingest messy folder → OCR+chart+pipeline → ontology twin → Workshop decisions → grounded AI → audited actions. The suite surrounds the core tech (like Palantir's methodology); Seller OS is the **featured outstanding app** proving it for concrete SMB (not the only thing).
+**Sellers don't live in dashboards. They close the day.** Omni-One's **Daily Close** answers the 5
+questions a 1–5 person Shopify/Etsy/Amazon shop asks every morning — in one command, offline, $0:
 
-> Pipeline + ontology + suite remain — not deleted. Seller OS showcases the engine.
+> Did I actually make money? What stocks out TODAY? Who is angry RIGHT NOW? Where is money
+> leaking? What do I hand my accountant? → `close.json + close.csv + reorder.csv + replies.txt + po.txt`
 
----
-
-## 1. Core Meat (always here, now strengthened)
-
-**4-layer pipeline** `src/omni_one/core/data_processing_pipeline.py:1` (thread-safe, dedup, STATISTICAL stage, cache-store, evidence parity):
-- **Layer 1** `<1ms` `core/layer_1_ingestion.py:73` robust ISO/epoch/ms timestamps, OrderedDict TTL dedup
-- **Layer 2** `<10ms` `core/layer_2_statistical.py:35` signal-bucket fallback (unique IDs), multi-key thresholds
-- **Layer 3** `<100ms` `core/layer_3_ml_features.py:45` bilingual sentiment, calibrated priority
-- **Layer 4** gated `IntelligentLLMGate` budget-aware + `evidence_bundle`/`cost_ledger` `core/types.py:213`
-
-**Suite surrounding core (Palantir methodology, free):**
-- **Foundry** `palantir_free/foundry.py:22` — versioned datasets, expectations gate, `build_if_stale`, `profile_dataset`, multi-SQL `sql_join` (DuckDB+Pandas, $0)
-- **Ontology** `palantir_free/ontology.py:16` — typed coercion, history/version, cardinality, propose/approve actions, markings, `save/load`
-- **Workshop** `palantir_free/workshop.py:1` — decision queue FROM ontology (no phantoms), assign/approve/resolve → writeback via Actions
-- **Governance** `palantir_free/governance.py:1` — hash-chained `AuditLog` across pipeline+ontology+workshop+AIP+foundry, `verify()`, markings filter
-- **AIP** `palantir_free/aip.py:44` — `FunctionRegistry`, `check_grounding` anti-hallucination, `evaluate()` harness, single reused pipeline
-- **Vision** `core/vision.py:83` Tesseract + OpenCV + Matplotlib ($0) → **98.8% bypass p50 0.07ms $0.0011/1k**
-
-Use the core directly:
 ```bash
-PYTHONPATH=src python -m pytest tests/unit -q # 22 passed (core + methodology)
-PYTHONPATH=src python3 scripts/e2e_core_methodology.py --out /tmp/e2e_method # 6-stage loop PASSED
-PYTHONPATH=src python -m omni_one.core.eval_harness --n 2000 # writes docs/EVAL_REPORT.md
+git clone https://github.com/garyguo123456789/omni-one.git && cd omni-one
+pip install -r requirements-seller.txt && pip install -e .
+omni-one close --demo --out ./close_today   # profit $169.09 · $102.75 at risk · Tote ORDER TODAY
+cat ./close_today/replies.txt                # copy-paste a draft, send the PO — done
 ```
 
-## 2. Highlight: Seller OS — 12 Sharp Scenarios for Online Sellers
+Your shop: drop the mess in a folder (any headers, DMs, invoice photos), no renaming, no integration:
 
-**For 1-5 person shops on Shopify / Etsy / Amazon + Instagram DMs.** Full catalog: `docs/SCENARIOS.md` (STOCKOUT, DEAD_STOCK, UNANSWERED_COMPLAINT, REFUND_RISK, REVIEW_CRISIS, DM_BACKLOG, FEE_CREEP, SHIPPING_LOSS, PROFIT_DIP, COGS_SPIKE, PRICE_MISMATCH, LISTING_GAP). Each: trigger → evidence `file:line` → Workshop action. Demo hits 8/12.
-
-**What it proves the engine can do:**
-- **True profit, not GMV** — `packs/seller_os.py:155` per-unit COGS → `[shopify_orders.csv:5] Tote Bag qty2 gmv$56`
-- **Stockout + 11 more** — `packs/seller_scenarios.py:1` single-pass O(n), stable IDs (idempotent), severity-sorted. E.g. `Tote 2 left, sold 6/7d = 2.3d`, `Unanswered complaint from Alice`, `Price mismatch 7% Shopify vs Etsy`
-- **Win-back draft** — gated `[MOCK SELLER DRAFT]` free
-- **One page** — `web/seller.html` → Run Demo + Run 12 Scenarios + photo → briefing + chart + queue
-
-Demo (synthetic, still uses pipeline engine):
-```bash
-PYTHONPATH=src python scripts/demo_seller_os.py --folder /tmp/seller_demo
-# → GMV $274.00 Fees $16.71 Net $233.29 True Profit $169.09 Margin 61.7% Best Tote Bag Handmade (6) Stockout 1 At-risk 3
-```
-
-Your mess:
 ```bash
 mkdir -p /tmp/my_shop
 cp ~/Downloads/*orders*.csv ~/Downloads/inventory.csv ~/Downloads/*dm*.txt /tmp/my_shop/
-# drop supplier photos into /tmp/my_shop/
-PYTHONPATH=src python scripts/demo_seller_os.py --folder /tmp/my_shop --json /tmp/briefing.json
+omni-one close --folder /tmp/my_shop --out ./close_2026-10-11 --shop "Maya's Handmade"
 ```
 
-Photo → text+chart → pipeline (free, also generic):
-```bash
-curl -F file=@supplier_invoice.jpg -F lang=eng http://localhost:5003/api/v1/seller/photo | jq .cost_usd # 0.0 free
-curl -F file=@chart.png http://localhost:5003/api/v1/vision/analyze | jq .ocr.text
-```
+Demo headline: `Profit $169.09 (61.7%) · $102.75 at risk in 3 angry messages · 1 reorder TODAY · 0 leaks`.
+Every dollar cites `file:line` (e.g. `[inventory.csv:2] Tote on_hand=2`). See `docs/DAILY_CLOSE.md`.
 
 ---
 
-## 3. Suite surrounding core (methodology like Palantir, not a clone)
+## Why shops use it daily (not another dashboard)
 
-| Pillar | What it does (free) | Highlight wiring |
+| Pain (real money) | Daily Close gives you | File |
 |---|---|---|
-| Foundry `foundry.py:22` | Versioned datasets, expectations gate, incremental `build_if_stale`, profiling, multi-SQL | Seller Shopify/Etsy → joined |
-| Ontology `ontology.py:16` | Typed twin, history/version, cardinality, propose/approve, markings, save/load | Product/Order/Shipment/Ward twin |
-| Pipeline `data_processing_pipeline.py:1` | 4-layer evidence + cost, dedup, STATISTICAL stage | Seller events → evidence |
-| Workshop `workshop.py:1` | Decision queue FROM ontology (no phantoms), assign/approve/resolve → Actions | Seller stockout + supply delay queue |
-| AIP `aip.py:44` | Registry, grounding check, eval, reused pipeline | `seller_stockout` grounded 1.0, eval 2/2 |
-| Governance `governance.py:1` | Hash-chained audit across all, verify, markings | 29 events verified |
-| Apollo `apollo.py:22` | Compose manifest | `web/seller.html` ships |
+| "GMV is vanity" | True profit GMV−fees−ship−COGS ($169.09 on $274 demo) | `close.csv` |
+| Stockout kills tomorrow | Reorder sheet: velocity→days_left→qty_14d + urgency + supplier + PO email | `reorder.csv` + `po.txt` |
+| Slow reply → refund/1-star | Reply queue with copy-paste drafts (name, issue, order cite, 2h promise) | `replies.txt` |
+| Fees/shipping quietly eat margin | Leaks with $: fee creep, shipping loss, margin dip, COGS spike | `close.csv` |
+| Accountant needs something | One CSV: KPIs + actions + leaks; JSON for automation | `close.csv`/`close.json` |
 
-Labs still runnable: `_labs/micro_biz.py`, `_labs/revenue_ops.py`, `scripts/e2e_palantir_free.py:1` (6 pillars $0).
+Day 1: one refund saved pays for the year (it's $0). Day 7: velocity learned, POs one-click.
+Day 30: `money_at_risk → $0` streak. Principles: **$0 default, offline-first, cited numbers,
+no phantom tasks, mock-by-default LLM, laptop-private data.**
 
----
+## Engine underneath (deterministic-first, Palantir methodology — not a clone)
 
-## 4. Try the platform (60 sec)
-
-```bash
-git clone https://github.com/garyguo123456789/omni-one.git
-cd omni-one
-pip install -r requirements.txt
-brew install tesseract  # free OCR, apt-get on Linux
-pip install pytesseract opencv-python pillow matplotlib python-multipart
-
-# Engine alone
-PYTHONPATH=src python -m omni_one.core.eval_harness --n 500
-
-# Highlight app (Seller OS)
-PYTHONPATH=src python scripts/demo_seller_os.py --folder /tmp/seller_demo
-open web/seller.html  # drag-drop seller folder
-
-# API (engine + highlight)
-PYTHONPATH=src uvicorn omni_one.api.fastapi_app:create_omni_one_app --factory --port 5003
-curl -X POST http://localhost:5003/api/v1/seller/briefing -H "Content-Type: application/json" -d '{"demo":true}' | jq .kpis
-curl http://localhost:5003/api/docs  # all endpoints
+```
+messy folder → [Foundry: versioned datasets, expectations gate, DuckDB $0]
+  → [Ontology: typed twin Product/Order/Shipment, history, approvals, markings]
+  → [4-layer pipeline: <1ms ingest → <10ms stats → <100ms ML → gated LLM + evidence/cost ledger, 98.8% bypass]
+  → [12 scenarios: STOCKOUT…LISTING_GAP, stable IDs, idempotent]
+  → [Workshop: queue FROM ontology only] → [AIP: grounded check, eval 2/2]
+  → [Governance: hash-chained audit, verify()] → DAILY CLOSE bundle
 ```
 
-## 5. APIs (core + highlight)
+- **Pipeline** `src/omni_one/core/data_processing_pipeline.py` (+ `layer_1/2/3`, `types.py` evidence/cost)
+- **Suite** `src/omni_one/palantir_free/`: `foundry.py` `ontology.py` `workshop.py` `aip.py` `governance.py` `apollo.py`
+- **Vision** `src/omni_one/core/vision.py`: Tesseract + OpenCV + Matplotlib ($0, offline, photo→text+chart)
+- **Seller packs** `src/omni_one/packs/`: `seller_os.py` (parsers+briefing) `seller_scenarios.py` (12)
+  `seller_close.py` (Daily Close) `seller_export.py` (CSV) `seller_parse.py` (money/fuzzy shared)
 
-| Endpoint | Purpose | Cost |
-|---|---|---|
-| `POST /api/v1/seller/briefing {"demo":true}` | Seller highlight demo (GMV $274 profit $169) | $0 |
-| `POST /api/v1/seller/operations {"demo":true}` | Briefing + Workshop queue + AIP grounded + Governance audit (full loop) | $0 |
-| `POST /api/v1/seller/photo` multipart | Seller invoice photo → OCR+chart+pipeline | $0 |
-| `POST /api/v1/vision/analyze` | Generic photo (engine) | $0 |
-| `POST /api/v1/analyze {"records":[...]}` | Raw pipeline (engine) | $0 |
-| Labs: `POST /api/v1/micro/briefing`, `POST /api/v1/revenue/health` | `_labs` | $0 |
-
-## 6. Docs
-
-- **Core:** `docs/MULTI_LAYER_ARCHITECTURE.md`, `docs/EVAL_REPORT.md` (98.8% bypass), `core/data_processing_pipeline.py:1`
-- **Suite:** `palantir_free/ontology.py:16`, `foundry.py:22`, `workshop.py:1`, `governance.py:1`, `aip.py:44`, `scripts/e2e_core_methodology.py:1`
-- **Highlight:** `docs/SELLER_OS.md`, `docs/FOCUS.md`, `packs/seller_os.py:1`, `web/seller.html:1`
-- **Labs:** `packs/_labs/` + `scripts/e2e_palantir_free.py:1`
-
-## 7. Verify (robust)
+## Use it your way
 
 ```bash
-PYTHONPATH=src python -m pytest tests/unit -q  # 22 passed (core + methodology)
-PYTHONPATH=src python3 scripts/e2e_core_methodology.py --out /tmp/e2e_method  # Foundry→Ontology→Pipeline→Workshop→AIP→Governance PASSED
-PYTHONPATH=src python scripts/e2e_palantir_free.py --out /tmp/e2e  # 6 pillars PASSED $0
-ls src/omni_one/core/data_processing_pipeline.py  # core meat, not deleted
+omni-one briefing --demo --json b.json     # KPIs + alerts + draft
+omni-one scenarios --demo                 # 12 ranked decisions
+omni-one operations                        # full loop: briefing→ontology→workshop→AIP→audit
+omni-one serve --port 5003 &               # API at /api/docs
+PYTHONPATH=src python3 examples/sdk_demo.py
+PYTHONPATH=src python3 examples/daily_close_demo.py
 ```
 
-*Core meat strengthened with suite methodology. Seller OS is the outstanding highlight proving it.*
+| Endpoint | Purpose |
+|---|---|
+| `POST /api/v1/seller/close {"demo":true}` | Daily Close bundle (hero) |
+| `GET /api/v1/seller/close.csv?demo=true` | accountant CSV download |
+| `POST /api/v1/seller/briefing` / `operations` / `scenarios/run` | briefing / full loop / 12 decisions |
+| `POST /api/v1/seller/photo` (multipart) | invoice photo → OCR+COGS |
+| `POST /api/v1/analyze {"records":[...]}` | raw 4-layer pipeline |
+| `GET /metrics` | Prometheus counters (closes/briefings/scenarios/vision) |
+| MCP `python3 -m omni_one.mcp_server` | tools for Claude/Cursor: `seller_close`, `seller_briefing`, `seller_scenarios`, `seller_operations`, `pipeline_analyze`, `vision_analyze` |
+
+Python SDK: `from omni_one.client import OmniOneClient; OmniOneClient.local().close(demo=True)`.
+
+## vs. the world
+
+| | Omni-One Daily Close | Shopify reports | LangChain/RAG demo | Palantir |
+|---|---|---|---|---|
+| True profit (fees+ship+COGS, cited) | yes, `file:line` | GMV-centric | no | yes, $$$ |
+| Stockout→PO draft | yes, offline | alerts only | no | custom build |
+| Angry-customer drafts now | yes, copy-paste | no | generic chat | no |
+| Cost / privacy | $0, laptop-private | subscription + cloud | API $$$ | enterprise $$$ |
+| Audit (hash-chained, verify) | yes | no | no | yes |
+
+## Verify (robust, offline)
+
+```bash
+make test    # 1350+ tests (core + methodology + seller + daily close + connectors + i18n + API matrix + e2e)
+make test-all# + generated-client contracts (py/ts/go), regen check
+make close   # Daily Close bundle -> ./close_today (ORDER TODAY + replies + PO)
+make e2e     # methodology loop PASSED + golden KPIs (GMV $274 / profit $169.09)
+make eval    # 500-record bypass/cost/latency -> docs/EVAL_REPORT.md
+```
+
+Scale of this repo: **100k+ LOC, 870+ files** — 10 channel connectors (58 fixtures),
+5-locale i18n (EN/ES/ZH/FR/DE), 80-shop eval corpus + 9 notebooks, TS + Go + generated
+Python/TS/Go clients (18 routes), Close + Accountant PWAs, K8s/Helm/Terraform/Grafana,
+ES/ZH docs. See `docs/handbook/00-quick-reference.md`.
+
+## Docs
+
+- Ritual: `docs/DAILY_CLOSE.md` · 60s: `docs/QUICKSTART.md` · API: `docs/API.md` · CLI: `docs/CLI.md`
+- Deploy/cron/7am: `docs/DEPLOYMENT.md` · Roadmap: `docs/ROADMAP.md` · Scenarios: `docs/SCENARIOS.md`
+- Core: `docs/MULTI_LAYER_ARCHITECTURE.md` `docs/EVAL_REPORT.md` · Seller: `docs/SELLER_OS.md`
+- Contribute: `CONTRIBUTING.md` (+ `CODE_OF_CONDUCT.md` `SECURITY.md` `CHANGELOG.md`)
+
+## Roadmap
+
+**v1.1 now**: Daily Close ritual (this README). **v1.2**: 7am cron+email, risk→$0 streak, margin trend,
+multi-shop, ES/ZH drafts, TikTok parser. **v1.3**: DuckDB cost memory, shelf-photo counts, review webhook.
+Propose a scenario: `.github/ISSUE_TEMPLATE/seller_scenario.yml`.
+
+*Apache-2.0. Built for the shop that can't afford a data team — one close at a time.*

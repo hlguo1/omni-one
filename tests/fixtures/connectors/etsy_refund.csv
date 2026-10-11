@@ -1,0 +1,4 @@
+Order ID,Sale Date,Item Name,Quantity,Item Total,Type,Buyer
+E3001,2024-09-10,Tote Bag,1,30.00,sale,Alice
+E3002,2024-09-11,Mug,1,20.00,refund,Bob
+E3003,2024-09-12,Scarf,-1,25.00,sale,Charlie

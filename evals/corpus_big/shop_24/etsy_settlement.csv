@@ -1,0 +1,7 @@
+order_id,order_date,product,qty,price,fees,shipping,buyer
+4400,2024-09-10,Tote Bag Handmade,1,28.50,6.47,0.00,Eve
+4401,2024-09-11,Ceramic Mug,2,43.00,9.15,3.00,Hank
+4402,2024-09-12,Print - Botanical,3,48.00,10.08,3.50,Karen
+4403,2024-09-10,Tote Bag Handmade,1,28.00,6.38,4.00,Nina
+4404,2024-09-11,Ceramic Mug,2,42.00,8.97,4.50,Quinn
+4405,2024-09-12,Print - Botanical,3,46.50,9.80,5.00,Tara

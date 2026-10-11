@@ -1,0 +1,4 @@
+order-id,purchase-date,product-name,quantity,item-price,Referral Fee,order-status,Buyer
+106-1111111-1111111,2024/09/10 14:30:00,Canvas Tote,1,32.00,4.80,Shipped,Alice
+106-1111111-2222222,2024.09.11,Tote Mini,2,36.00,5.40,Shipped,Bob
+106-1111111-3333333,15/09/2024,Stoneware Mug,1,21.00,3.15,Cancelled,Charlie

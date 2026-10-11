@@ -1,0 +1,12 @@
+Clay Co 🪺
+Invoice INV-2156 Date: 2024-09-10
+Bill to: shop_68 (unicode)
+Order ref: shop_68-2024-09
+Café Mug ☕ crème 43 x 7.70 331.10
+Botanical プリント 🌿 60 x 5.25 315.00
+Shipping 17.50
+Total $663.60
+Payment terms: Net 30
+Thank you for your business!
+Questions? Contact Clay Co 🪺
+--- end of invoice ---

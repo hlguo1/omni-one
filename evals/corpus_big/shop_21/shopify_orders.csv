@@ -1,0 +1,5 @@
+Order Name,Created at,Lineitem name,Lineitem quantity,Lineitem price,Total,Fees,Shipping,Customer
+#3100,2024-09-10,Print - Botanical,1,15.00,15.00,0.73,4.00,Bob
+#3101,2024-09-11,Knitted Scarf,2,44.00,88.00,2.85,4.50,Eve
+#3102,2024-09-12,Leather Wallet,3,39.50,118.50,3.74,5.00,Hank
+#3103,2024-09-10,Print - Botanical,1,14.50,14.50,0.72,0.00,Karen

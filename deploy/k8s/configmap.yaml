@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: omni-one-config
+  namespace: omni-one
+  labels:
+    app.kubernetes.io/name: omni-one
+data:
+  # LLM mode for Seller OS: "off" (default, deterministic $0) or provider id.
+  SELLER_LLM: "off"
+  # DuckDB file lives on the persistent volume (see deployment volumeMount).
+  DUCKDB_PATH: "/app/data/omni.duckdb"
+  AUDIT_PATH: "/app/data/audit.jsonl"
+  OMNI_DATA_DIR: "/app/data"
+  SELLER_INBOX: "/app/data/inbox"
+  PORT: "5003"

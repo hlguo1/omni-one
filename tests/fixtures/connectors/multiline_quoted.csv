@@ -1,0 +1,5 @@
+Order Name,Created at,Lineitem name,Lineitem quantity,Lineitem price,Total,Fees,Financial Status,Customer
+#ML-1,2024-09-10,"Tote Bag
+Large Canvas, Natural",1,34.00,34.00,1.29,paid,Alice
+#ML-2,2024-09-11,"Mug, Speckled
+Stoneware (Blue)",2,13.00,26.00,1.05,paid,Bob

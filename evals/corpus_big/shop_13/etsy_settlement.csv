@@ -1,0 +1,9 @@
+order_id,order_date,product,qty,price,fees,shipping,buyer,status
+3300,2024-09-11,Knitted Scarf,2,89.00,5.99,3.00,Nina,refunded
+3301,2024-09-12,Leather Wallet,3,120.00,8.00,3.50,Quinn,chargeback
+3302,2024-09-10,Soy Candle - Vanilla,1,18.00,1.37,4.00,Tara,refunded
+3303,2024-09-11,Print - Botanical,2,28.00,2.02,4.50,Charlie,chargeback
+3304,2024-09-12,Knitted Scarf,3,136.50,9.07,5.00,Frank,refunded
+3305,2024-09-10,Leather Wallet,1,38.50,2.70,0.00,Ivy,chargeback
+3306,2024-09-11,Soy Candle - Vanilla,2,38.00,2.67,3.00,Leo,refunded
+3307,2024-09-12,Print - Botanical,3,45.00,3.13,3.50,Omar,chargeback

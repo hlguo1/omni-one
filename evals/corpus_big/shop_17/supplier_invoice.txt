@@ -1,0 +1,13 @@
+Paper Co
+Invoice INV-1289 Date: 2024-09-10
+Bill to: shop_17 (shippingloss)
+Order ref: shop_17-2024-09
+Leather Wallet 43 x 15.60 670.80
+Soy Candle - Vanilla 56 x 6.48 362.88
+Embroidered Cap 28 x 8.00 224.00
+Shipping 20.50
+Total $1278.18
+Payment terms: Net 30
+Thank you for your business!
+Questions? Contact Paper Co
+--- end of invoice ---

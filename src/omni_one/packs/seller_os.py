@@ -201,6 +201,8 @@ def parse_inventory_csv(path: Path) -> List[Dict[str, Any]]:
             for idx, row in enumerate(reader, 2):
                 norm = {field_map.get(k,k): (v or "").strip() for k,v in row.items()}
                 product = norm.get("product") or norm.get("sku") or f"sku:{idx}"
+                supplier = norm.get("supplier") or norm.get("vendor") or ""
+                sku = norm.get("sku") or ""
                 qty_on_hand = None
                 for k in ["qty","inventory","stock","on_hand","quantity"]:
                     if k in norm and norm[k]:
@@ -212,7 +214,7 @@ def parse_inventory_csv(path: Path) -> List[Dict[str, Any]]:
                     "source": "inventory",
                     "entity_id": f"inv:{product[:16]}",
                     "value": float(qty_on_hand),
-                    "metadata": {"source_file": path.name, "line": idx, "signal": "on_hand", "product": product, "qty_on_hand": qty_on_hand, "citation": f"[{path.name}:{idx}] {product} on_hand={qty_on_hand}"},
+                    "metadata": {"source_file": path.name, "line": idx, "signal": "on_hand", "product": product, "qty_on_hand": qty_on_hand, "supplier": supplier, "sku": sku, "citation": f"[{path.name}:{idx}] {product} on_hand={qty_on_hand}"},
                 })
     except Exception:
         pass

@@ -1,0 +1,186 @@
+{
+  "date": "2024-09-12",
+  "shop": "Demo Shop",
+  "headline": "Profit $332.04 (59.7%) \u00b7 $0.00 at risk in 0 angry messages \u00b7 1 reorder(s) TODAY \u00b7 0 leak(s) to plug",
+  "kpis": {
+    "gmv": 556.0,
+    "fees": 19.16,
+    "shipping": 38.0,
+    "net": 498.84,
+    "cogs": 166.8,
+    "true_profit": 332.04,
+    "margin_pct": 59.7,
+    "orders": 10,
+    "aov": 55.6,
+    "best_seller": {
+      "product": "Canvas Tote",
+      "qty": 16,
+      "gmv": 512.0
+    },
+    "money_at_risk_usd": 0.0
+  },
+  "do_today": [
+    "Reply to 0 message(s) \u2014 $0.00 at risk (drafts below, cite file:line)",
+    "Reorder Canvas Tote x29 from Austin Textiles (1.3d left)",
+    "No money leaks \u2014 push best seller"
+  ],
+  "reorder_sheet": [
+    {
+      "product": "Canvas Tote",
+      "on_hand": 3,
+      "sold_7d": 16,
+      "daily_velocity": 2.29,
+      "days_left": 1.3,
+      "reorder_qty": 29,
+      "cover_days": 14,
+      "supplier": "Austin Textiles",
+      "urgency": "ORDER TODAY",
+      "citation": "[inventory.csv:2] Canvas Tote 3 left"
+    }
+  ],
+  "dead_stock_note": [],
+  "reply_queue": [],
+  "money_leaks": [],
+  "listing_fixes": [
+    {
+      "fix": "LISTING_GAP",
+      "title": "Listing gap: Canvas Tote sold 16 with zero reviews \u2014 request UGC",
+      "evidence": "[orders] Canvas Tote sold 16"
+    },
+    {
+      "fix": "LISTING_GAP",
+      "title": "Listing gap: Stoneware Mug sold 2 with zero reviews \u2014 request UGC",
+      "evidence": "[orders] Stoneware Mug sold 2"
+    },
+    {
+      "fix": "WORST_SELLER",
+      "title": " worst seller Stoneware Mug x2 \u2014 clearance/bundle it",
+      "evidence": "[orders] worst seller"
+    }
+  ],
+  "po_draft": "Subject: Reorder request \u2014 Austin Textiles\n\nHi Austin Textiles!\n\nPlease send the following for Demo Shop:\n  - Canvas Tote: 29 units (have 3, 1.3d left) [[inventory.csv:2] Canvas Tote 3 left]\n\nPlease confirm price + ETA. Last invoice numbers are cited above from our records.\n\nThanks!\nDemo Shop",
+  "citations": "every number cites [file:line]; audit via /seller/operations",
+  "free": true,
+  "offline": true,
+  "archetype": "stockout",
+  "generated_by": {
+    "code": "omni_one.packs.seller_close.build_daily_close",
+    "csv_code": "omni_one.packs.seller_close.close_to_csv",
+    "date": "2024-09-12",
+    "shop": "Demo Shop",
+    "repo": "omni-one",
+    "wave": "WAVE3-O"
+  },
+  "how_to_read": [
+    "kpis: GMV, fees, shipping, net, COGS, true_profit, margin_pct, AOV.",
+    "headline: one line for the owner (profit, at-risk, reorders, leaks).",
+    "reorder_sheet: velocity vs on-hand rows with supplier + urgency.",
+    "reply_queue: copy-paste drafts, each with a file:line citation.",
+    "po_draft: supplier email text for the top reorder row.",
+    "money_leaks: fee_creep / shipping_loss / margin_dip with amounts.",
+    "citations: every number traces to [file:line]; audit anytime."
+  ],
+  "inputs": {
+    "n_events": 13,
+    "by_source": {
+      "orders": 10,
+      "inventory": 2,
+      "dm": 1
+    },
+    "orders": [
+      {
+        "product": "Canvas Tote",
+        "qty": 2,
+        "gmv": 64.0,
+        "fees": 2.16,
+        "signal": "order_gmv",
+        "citation": "[tiktok_live.csv:2] Canvas Tote qty2 gmv$64.0 fees$2.16 net$57.84"
+      },
+      {
+        "product": "Canvas Tote",
+        "qty": 2,
+        "gmv": 64.0,
+        "fees": 2.16,
+        "signal": "order_gmv",
+        "citation": "[tiktok_live.csv:3] Canvas Tote qty2 gmv$64.0 fees$2.16 net$57.84"
+      },
+      {
+        "product": "Canvas Tote",
+        "qty": 2,
+        "gmv": 64.0,
+        "fees": 2.16,
+        "signal": "order_gmv",
+        "citation": "[tiktok_live.csv:4] Canvas Tote qty2 gmv$64.0 fees$2.16 net$57.84"
+      },
+      {
+        "product": "Canvas Tote",
+        "qty": 2,
+        "gmv": 64.0,
+        "fees": 2.16,
+        "signal": "order_gmv",
+        "citation": "[tiktok_live.csv:5] Canvas Tote qty2 gmv$64.0 fees$2.16 net$57.84"
+      },
+      {
+        "product": "Canvas Tote",
+        "qty": 2,
+        "gmv": 64.0,
+        "fees": 2.16,
+        "signal": "order_gmv",
+        "citation": "[tiktok_live.csv:6] Canvas Tote qty2 gmv$64.0 fees$2.16 net$57.84"
+      },
+      {
+        "product": "Canvas Tote",
+        "qty": 2,
+        "gmv": 64.0,
+        "fees": 2.16,
+        "signal": "order_gmv",
+        "citation": "[tiktok_live.csv:7] Canvas Tote qty2 gmv$64.0 fees$2.16 net$57.84"
+      },
+      {
+        "product": "Canvas Tote",
+        "qty": 2,
+        "gmv": 64.0,
+        "fees": 2.16,
+        "signal": "order_gmv",
+        "citation": "[tiktok_live.csv:8] Canvas Tote qty2 gmv$64.0 fees$2.16 net$57.84"
+      },
+      {
+        "product": "Canvas Tote",
+        "qty": 2,
+        "gmv": 64.0,
+        "fees": 2.16,
+        "signal": "order_gmv",
+        "citation": "[tiktok_live.csv:9] Canvas Tote qty2 gmv$64.0 fees$2.16 net$57.84"
+      },
+      {
+        "product": "Stoneware Mug",
+        "qty": 1,
+        "gmv": 22.0,
+        "fees": 0.94,
+        "signal": "order_gmv",
+        "citation": "[tiktok_live.csv:10] Stoneware Mug qty1 gmv$22.0 fees$0.94 net$18.06"
+      },
+      {
+        "product": "Stoneware Mug",
+        "qty": 1,
+        "gmv": 22.0,
+        "fees": 0.94,
+        "signal": "order_gmv",
+        "citation": "[tiktok_live.csv:11] Stoneware Mug qty1 gmv$22.0 fees$0.94 net$18.06"
+      }
+    ]
+  },
+  "expected": {
+    "true_profit": 332.04,
+    "margin_pct": 59.7,
+    "money_at_risk_usd": 0.0,
+    "reply_queue_len": 0,
+    "reorder_today": 1,
+    "leaks": 0
+  },
+  "sample_notes": [
+    "Canvas Tote selling 16 units/7d with only 3 on hand: ~1.3 days left.",
+    "Reorder sheet says ORDER TODAY; PO draft targets Austin Textiles.",
+    "Profit healthy but tomorrow's sales die without a reorder."
+  ]
+}

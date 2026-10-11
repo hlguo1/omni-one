@@ -1,0 +1,48 @@
+# omni-one — compose PROD overlay (hardened).
+# Usage: docker compose -f deploy/compose/docker-compose.prod.yml up -d --build
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    image: omni-one:1.1.0
+    ports:
+      - "5003:5003"
+    volumes:
+      - omni-prod-data:/app/data
+    env_file:
+      - ../../.env
+    environment:
+      PYTHONPATH: /app/src
+      DUCKDB_PATH: /app/data/omni.duckdb
+      AUDIT_PATH: /app/data/audit.jsonl
+      ALLOWED_ROOT: /app/data/inbox
+      SELLER_LLM: "off"
+      SELLER_MAX_LLM_USD: "0.0"
+      LOG_LEVEL: warning
+      ENVIRONMENT: production
+    command: ["uvicorn", "omni_one.api.fastapi_app:create_omni_one_app", "--factory", "--host", "0.0.0.0", "--port", "5003"]
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 1G
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5003/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  omni-prod-data:
+    driver: local

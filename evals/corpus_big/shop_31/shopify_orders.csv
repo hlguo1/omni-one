@@ -1,0 +1,7 @@
+Order Name,Created at,Lineitem name,Lineitem quantity,Lineitem price,Total,Fees,Shipping,Customer
+#4100,2024-09-11,Ceramic Mug,2,22.00,44.00,1.58,3.00,Leo
+#4101,2024-09-12,Embroidered Cap,3,24.00,72.00,2.39,3.50,Omar
+#4102,2024-09-10,Silver Ring,1,55.50,55.50,1.91,4.00,Rosa
+#4103,2024-09-11,Tote Bag Handmade,2,27.50,55.00,1.90,4.50,Alice
+#4104,2024-09-12,Ceramic Mug,3,23.00,69.00,2.30,5.00,David
+#4105,2024-09-10,Embroidered Cap,1,25.00,25.00,1.03,0.00,Grace

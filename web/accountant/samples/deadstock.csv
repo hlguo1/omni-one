@@ -1,0 +1,24 @@
+DAILY CLOSE,2026-10-10,Profit $209.25 (59.2%) · $141.40 at risk in 2 angry messages · 0 reorder(s) TODAY · 1 leak(s) to plug
+
+metric,value
+gmv,353.5
+fees,11.75
+shipping,15.5
+net,326.25
+cogs,117.0
+true_profit,209.25
+margin_pct,59.2
+orders,5
+aov,70.7
+best_seller,"{'product': 'Leather Wallet', 'qty': 6, 'gmv': 234.0}"
+money_at_risk_usd,141.4
+
+do_today_n,do_today
+1,"Reply to 2 message(s) — $141.40 at risk (drafts below, cite file:line)"
+2,Stock healthy — no reorder
+3,Plug leak: shipping_loss — Shipping loss: Print - Botanical ship $4.00 on $15.00 GMV
+
+product,on_hand,sold_7d,days_left,reorder_qty_14d,supplier,urgency,citation
+
+leak,amount_usd,note,evidence
+shipping_loss,,Shipping loss: Print - Botanical ship $4.00 on $15.00 GMV,[shopify_orders.csv:6] Print - Botanical qty1 gmv$15.0 fees$0.73 net$10.27

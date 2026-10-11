@@ -1,0 +1,23 @@
+DAILY CLOSE,2026-10-10,Profit $183.42 (54.8%) · $143.58 at risk in 3 angry messages · 0 reorder(s) TODAY · 0 leak(s) to plug
+
+metric,value
+gmv,335.0
+fees,23.18
+shipping,23.5
+net,288.32
+cogs,104.9
+true_profit,183.42
+margin_pct,54.8
+orders,7
+aov,47.86
+best_seller,"{'product': 'Bougie Noël 🎄', 'qty': 5, 'gmv': 87.5}"
+money_at_risk_usd,143.58
+
+do_today_n,do_today
+1,"Reply to 3 message(s) — $143.58 at risk (drafts below, cite file:line)"
+2,Stock healthy — no reorder
+3,No money leaks — push best seller
+
+product,on_hand,sold_7d,days_left,reorder_qty_14d,supplier,urgency,citation
+
+leak,amount_usd,note,evidence

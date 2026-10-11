@@ -1,0 +1,57 @@
+# dev overlay patch — single replica, debug logging, dev hostname.
+# Applied by deploy/k8s/overlays/dev/kustomization.yaml via patchesStrategicMerge.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: omni-one
+  namespace: omni-one
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - name: omni-one
+          env:
+            - name: LOG_LEVEL
+              value: "debug"
+            - name: ENVIRONMENT
+              value: "development"
+            - name: SELLER_LLM
+              value: "mock"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: omni-one-config
+  namespace: omni-one
+data:
+  LOG_LEVEL: "debug"
+  ENVIRONMENT: "development"
+  SELLER_LLM: "mock"
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: omni-one
+  namespace: omni-one
+  annotations:
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+spec:
+  rules:
+    - host: dev.omni-one.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: omni-one
+                port:
+                  number: 80

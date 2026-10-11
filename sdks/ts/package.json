@@ -1,0 +1,58 @@
+{
+  "name": "@omni-one/sdk-ts",
+  "version": "1.1.0",
+  "description": "Omni-One TypeScript SDK — local-first seller OS client (fetch-based, node18+ & browser). $0, offline-friendly, citation-preserving.",
+  "type": "module",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "default": "./dist/esm/index.js"
+    },
+    "./close": {
+      "types": "./dist/esm/close.d.ts",
+      "import": "./dist/esm/close.js",
+      "require": "./dist/cjs/close.js",
+      "default": "./dist/esm/close.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.cjs.json",
+    "build:esm": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --test tests/run.mjs",
+    "test:smoke": "node tests/run.mjs",
+    "lint": "echo \"no eslint config — typecheck is the gate\" && npm run typecheck"
+  },
+  "keywords": [
+    "omni-one",
+    "seller",
+    "shopify",
+    "etsy",
+    "sdk",
+    "local-first",
+    "offline"
+  ],
+  "author": "Omni-One Contributors",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/garyguo123456789/omni-one"
+  }
+}

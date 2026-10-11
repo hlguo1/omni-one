@@ -1,0 +1,6 @@
+order_id;order_date;product;qty;price;fees;shipping;buyer
+8000;2024-09-12;Tote Bag Handmade;3;81.00;5.47;3.50;Alice
+8001;2024-09-10;Ceramic Mug;1;22.50;1.66;4.00;David
+8002;2024-09-11;Print - Botanical;2;29.00;2.08;4.50;Grace
+8003;2024-09-12;Knitted Scarf;3;138.00;9.17;5.00;Jack
+8004;2024-09-10;Tote Bag Handmade;1;28.00;2.02;0.00;Mona

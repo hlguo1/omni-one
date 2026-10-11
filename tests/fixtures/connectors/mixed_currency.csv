@@ -1,0 +1,4 @@
+Charge ID,Created (UTC),Statement Descriptor,Amount,Currency,Fee,Net,Status,Customer
+ch_m1,2024-09-10,US TOTE,30.00,USD,1.17,28.83,Completed,Alice
+ch_m2,2024-09-11,EU SCARF,€45.00,EUR,1.61,43.39,Completed,Chloé
+ch_m3,2024-09-12,UK MUG,£22.00,GBP,0.94,21.06,Completed,Oliver

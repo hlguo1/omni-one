@@ -1,0 +1,90 @@
+{
+  "date": "2026-10-11",
+  "shop": "our shop",
+  "headline": "Profit $169.09 (61.7%) \u00b7 $102.75 at risk in 3 angry messages \u00b7 1 reorder(s) TODAY \u00b7 0 leak(s) to plug",
+  "kpis": {
+    "gmv": 274.0,
+    "fees": 16.71,
+    "shipping": 24.0,
+    "net": 233.29,
+    "cogs": 64.2,
+    "true_profit": 169.09,
+    "margin_pct": 61.7,
+    "orders": 8,
+    "aov": 34.25,
+    "best_seller": {
+      "product": "Tote Bag Handmade",
+      "qty": 6,
+      "gmv": 140.0
+    },
+    "money_at_risk_usd": 102.75
+  },
+  "do_today": [
+    "Reply to 3 message(s) \u2014 $102.75 at risk (drafts below, cite file:line)",
+    "Reorder Tote Bag Handmade x10 from Acme Textiles (2.3d left)",
+    "No money leaks \u2014 push best seller"
+  ],
+  "reorder_sheet": [
+    {
+      "product": "Tote Bag Handmade",
+      "on_hand": 2,
+      "sold_7d": 6,
+      "daily_velocity": 0.86,
+      "days_left": 2.3,
+      "reorder_qty": 10,
+      "cover_days": 14,
+      "supplier": "Acme Textiles",
+      "urgency": "ORDER TODAY",
+      "citation": "[inventory.csv:2] Tote Bag Handmade on_hand=2"
+    }
+  ],
+  "reply_queue": [
+    {
+      "channel": "dm",
+      "customer": "Alice",
+      "summary": "Alice: Hi! My tote bag hasn't arrived yet, ordered 5 days ago. Worried.",
+      "draft": "Hi Alice! I'm really sorry about your late delivery \u2014 I just pulled your order ([instagram_dm.txt:1] Alice: Hi! My tote bag hasn't arrived yet, ordered 5 days) and I'm checking tracking/supplier right now. I'll update you within 2 hours with a fix (reship/refund \u2014 your choice). Thank you for your patience with our shop!",
+      "citation": "[instagram_dm.txt:1] Alice: Hi! My tote bag hasn't arrived yet, ordered 5 days",
+      "priority": "P0-reply-in-2h"
+    },
+    {
+      "channel": "dm",
+      "customer": "Charlie",
+      "summary": "Charlie: Where is my order? No tracking.",
+      "draft": "Hi Charlie! I'm really sorry about your missing tracking \u2014 I just pulled your order ([instagram_dm.txt:4] Charlie: Where is my order? No tracking.) and I'm checking tracking/supplier right now. I'll update you within 2 hours with a fix (reship/refund \u2014 your choice). Thank you for your patience with our shop!",
+      "citation": "[instagram_dm.txt:4] Charlie: Where is my order? No tracking.",
+      "priority": "P0-reply-in-2h"
+    },
+    {
+      "channel": "review",
+      "customer": "customer",
+      "summary": "2024-09-11 Ceramic Mug 2 Arrived chipped, very disappointed",
+      "draft": "Thank you for flagging this ([reviews.csv:3] 2024-09-11 Ceramic Mug 2 Arrived chipped, very disappointed) \u2014 we're sorry about your customer experience. We've fixed the packing/quality check that caused it. Please DM us for a free replacement or refund \u2014 we want to make this right. \u2014 our shop",
+      "citation": "[reviews.csv:3] 2024-09-11 Ceramic Mug 2 Arrived chipped, very disappointed",
+      "priority": "P0-reply-in-2h"
+    }
+  ],
+  "money_leaks": [],
+  "listing_fixes": [
+    {
+      "fix": "REVIEW_CRISIS",
+      "title": "Bad review \u2014 fix + public reply: 2024-09-11 Ceramic Mug 2 Arrived chipped, very disappointed",
+      "evidence": "[reviews.csv:3] 2024-09-11 Ceramic Mug 2 Arrived chipped, very disappointed"
+    },
+    {
+      "fix": "PRICE_MISMATCH",
+      "title": "Price mismatch: Tote Bag Handmade {'etsy': 14.0, 'shopify': 28.0} (100% diff) \u2014 align to avoid complaints",
+      "evidence": "[orders] Tote Bag Handmade {'etsy': 14.0, 'shopify': 28.0}"
+    },
+    {
+      "fix": "PRICE_MISMATCH",
+      "title": "Price mismatch: Ceramic Mug {'etsy': 11.0, 'shopify': 22.0} (100% diff) \u2014 align to avoid complaints",
+      "evidence": "[orders] Ceramic Mug {'etsy': 11.0, 'shopify': 22.0}"
+    }
+  ],
+  "po_draft": "Subject: Reorder request \u2014 Acme Textiles\n\nHi Acme Textiles!\n\nPlease send the following for our shop:\n  - Tote Bag Handmade: 10 units (have 2, 2.3d left) [[inventory.csv:2] Tote Bag Handmade on_hand=2]\n\nPlease confirm price + ETA. Last invoice numbers are cited above from our records.\n\nThanks!\nour shop",
+  "citations": "every number cites [file:line]; audit via /seller/operations",
+  "free": true,
+  "offline": true,
+  "source": "demo seed=42 via POST /api/v1/seller/close (trimmed for PWA; chart payloads dropped)"
+}

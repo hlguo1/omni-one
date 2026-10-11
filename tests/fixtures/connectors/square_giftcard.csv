@@ -1,0 +1,4 @@
+Transaction ID,Date,Description,Gross Sales,Gift Card Sales,Partial Refunds,Fee,Source,Customer
+SQ-GC1,2024-09-10,Gift Card Redemption - Tote,50.00,GIFT-CARD-200,,1.75,Card,Alice
+SQ-GC2,2024-09-11,In-store Mug Sale,60.00,,,2.04,Card,Bob
+SQ-GC3,2024-09-12,Gift Card Partial Refund,20.00,,Partial refund issued,0.88,Card,Charlie

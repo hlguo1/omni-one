@@ -1,0 +1,83 @@
+{
+  "date": "2024-09-12",
+  "shop": "Demo Shop",
+  "headline": "Profit $0.00 (0%) \u00b7 $0.00 at risk in 0 angry messages \u00b7 0 reorder(s) TODAY \u00b7 0 leak(s) to plug",
+  "kpis": {
+    "gmv": 0,
+    "fees": 0,
+    "shipping": 0,
+    "net": 0,
+    "cogs": 0.0,
+    "true_profit": 0.0,
+    "margin_pct": 0,
+    "orders": 0,
+    "aov": 0.0,
+    "best_seller": {
+      "product": "\u2014",
+      "qty": 0,
+      "gmv": 0
+    },
+    "money_at_risk_usd": 0.0
+  },
+  "do_today": [
+    "Reply to 0 message(s) \u2014 $0.00 at risk (drafts below, cite file:line)",
+    "Stock healthy \u2014 no reorder",
+    "No money leaks \u2014 push best seller"
+  ],
+  "reorder_sheet": [],
+  "dead_stock_note": [],
+  "reply_queue": [],
+  "money_leaks": [],
+  "listing_fixes": [
+    {
+      "fix": "WORST_SELLER",
+      "title": " worst seller \u2014 x0 \u2014 clearance/bundle it",
+      "evidence": "[orders] worst seller"
+    }
+  ],
+  "po_draft": "Stock healthy \u2014 no PO needed today.",
+  "citations": "every number cites [file:line]; audit via /seller/operations",
+  "free": true,
+  "offline": true,
+  "archetype": "empty",
+  "generated_by": {
+    "code": "omni_one.packs.seller_close.build_daily_close",
+    "csv_code": "omni_one.packs.seller_close.close_to_csv",
+    "date": "2024-09-12",
+    "shop": "Demo Shop",
+    "repo": "omni-one",
+    "wave": "WAVE3-O"
+  },
+  "how_to_read": [
+    "kpis: GMV, fees, shipping, net, COGS, true_profit, margin_pct, AOV.",
+    "headline: one line for the owner (profit, at-risk, reorders, leaks).",
+    "reorder_sheet: velocity vs on-hand rows with supplier + urgency.",
+    "reply_queue: copy-paste drafts, each with a file:line citation.",
+    "po_draft: supplier email text for the top reorder row.",
+    "money_leaks: fee_creep / shipping_loss / margin_dip with amounts.",
+    "citations: every number traces to [file:line]; audit anytime."
+  ],
+  "inputs": {
+    "n_events": 0,
+    "by_source": {},
+    "orders": []
+  },
+  "expected": {
+    "true_profit": 0.0,
+    "margin_pct": 0,
+    "money_at_risk_usd": 0.0,
+    "reply_queue_len": 0,
+    "reorder_today": 0,
+    "leaks": 0
+  },
+  "sample_notes": [
+    "No events ingested: a closed shop day (or an empty export folder).",
+    "All KPIs zero; headline, do_today and citations still render.",
+    "Use this to smoke-test the accountant UI null state.",
+    "Reorder sheet, reply queue and leaks are empty lists, not nulls.",
+    "PO draft falls back to the healthy-stock sentence.",
+    "Expected profit is 0.00 and money at risk is 0.00 by construction.",
+    "inputs.n_events is 0 and inputs.orders is an empty list.",
+    "CSVs still carry the full close_to_csv column layout (23 lines)."
+  ]
+}

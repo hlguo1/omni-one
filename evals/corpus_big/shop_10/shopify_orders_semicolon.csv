@@ -1,0 +1,7 @@
+order_id;order_date;product;qty;price;fees;shipping;buyer
+8100;2024-09-11;Embroidered Cap;2;48.00;3.32;4.50;Karen
+8101;2024-09-12;Silver Ring;3;166.50;11.02;5.00;Nina
+8102;2024-09-10;Leather Wallet;1;38.50;2.70;0.00;Quinn
+8103;2024-09-11;Soy Candle - Vanilla;2;38.00;2.67;3.00;Tara
+8104;2024-09-12;Embroidered Cap;3;75.00;5.08;3.50;Charlie
+8105;2024-09-10;Silver Ring;1;54.00;3.71;4.00;Frank

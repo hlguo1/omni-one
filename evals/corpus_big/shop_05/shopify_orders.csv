@@ -1,0 +1,6 @@
+Order Name,Created at,Lineitem name,Lineitem quantity,Lineitem price,Total,Fees,Shipping,Customer
+#1500,2024-09-12,Leather Wallet,3,38.00,114.00,3.61,5.00,Frank
+#1501,2024-09-10,Print - Botanical,1,15.50,15.50,0.75,0.00,Ivy
+#1502,2024-09-11,Knitted Scarf,2,44.50,89.00,2.88,3.00,Leo
+#1503,2024-09-12,Leather Wallet,3,40.00,120.00,3.78,3.50,Omar
+#1504,2024-09-10,Print - Botanical,1,15.00,15.00,0.73,4.00,Rosa

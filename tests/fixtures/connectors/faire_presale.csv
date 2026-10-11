@@ -1,0 +1,4 @@
+Order ID,Created At,Product,Quantity,Wholesale Price,Retailer,Order Status
+F-PRE1,2024-09-10,Holiday Tote Presale,12,240.00,Shop Denver,Paid
+F-PRE2,2024-09-11,Holiday Mug Presale,8,160.00,Shop Oslo,Paid
+F-PRE3,2024-09-12,Spring Scarf Presale,5,100.00,Shop Paris,Cancelled

@@ -1,0 +1,7 @@
+order_id,order_date,product,qty,price,fees,shipping,buyer,status
+4300,2024-09-11,Embroidered Cap,2,49.00,3.39,3.00,David,refunded
+4301,2024-09-12,Silver Ring,3,168.00,11.12,3.50,Grace,chargeback
+4302,2024-09-10,Tote Bag Handmade,1,28.00,2.02,4.00,Jack,refunded
+4303,2024-09-11,Embroidered Cap,2,48.00,3.32,4.50,Mona,chargeback
+4304,2024-09-12,Silver Ring,3,166.50,11.02,5.00,Priya,refunded
+4305,2024-09-10,Tote Bag Handmade,1,27.50,1.99,0.00,Sam,chargeback

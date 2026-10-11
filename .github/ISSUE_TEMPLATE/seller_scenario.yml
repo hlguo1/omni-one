@@ -1,0 +1,17 @@
+---
+name: Seller scenario
+description: Propose a new sharp Seller OS scenario (trigger → evidence → Workshop action)
+labels: [seller-os]
+---
+**Scenario name (e.g. REFUND_SPIKE):**
+
+**Trigger (deterministic rule + threshold):**
+
+**Evidence (file:line citation format):**
+
+**Workshop action (assign/approve/resolve → writeback):**
+
+**Sample rows (anonymized CSV lines):**
+```csv
+...
+```

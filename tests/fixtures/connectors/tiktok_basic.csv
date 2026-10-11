@@ -1,0 +1,3 @@
+Order ID,Order Created Time,Product Name,Quantity,Order Amount,Seller SKU,Buyer
+TT1,2024-09-10 12:00:00,Tote Bag,1,30.00,SKU1,Alice
+TT2,2024-09-11 13:00:00,Mug,2,40.00,SKU2,Bob

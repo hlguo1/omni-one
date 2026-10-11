@@ -1,0 +1,59 @@
+{
+  "title": "Omni-One Seller OS",
+  "uid": "omni-one-seller-os",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-24h", "to": "now" },
+  "tags": ["omni-one", "seller-os"],
+  "panels": [
+    {
+      "id": 1,
+      "title": "Briefings",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "omni_one_requests{op=\"briefings_total\"}", "legendFormat": "briefings" }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Scenarios",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "omni_one_requests{op=\"scenarios_runs_total\"}", "legendFormat": "scenarios" }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Closes",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "omni_one_requests{op=\"closes_total\"}", "legendFormat": "closes" }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Vision",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "omni_one_requests{op=\"vision_total\"}", "legendFormat": "vision" }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Latency histogram (placeholder — wire histogram_quantile when buckets ship)",
+      "type": "heatmap",
+      "targets": [
+        { "expr": "sum by (le) (rate(omni_one_request_latency_seconds_bucket[5m]))", "legendFormat": "{{le}}" }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Up",
+      "type": "gauge",
+      "targets": [
+        { "expr": "omni_one_up", "legendFormat": "up" }
+      ]
+    }
+  ]
+}

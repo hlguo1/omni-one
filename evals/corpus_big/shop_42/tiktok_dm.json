@@ -1,0 +1,20 @@
+{
+ "messages": [
+  {
+   "from": "David",
+   "text": "Hi! My Leather Wallet hasn't arrived yet, ordered 5 days ago. Worried."
+  },
+  {
+   "from": "Ivy",
+   "text": "Amazing Tote Bag Handmade! Will order again. Love it!"
+  },
+  {
+   "from": "Nina",
+   "text": "Where is my order? No tracking number received for Leather Wallet."
+  },
+  {
+   "from": "Sam",
+   "text": "Do you have the Leather Wallet in blue? Quick question."
+  }
+ ]
+}

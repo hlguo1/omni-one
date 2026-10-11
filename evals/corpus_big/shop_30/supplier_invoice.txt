@@ -1,0 +1,12 @@
+Hide Works
+Invoice INV-1510 Date: 2024-09-10
+Bill to: shop_30 (semicolon)
+Order ref: shop_30-2024-09
+Leather Wallet 22 x 15.21 334.62
+Soy Candle - Vanilla 35 x 6.30 220.50
+Shipping 20.50
+Total $575.62
+Payment terms: Net 30
+Thank you for your business!
+Questions? Contact Hide Works
+--- end of invoice ---

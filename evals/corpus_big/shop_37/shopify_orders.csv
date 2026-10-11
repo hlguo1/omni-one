@@ -1,0 +1,11 @@
+Order Name,Created at,Lineitem name,Lineitem quantity,Lineitem price,Total,Fees,Shipping,Customer
+#4700,2024-09-11,Knitted Scarf,2,46.00,92.00,2.97,13.00,Rosa
+#4701,2024-09-12,Leather Wallet,3,39.00,117.00,3.69,14.00,Alice
+#4702,2024-09-10,Soy Candle - Vanilla,1,17.00,17.00,0.79,12.00,David
+#4703,2024-09-11,Print - Botanical,2,15.50,31.00,1.20,13.00,Grace
+#4704,2024-09-12,Knitted Scarf,3,44.50,133.50,4.17,14.00,Jack
+#4705,2024-09-10,Leather Wallet,1,40.00,40.00,1.46,12.00,Mona
+#4706,2024-09-11,Soy Candle - Vanilla,2,18.00,36.00,1.34,13.00,Priya
+#4707,2024-09-12,Print - Botanical,3,14.00,42.00,1.52,14.00,Sam
+#4708,2024-09-10,Knitted Scarf,1,45.50,45.50,1.62,12.00,Bob
+#4709,2024-09-11,Leather Wallet,2,38.50,77.00,2.53,13.00,Eve

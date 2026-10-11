@@ -1,0 +1,11 @@
+order_id;order_date;product;qty;price;fees;shipping;buyer
+8300;2024-09-10;Leather Wallet;1;38.00;2.67;0.00;Karen
+8301;2024-09-11;Soy Candle - Vanilla;2;37.00;2.61;3.00;Nina
+8302;2024-09-12;Embroidered Cap;3;73.50;4.98;3.50;Quinn
+8303;2024-09-10;Leather Wallet;1;40.00;2.80;4.00;Tara
+8304;2024-09-11;Soy Candle - Vanilla;2;36.00;2.54;4.50;Charlie
+8305;2024-09-12;Embroidered Cap;3;72.00;4.88;5.00;Frank
+8306;2024-09-10;Leather Wallet;1;39.50;2.77;0.00;Ivy
+8307;2024-09-11;Soy Candle - Vanilla;2;35.00;2.48;3.00;Leo
+8308;2024-09-12;Embroidered Cap;3;78.00;5.27;3.50;Omar
+8309;2024-09-10;Leather Wallet;1;39.00;2.74;4.00;Rosa

@@ -1,0 +1,12 @@
+Acme Textiles
+Invoice INV-2088 Date: 2024-09-10
+Bill to: shop_64 (feebleed)
+Order ref: shop_64-2024-09
+Tote Bag Handmade 32 x 11.20 358.40
+Ceramic Mug 49 x 8.80 431.20
+Shipping 18.50
+Total $808.10
+Payment terms: Net 30
+Thank you for your business!
+Questions? Contact Acme Textiles
+--- end of invoice ---

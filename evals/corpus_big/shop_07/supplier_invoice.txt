@@ -1,0 +1,13 @@
+Stitch Supply
+Invoice INV-1119 Date: 2024-09-10
+Bill to: shop_07 (shippingloss)
+Order ref: shop_07-2024-09
+Ceramic Mug 56 x 7.48 418.88
+Embroidered Cap 28 x 10.25 287.00
+Silver Ring 41 x 20.35 834.35
+Shipping 16.50
+Total $1556.73
+Payment terms: Net 30
+Thank you for your business!
+Questions? Contact Stitch Supply
+--- end of invoice ---

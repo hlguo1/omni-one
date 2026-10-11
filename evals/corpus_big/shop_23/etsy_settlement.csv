@@ -1,0 +1,11 @@
+order_id,order_date,product,qty,price,fees,shipping,buyer,status
+4300,2024-09-12,Ceramic Mug,3,64.50,4.39,5.00,David,refunded
+4301,2024-09-10,Print - Botanical,1,16.00,1.24,0.00,Grace,chargeback
+4302,2024-09-11,Embroidered Cap,2,50.00,3.45,3.00,Jack,refunded
+4303,2024-09-12,Silver Ring,3,162.00,10.73,3.50,Mona,chargeback
+4304,2024-09-10,Tote Bag Handmade,1,28.50,2.05,4.00,Priya,refunded
+4305,2024-09-11,Ceramic Mug,2,43.00,3.00,4.50,Sam,chargeback
+4306,2024-09-12,Print - Botanical,3,48.00,3.32,5.00,Bob,refunded
+4307,2024-09-10,Embroidered Cap,1,25.00,1.82,0.00,Eve,chargeback
+4308,2024-09-11,Silver Ring,2,108.00,7.22,3.00,Hank,refunded
+4309,2024-09-12,Tote Bag Handmade,3,85.50,5.76,3.50,Karen,chargeback

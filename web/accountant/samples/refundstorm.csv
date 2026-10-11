@@ -1,0 +1,25 @@
+DAILY CLOSE,2024-09-12,Profit $-76.22 (-95.3%) · $40.00 at risk in 5 angry messages · 0 reorder(s) TODAY · 2 leak(s) to plug
+
+metric,value
+gmv,80.0
+fees,14.22
+shipping,34.0
+net,31.78
+cogs,108.0
+true_profit,-76.22
+margin_pct,-95.3
+orders,10
+aov,8.0
+best_seller,"{'product': 'Botanical Print', 'qty': 1, 'gmv': 32.0}"
+money_at_risk_usd,40.0
+
+do_today_n,do_today
+1,"Reply to 5 message(s) — $40.00 at risk (drafts below, cite file:line)"
+2,Stock healthy — no reorder
+3,Plug leak: fee_creep — Fees 17.8% of GMV — compare Shopify 2.9%+30c vs Etsy 6.5%+$0.20 vs Amazon 15%; shift volum
+
+product,on_hand,sold_7d,days_left,reorder_qty_14d,supplier,urgency,citation
+
+leak,amount_usd,note,evidence
+fee_creep,14.22,Fees 17.8% of GMV — compare Shopify 2.9%+30c vs Etsy 6.5%+$0.20 vs Amazon 15%; shift volume or raise price ~$1.42/order,[orders] fees $14.22 / GMV $80.00
+margin_dip,-76.22,True margin -95.3% — profit $-76.22 on $80.0 GMV (COGS $108.00 fees $14.22),[orders] gmv/fees + supplier COGS

@@ -1,0 +1,3 @@
+Transaction ID,Date,Gross Sales,Type,Source
+SQ3,2024-09-10,30.00,CHARGE,Card
+SQ4,2024-09-11,20.00,REFUND,Card

@@ -1,0 +1,86 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "omni-one"
+version = "1.1.0"
+description = "Deterministic-first local intelligence platform: 4-layer pipeline + ontology twin + grounded AI. Seller OS included."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.10"
+authors = [{ name = "Omni-One Contributors" }]
+keywords = ["ai", "ontology", "seller", "shopify", "etsy", "local-first", "rag", "audit"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: End Users/Desktop",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Office/Business",
+  "Environment :: Console",
+]
+dependencies = [
+  "fastapi==0.104.1",
+  "uvicorn==0.24.0",
+  "python-multipart==0.0.6",
+  "pydantic>=2.5.0",
+  "pydantic-settings>=2.1.0",
+  "pandas>=2.0",
+  "numpy>=1.24",
+  "duckdb>=0.10.0",
+  "pillow>=10.0",
+  "matplotlib>=3.8",
+  "python-dotenv>=1.0.0",
+  "scikit-learn>=1.3",
+  "typer>=0.9.0",
+  "rich>=13.0",
+  "httpx>=0.25.0",
+]
+
+[project.optional-dependencies]
+vision = ["pytesseract>=0.3.10", "opencv-python>=4.8.0"]
+dev = ["pytest>=7.4", "pytest-asyncio>=0.21", "pytest-cov>=4.0", "ruff>=0.1", "mypy>=1.0", "pre-commit>=3.0"]
+full = ["tiktoken>=0.5", "redis>=5.0", "prometheus-client>=0.20", "structlog>=23.0"]
+mcp = ["mcp>=1.0.0"]
+
+[project.scripts]
+omni-one = "omni_one.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/garyguo123456789/omni-one"
+Documentation = "https://github.com/garyguo123456789/omni-one#readme"
+Issues = "https://github.com/garyguo123456789/omni-one/issues"
+Changelog = "https://github.com/garyguo123456789/omni-one/blob/main/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 110
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B", "SIM"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+exclude = ["tests/", "web/"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-q"
+
+[tool.coverage.run]
+source = ["src/omni_one"]
+omit = ["*/tests/*", "*/__pycache__/*"]
+
+[tool.coverage.report]
+fail_under = 0
+show_missing = true

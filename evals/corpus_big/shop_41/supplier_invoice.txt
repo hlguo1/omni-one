@@ -1,0 +1,13 @@
+Paper Co
+Invoice INV-1697 Date: 2024-09-10
+Bill to: shop_41 (healthy)
+Order ref: shop_41-2024-09
+Knitted Scarf 20 x 14.85 297.00
+Leather Wallet 37 x 12.87 476.19
+Soy Candle - Vanilla 54 x 5.94 320.76
+Shipping 14.50
+Total $1108.45
+Payment terms: Net 30
+Thank you for your business!
+Questions? Contact Paper Co
+--- end of invoice ---

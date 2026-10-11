@@ -1,0 +1,69 @@
+{
+  "date": "2026-10-10",
+  "shop": "our shop",
+  "headline": "Profit $245.50 (58.5%) \u00b7 $140.00 at risk in 2 angry messages \u00b7 0 reorder(s) TODAY \u00b7 0 leak(s) to plug",
+  "kpis": {
+    "gmv": 420.0,
+    "fees": 28.5,
+    "shipping": 20.0,
+    "net": 371.5,
+    "cogs": 126.0,
+    "true_profit": 245.5,
+    "margin_pct": 58.5,
+    "orders": 6,
+    "aov": 70.0,
+    "best_seller": {
+      "product": "Embroidered Cap",
+      "qty": 5,
+      "gmv": 123.0
+    },
+    "money_at_risk_usd": 140.0
+  },
+  "do_today": [
+    "Reply to 2 message(s) \u2014 $140.00 at risk (drafts below, cite file:line)",
+    "Stock healthy \u2014 no reorder",
+    "No money leaks \u2014 push best seller"
+  ],
+  "reorder_sheet": [],
+  "dead_stock_note": [
+    {
+      "title": "Dead stock: Tote Bag Handmade \u2014 22 units, zero sales 7d \u2192 bundle/clearance",
+      "evidence": "[inventory.csv:6] Tote Bag Handmade on_hand=22"
+    }
+  ],
+  "reply_queue": [
+    {
+      "channel": "dm",
+      "customer": "Alice",
+      "summary": "Alice: Hi! My Embroidered Cap hasn't arrived yet, ordered 5 days ago. Worried.",
+      "draft": "Hi Alice! I'm really sorry about your late delivery \u2014 I just pulled your order ([instagram_dm.txt:1] Alice: Hi! My Embroidered Cap hasn't arrived yet, ordered) and I'm checking tracking/supplier right now. I'll update you within 2 hours with a fix (reship/refund \u2014 your choice). Thank you for your patience with our shop!",
+      "citation": "[instagram_dm.txt:1] Alice: Hi! My Embroidered Cap hasn't arrived yet, ordered",
+      "priority": "P0-reply-in-2h"
+    },
+    {
+      "channel": "dm",
+      "customer": "Eve",
+      "summary": "Eve: Where is my order? No tracking number received for Leather Wallet.",
+      "draft": "Hi Eve! I'm really sorry about your missing tracking \u2014 I just pulled your order ([instagram_dm.txt:3] Eve: Where is my order? No tracking number received for) and I'm checking tracking/supplier right now. I'll update you within 2 hours with a fix (reship/refund \u2014 your choice). Thank you for your patience with our shop!",
+      "citation": "[instagram_dm.txt:3] Eve: Where is my order? No tracking number received for",
+      "priority": "P0-reply-in-2h"
+    }
+  ],
+  "money_leaks": [],
+  "listing_fixes": [
+    {
+      "fix": "LISTING_GAP",
+      "title": "Listing gap: Soy Candle - Vanilla sold 2 with zero reviews \u2014 request UGC",
+      "evidence": "[orders] Soy Candle - Vanilla sold 2"
+    },
+    {
+      "fix": "WORST_SELLER",
+      "title": " worst seller Leather Wallet x1 \u2014 clearance/bundle it",
+      "evidence": "[orders] worst seller"
+    }
+  ],
+  "po_draft": "Stock healthy \u2014 no PO needed today.",
+  "citations": "every number cites [file:line]; audit via /seller/operations",
+  "free": true,
+  "offline": true
+}

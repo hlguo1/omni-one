@@ -1,0 +1,23 @@
+DAILY CLOSE,2026-10-10,Profit $314.63 (59.3%) · $106.12 at risk in 2 angry messages · 0 reorder(s) TODAY · 0 leak(s) to plug
+
+metric,value
+gmv,530.58
+fees,26.28
+shipping,30.5
+net,473.8
+cogs,159.17
+true_profit,314.63
+margin_pct,59.3
+orders,10
+aov,53.06
+best_seller,"{'product': 'Embroidered Cap', 'qty': 9, 'gmv': 241.5}"
+money_at_risk_usd,106.12
+
+do_today_n,do_today
+1,"Reply to 2 message(s) — $106.12 at risk (drafts below, cite file:line)"
+2,Stock healthy — no reorder
+3,No money leaks — push best seller
+
+product,on_hand,sold_7d,days_left,reorder_qty_14d,supplier,urgency,citation
+
+leak,amount_usd,note,evidence

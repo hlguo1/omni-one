@@ -1,0 +1,24 @@
+{
+ "messages": [
+  {
+   "from": "Grace",
+   "text": "I want a refund for my Embroidered Cap, never arrived."
+  },
+  {
+   "from": "Ivy",
+   "text": "Return requested - Silver Ring arrived damaged, refund please."
+  },
+  {
+   "from": "Karen",
+   "text": "Chargeback filed, where is my refund for Tote Bag Handmade?"
+  },
+  {
+   "from": "Mona",
+   "text": "My Embroidered Cap hasn't arrived yet, refund now. Angry."
+  },
+  {
+   "from": "Shop",
+   "text": "Hi Omar - processing refunds today, sorry for the trouble."
+  }
+ ]
+}

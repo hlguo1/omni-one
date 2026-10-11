@@ -289,6 +289,26 @@ class OmniOneAPIFactory:
                 "name": "Analytics",
                 "description": "Analytics and metrics",
             },
+            {
+                "name": "Seller OS",
+                "description": "Seller highlight: briefing, 12 scenarios, operations, photo, CSV export ($0)",
+            },
+            {
+                "name": "Vision",
+                "description": "Free local OCR + chart photo analysis",
+            },
+            {
+                "name": "Verticals",
+                "description": "Labs packs (micro-biz, revenue ops)",
+            },
+            {
+                "name": "Admin",
+                "description": "API-key protected ops",
+            },
+            {
+                "name": "Ops",
+                "description": "Prometheus /metrics, tag catalog",
+            },
         ]
 
 

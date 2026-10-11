@@ -1,0 +1,9 @@
+Order Name,Created at,Lineitem name,Lineitem quantity,Lineitem price,Total,Fees,Shipping,Customer
+#5000,2024-09-09,Tote Bag Handmade,2,30.65,61.30,2.08,4.50,Bob
+#5001,2024-09-08,Tote Bag Handmade,3,29.30,87.90,2.85,4.50,Frank
+#5002,2024-09-05,Tote Bag Handmade,1,26.79,26.79,1.08,4.00,Wendy
+#5003,2024-09-06,Tote Bag Handmade,1,28.88,28.88,1.14,4.00,Charlie
+#5004,2024-09-12,Tote Bag Handmade,3,29.13,87.39,2.83,3.00,Priya
+#5005,2024-09-11,Tote Bag Handmade,3,28.72,86.16,2.80,0.00,David
+#5006,2024-09-12,Tote Bag Handmade,2,29.84,59.68,2.03,5.00,Wendy
+#5007,2024-09-11,Tote Bag Handmade,2,26.34,52.68,1.83,0.00,Ivy

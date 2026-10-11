@@ -1,0 +1,7 @@
+Order Name,Created at,Lineitem name,Lineitem quantity,Lineitem price,Total,Fees,Shipping,Customer
+#5700,2024-09-10,Leather Wallet,1,40.00,40.00,1.46,12.00,Rosa
+#5701,2024-09-11,Soy Candle - Vanilla,2,18.00,36.00,1.34,13.00,Alice
+#5702,2024-09-12,Embroidered Cap,3,24.00,72.00,2.39,14.00,David
+#5703,2024-09-10,Print - Botanical,1,15.50,15.50,0.75,12.00,Grace
+#5704,2024-09-11,Knitted Scarf,2,44.50,89.00,2.88,13.00,Jack
+#5705,2024-09-12,Leather Wallet,3,40.00,120.00,3.78,14.00,Mona

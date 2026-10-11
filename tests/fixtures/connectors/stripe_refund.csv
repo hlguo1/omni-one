@@ -1,0 +1,3 @@
+id,Created (UTC),Description,Amount,Type,Customer
+ch_3,2024-09-10,Tote Bag,30.00,charge,Alice
+ch_4,2024-09-11,Mug,20.00,refund,Bob

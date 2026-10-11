@@ -1,0 +1,223 @@
+{
+  "date": "2024-09-12",
+  "shop": "Demo Shop",
+  "headline": "Profit $-76.22 (-95.3%) \u00b7 $40.00 at risk in 5 angry messages \u00b7 0 reorder(s) TODAY \u00b7 2 leak(s) to plug",
+  "kpis": {
+    "gmv": 80.0,
+    "fees": 14.22,
+    "shipping": 34.0,
+    "net": 31.78,
+    "cogs": 108.0,
+    "true_profit": -76.22,
+    "margin_pct": -95.3,
+    "orders": 10,
+    "aov": 8.0,
+    "best_seller": {
+      "product": "Botanical Print",
+      "qty": 1,
+      "gmv": 32.0
+    },
+    "money_at_risk_usd": 40.0
+  },
+  "do_today": [
+    "Reply to 5 message(s) \u2014 $40.00 at risk (drafts below, cite file:line)",
+    "Stock healthy \u2014 no reorder",
+    "Plug leak: fee_creep \u2014 Fees 17.8% of GMV \u2014 compare Shopify 2.9%+30c vs Etsy 6.5%+$0.20 vs Amazon 15%; shift volum"
+  ],
+  "reorder_sheet": [],
+  "dead_stock_note": [],
+  "reply_queue": [
+    {
+      "channel": "dm",
+      "customer": "Mia",
+      "summary": "Mia: I want a refund, my mug arrived chipped and broken!",
+      "draft": "Hi Mia! I'm really sorry about your damaged item \u2014 I just pulled your order ([dms.csv:2] Mia: I want a refund, my mug arrived chipped and broken) and I'm checking tracking/supplier right now. I'll update you within 2 hours with a fix (reship/refund \u2014 your choice). Thank you for your patience with Demo Shop!",
+      "citation": "[dms.csv:2] Mia: I want a refund, my mug arrived chipped and broken",
+      "priority": "P0-reply-in-2h"
+    },
+    {
+      "channel": "dm",
+      "customer": "Ned",
+      "summary": "Ned: Where is my order? It hasn't arrived and there is no tracking!",
+      "draft": "Hi Ned! I'm really sorry about your late delivery \u2014 I just pulled your order ([dms.csv:3] Ned: Where is my order? It hasn't arrived and there is ) and I'm checking tracking/supplier right now. I'll update you within 2 hours with a fix (reship/refund \u2014 your choice). Thank you for your patience with Demo Shop!",
+      "citation": "[dms.csv:3] Ned: Where is my order? It hasn't arrived and there is ",
+      "priority": "P0-reply-in-2h"
+    },
+    {
+      "channel": "dm",
+      "customer": "Ora",
+      "summary": "Ora: Very disappointed, the scarf is late and I need it Friday!",
+      "draft": "Hi Ora! I'm really sorry about the delay \u2014 I just pulled your order ([dms.csv:4] Ora: Very disappointed, the scarf is late and I need it) and I'm checking tracking/supplier right now. I'll update you within 2 hours with a fix (reship/refund \u2014 your choice). Thank you for your patience with Demo Shop!",
+      "citation": "[dms.csv:4] Ora: Very disappointed, the scarf is late and I need it",
+      "priority": "P0-reply-in-2h"
+    },
+    {
+      "channel": "scenario",
+      "customer": "REFUND_RISK",
+      "summary": "Refund risk \u2014 reply in 2h: Pat: Package never arrived, please refund me right now!",
+      "draft": "",
+      "citation": "[dms.csv:5] Pat: Package never arrived, please refund me right now!",
+      "priority": "P0-reply-in-2h"
+    },
+    {
+      "channel": "scenario",
+      "customer": "REVIEW_CRISIS",
+      "summary": "Bad review \u2014 fix + public reply: Quinn stars: 1 Terrible experience, chipped mug, awful packi",
+      "draft": "",
+      "citation": "[reviews.csv:2] Quinn: Terrible experience, chipped mug, awful packing!",
+      "priority": "P0-reply-in-2h"
+    }
+  ],
+  "money_leaks": [
+    {
+      "leak": "fee_creep",
+      "amount_usd": 14.22,
+      "note": "Fees 17.8% of GMV \u2014 compare Shopify 2.9%+30c vs Etsy 6.5%+$0.20 vs Amazon 15%; shift volume or raise price ~$1.42/order",
+      "evidence": "[orders] fees $14.22 / GMV $80.00"
+    },
+    {
+      "leak": "margin_dip",
+      "amount_usd": -76.22,
+      "note": "True margin -95.3% \u2014 profit $-76.22 on $80.0 GMV (COGS $108.00 fees $14.22)",
+      "evidence": "[orders] gmv/fees + supplier COGS"
+    }
+  ],
+  "listing_fixes": [
+    {
+      "fix": "REVIEW_CRISIS",
+      "title": "Bad review \u2014 fix + public reply: Quinn stars: 1 Terrible experience, chipped mug, awful packi",
+      "evidence": "[reviews.csv:2] Quinn: Terrible experience, chipped mug, awful packing!"
+    },
+    {
+      "fix": "WORST_SELLER",
+      "title": " worst seller Wool Scarf x0 \u2014 clearance/bundle it",
+      "evidence": "[orders] worst seller"
+    }
+  ],
+  "po_draft": "Stock healthy \u2014 no PO needed today.",
+  "citations": "every number cites [file:line]; audit via /seller/operations",
+  "free": true,
+  "offline": true,
+  "archetype": "refundstorm",
+  "generated_by": {
+    "code": "omni_one.packs.seller_close.build_daily_close",
+    "csv_code": "omni_one.packs.seller_close.close_to_csv",
+    "date": "2024-09-12",
+    "shop": "Demo Shop",
+    "repo": "omni-one",
+    "wave": "WAVE3-O"
+  },
+  "how_to_read": [
+    "kpis: GMV, fees, shipping, net, COGS, true_profit, margin_pct, AOV.",
+    "headline: one line for the owner (profit, at-risk, reorders, leaks).",
+    "reorder_sheet: velocity vs on-hand rows with supplier + urgency.",
+    "reply_queue: copy-paste drafts, each with a file:line citation.",
+    "po_draft: supplier email text for the top reorder row.",
+    "money_leaks: fee_creep / shipping_loss / margin_dip with amounts.",
+    "citations: every number traces to [file:line]; audit anytime."
+  ],
+  "inputs": {
+    "n_events": 17,
+    "by_source": {
+      "orders": 10,
+      "inventory": 2,
+      "dm": 4,
+      "review": 1
+    },
+    "orders": [
+      {
+        "product": "Canvas Tote",
+        "qty": 1,
+        "gmv": 40.0,
+        "fees": 1.89,
+        "signal": "order_gmv",
+        "citation": "[paypal_refund.csv:2] Canvas Tote qty1 gmv$40.0 fees$1.89 net$34.11"
+      },
+      {
+        "product": "Ceramic Mug",
+        "qty": 1,
+        "gmv": 25.0,
+        "fees": 1.36,
+        "signal": "order_gmv",
+        "citation": "[paypal_refund.csv:3] Ceramic Mug qty1 gmv$25.0 fees$1.36 net$20.64"
+      },
+      {
+        "product": "Wool Scarf",
+        "qty": 1,
+        "gmv": 45.0,
+        "fees": 1.61,
+        "signal": "order_gmv",
+        "citation": "[paypal_refund.csv:4] Wool Scarf qty1 gmv$45.0 fees$1.61 net$38.89"
+      },
+      {
+        "product": "Botanical Print",
+        "qty": 1,
+        "gmv": 32.0,
+        "fees": 1.23,
+        "signal": "order_gmv",
+        "citation": "[paypal_refund.csv:5] Botanical Print qty1 gmv$32.0 fees$1.23 net$30.77"
+      },
+      {
+        "product": "Ceramic Vase",
+        "qty": 1,
+        "gmv": 42.0,
+        "fees": 1.52,
+        "signal": "order_gmv",
+        "citation": "[paypal_refund.csv:6] Ceramic Vase qty1 gmv$42.0 fees$1.52 net$35.48"
+      },
+      {
+        "product": "Tote Mini",
+        "qty": 2,
+        "gmv": 36.0,
+        "fees": 1.34,
+        "signal": "order_gmv",
+        "citation": "[paypal_refund.csv:7] Tote Mini qty2 gmv$36.0 fees$1.34 net$31.66"
+      },
+      {
+        "product": "Canvas Tote",
+        "qty": -1,
+        "gmv": -40.0,
+        "fees": 1.46,
+        "signal": "order_refund",
+        "citation": "[stripe_dispute.csv:2] Canvas Tote qty-1 gmv$-40.0 fees$1.46 net$-45.46"
+      },
+      {
+        "product": "Ceramic Mug",
+        "qty": -1,
+        "gmv": -25.0,
+        "fees": 1.03,
+        "signal": "order_refund",
+        "citation": "[stripe_dispute.csv:3] Ceramic Mug qty-1 gmv$-25.0 fees$1.03 net$-29.03"
+      },
+      {
+        "product": "Wool Scarf",
+        "qty": -1,
+        "gmv": -45.0,
+        "fees": 1.61,
+        "signal": "order_refund",
+        "citation": "[stripe_dispute.csv:4] Wool Scarf qty-1 gmv$-45.0 fees$1.61 net$-51.11"
+      },
+      {
+        "product": "Tote Mini",
+        "qty": -1,
+        "gmv": -30.0,
+        "fees": 1.17,
+        "signal": "order_refund",
+        "citation": "[stripe_dispute.csv:5] Tote Mini qty-1 gmv$-30.0 fees$1.17 net$-34.17"
+      }
+    ]
+  },
+  "expected": {
+    "true_profit": -76.22,
+    "margin_pct": -95.3,
+    "money_at_risk_usd": 40.0,
+    "reply_queue_len": 5,
+    "reorder_today": 0,
+    "leaks": 2
+  },
+  "sample_notes": [
+    "4 refund/dispute orders plus 4 angry DMs and a 1-star review.",
+    "Reply queue is the whole close: every draft cites file:line.",
+    "Money at risk = queue length x AOV; refunds drag GMV near zero."
+  ]
+}

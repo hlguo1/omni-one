@@ -1,0 +1,12 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: omni-one
+  namespace: omni-one
+  labels:
+    app.kubernetes.io/name: omni-one
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: omni-one

@@ -1,0 +1,3 @@
+Transaction ID,Date,Item,Quantity,Gross Sales,Fee,Tender,Status,Customer
+SQ-AP1,2024-09-10,Canvas Tote,1,32.00,1.23,Afterpay,Completed,Alice
+SQ-AP2,2024-09-11,Stoneware Mug,2,44.00,1.58,Afterpay,Completed,Bob

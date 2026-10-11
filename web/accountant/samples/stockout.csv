@@ -1,0 +1,24 @@
+DAILY CLOSE,2024-09-12,Profit $332.04 (59.7%) · $0.00 at risk in 0 angry messages · 1 reorder(s) TODAY · 0 leak(s) to plug
+
+metric,value
+gmv,556.0
+fees,19.16
+shipping,38.0
+net,498.84
+cogs,166.8
+true_profit,332.04
+margin_pct,59.7
+orders,10
+aov,55.6
+best_seller,"{'product': 'Canvas Tote', 'qty': 16, 'gmv': 512.0}"
+money_at_risk_usd,0.0
+
+do_today_n,do_today
+1,"Reply to 0 message(s) — $0.00 at risk (drafts below, cite file:line)"
+2,Reorder Canvas Tote x29 from Austin Textiles (1.3d left)
+3,No money leaks — push best seller
+
+product,on_hand,sold_7d,days_left,reorder_qty_14d,supplier,urgency,citation
+Canvas Tote,3,16,1.3,29,Austin Textiles,ORDER TODAY,[inventory.csv:2] Canvas Tote 3 left
+
+leak,amount_usd,note,evidence

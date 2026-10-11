@@ -1,0 +1,42 @@
+[
+  {
+    "channel": "etsy",
+    "locale": "fr",
+    "citation": "etsy_convo.csv",
+    "raw": {
+      "Buyer": "Camille",
+      "Message": "Bonjour, ma commande est arriv\u00e9e en retard et cass\u00e9e.\nPouvez-vous m'aider avec ce probl\u00e8me ? Merci.\nJ'attends votre aide pour la livraison, svp.",
+      "Date": "2026-09-12 10:15"
+    }
+  },
+  {
+    "channel": "etsy",
+    "locale": "fr",
+    "citation": "etsy_convo.csv",
+    "raw": {
+      "From": "L\u00e9a",
+      "Message Text": "Bonjour, je ne l'ai toujours pas re\u00e7u.\nJe veux un remboursement ou un retour, s'il vous pla\u00eet.\nMerci pour votre aide avec ma commande.",
+      "Created At": "2026-09-13 11:02"
+    }
+  },
+  {
+    "channel": "etsy",
+    "locale": "fr",
+    "citation": "etsy_convo.csv",
+    "raw": {
+      "Buyer Name": "Hugo",
+      "Body": "Bonjour, j'ai re\u00e7u le mauvais article de mauvaise qualit\u00e9.\nC'est inacceptable, je suis tr\u00e8s d\u00e9\u00e7u.\nO\u00f9 est ma commande correcte de la boutique ?",
+      "Timestamp": "2026-09-14 09:40"
+    }
+  },
+  {
+    "channel": "etsy",
+    "locale": "fr",
+    "citation": "etsy_convo.csv",
+    "raw": {
+      "Buyer": "Chlo\u00e9",
+      "Message": "Bonjour, le colis n'est jamais arriv\u00e9 et le produit ne fonctionne pas.\nAidez-moi s'il vous pla\u00eet, merci.\nArriv\u00e9 en retard et endommag\u00e9, d\u00e9sol\u00e9.",
+      "Date": "2026-09-15 16:20"
+    }
+  }
+]

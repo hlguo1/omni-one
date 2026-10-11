@@ -1,0 +1,13 @@
+Paper Co
+Invoice INV-1221 Date: 2024-09-10
+Bill to: shop_13 (refundstorm)
+Order ref: shop_13-2024-09
+Knitted Scarf 40 x 18.90 756.00
+Leather Wallet 53 x 14.82 785.46
+Soy Candle - Vanilla 25 x 6.12 153.00
+Shipping 8.50
+Total $1702.96
+Payment terms: Net 30
+Thank you for your business!
+Questions? Contact Paper Co
+--- end of invoice ---

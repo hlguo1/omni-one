@@ -1,0 +1,4 @@
+Order number,Sale date,Item title,Quantity,Total price,Final Value Fee,Currency,Order status,Buyer
+EB-P1,2024-09-10,Botanical Print,1,32.00,4.54,USD,Paid,Alice
+EB-P2,2024-09-11,Knitted Scarf,1,45.00,6.26,USD,Paid,Bob
+EB-P3,2024-09-12,Ceramic Mug,1,22.00,3.22,USD,Paid,Charlie

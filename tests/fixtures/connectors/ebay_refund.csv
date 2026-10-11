@@ -1,0 +1,3 @@
+Order number,Sale date,Item title,Quantity,Total price,Order status,Buyer
+EB3,2024-09-10,Tote Bag,1,30.00,Paid,Alice
+EB4,2024-09-11,Mug,1,20.00,Refund,Bob

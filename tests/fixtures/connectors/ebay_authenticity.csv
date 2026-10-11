@@ -1,0 +1,3 @@
+Order number,Sale date,Item title,Quantity,Total price,Final value fee,Currency,Order status,Buyer
+EB-A1,2024-09-10,Designer Tote,1,120.00,13.20,USD,Authenticated,Alice
+EB-A2,2024-09-11,Sneakers,1,85.00,9.56,USD,Return started,Bob

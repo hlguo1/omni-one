@@ -1,0 +1,13 @@
+Paper Co
+Invoice INV-1085 Date: 2024-09-10
+Bill to: shop_05 (deadstock)
+Order ref: shop_05-2024-09
+Leather Wallet 34 x 13.65 464.10
+Print - Botanical 47 x 6.30 296.10
+Knitted Scarf 60 x 17.10 1026.00
+Shipping 10.50
+Total $1796.70
+Payment terms: Net 30
+Thank you for your business!
+Questions? Contact Paper Co
+--- end of invoice ---

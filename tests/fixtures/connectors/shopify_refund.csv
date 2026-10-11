@@ -1,0 +1,4 @@
+Order Name,Created at,Lineitem name,Lineitem quantity,Lineitem price,Total,Financial Status,Customer
+#2001,2024-09-10,Tote Bag,1,30.00,30.00,paid,Alice
+#2002,2024-09-11,Mug,1,20.00,20.00,refunded,Bob
+#2003,09/12/2024,Scarf,2,25.00,50.00,paid,Charlie

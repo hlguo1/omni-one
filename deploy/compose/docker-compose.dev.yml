@@ -1,0 +1,40 @@
+# omni-one — compose DEV overlay (hot-reload).
+# Usage: docker compose -f deploy/compose/docker-compose.dev.yml up --build
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    image: omni-one:dev
+    ports:
+      - "5003:5003"
+    volumes:
+      # hot-reload: live source mount (overrides baked COPY src/ layer)
+      - ../../src:/app/src
+      - ../../web:/app/web
+      - omni-dev-data:/app/data
+    env_file:
+      - ../../.env
+    environment:
+      PYTHONPATH: /app/src
+      DUCKDB_PATH: /app/data/omni.duckdb
+      AUDIT_PATH: /app/data/audit.jsonl
+      ALLOWED_ROOT: /app/data/inbox
+      SELLER_LLM: mock
+      SELLER_MAX_LLM_USD: "0.0"
+      LOG_LEVEL: debug
+      ENVIRONMENT: development
+      RELOAD: "1"
+    command: ["uvicorn", "omni_one.api.fastapi_app:create_omni_one_app", "--factory", "--host", "0.0.0.0", "--port", "5003", "--reload"]
+    restart: "no"
+    stdin_open: true
+    tty: true
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5003/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  omni-dev-data:
+    driver: local

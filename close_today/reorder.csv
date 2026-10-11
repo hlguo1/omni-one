@@ -1,0 +1,2 @@
+product,on_hand,sold_7d,daily_velocity,days_left,reorder_qty_14d,supplier,urgency,citation
+Tote Bag Handmade,2,6,0.86,2.3,10,Acme Textiles,ORDER TODAY,[inventory.csv:2] Tote Bag Handmade on_hand=2

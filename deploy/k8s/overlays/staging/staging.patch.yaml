@@ -1,0 +1,83 @@
+# staging overlay patch — 2 replicas, HPA kept, staging ingress host.
+# Applied by deploy/k8s/overlays/staging/kustomization.yaml via patchesStrategicMerge.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: omni-one
+  namespace: omni-one
+spec:
+  replicas: 2
+  template:
+    spec:
+      containers:
+        - name: omni-one
+          env:
+            - name: LOG_LEVEL
+              value: "info"
+            - name: ENVIRONMENT
+              value: "staging"
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: omni-one-config
+  namespace: omni-one
+data:
+  LOG_LEVEL: "info"
+  ENVIRONMENT: "staging"
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: omni-one
+  namespace: omni-one
+spec:
+  tls:
+    - hosts:
+        - staging.omni-one.example.com
+      secretName: omni-one-tls-staging
+  rules:
+    - host: staging.omni-one.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: omni-one
+                port:
+                  number: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: omni-one
+  namespace: omni-one
+spec:
+  minReplicas: 2
+  maxReplicas: 4
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: omni-one
+  namespace: omni-one
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: omni-one

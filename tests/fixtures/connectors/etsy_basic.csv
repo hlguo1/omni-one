@@ -1,0 +1,4 @@
+Sale Date,Order ID,Item Name,Quantity,Item Total,Order Total,Fees,Shipping,Buyer
+2024-09-10,E2001,Knitted Scarf,1,45.00,45.00,3.12,4.50,Eve
+2024-09-11,E2002,Tote Bag Handmade,2,56.00,56.00,3.84,0.00,Frank
+2024-09-12,E2003,Ceramic Mug,2,44.00,44.00,3.06,3.00,Grace

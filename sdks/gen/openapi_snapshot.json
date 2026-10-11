@@ -1,0 +1,2875 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "omni-one",
+    "version": "1.1.0",
+    "description": "Omni-One Seller OS \u2014 offline $0 daily close, briefing, scenarios, vision OCR, analytics. Generated snapshot for SDK codegen. All money endpoints cite [file:line]. See docs/handbook 01-05. Servers: local :5003, docker :5003. Auth: X-API-Key optional (fail-closed on admin). Counters in-process; Prometheus scrapes /metrics. Golden demo true_profit $169.09 margin 61.7% at-risk $102.75 3 msgs 1 reorder 0 leaks.",
+    "contact": {
+      "name": "omni-one",
+      "url": "https://example.com/omni-one"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    },
+    "x-generated-from": "src/omni_one/api/fastapi_app.py + src/omni_one/api/ops.py + src/omni_one/infra/fastapi_factory.py",
+    "x-snapshot-date": "2026-10-11",
+    "x-codegen": "sdks/gen/regen.py -> sdks/gen/python/client_generated.py + sdks/gen/typescript/client_generated.ts"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5003",
+      "description": "Local dev (uvicorn src.omni_one.api.fastapi_app:create_omni_one_app, port 5003)"
+    },
+    {
+      "url": "http://localhost:8000",
+      "description": "Docker compose alias"
+    },
+    {
+      "url": "https://api.example.com",
+      "description": "Production placeholder (version-pinned v1.1.0)"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Health",
+      "description": "Health checks and readiness probes. GET /health liveness, Docker HEALTHCHECK."
+    },
+    {
+      "name": "AI",
+      "description": "AI inference and synthesis endpoints. POST /api/v1/synthesize, GET /api/v1/models."
+    },
+    {
+      "name": "Data",
+      "description": "Data ingestion and processing. POST /api/v1/analyze multi-layer pipeline."
+    },
+    {
+      "name": "Analytics",
+      "description": "Analytics and metrics. GET /api/v1/metrics live eval + GET /metrics Prometheus text."
+    },
+    {
+      "name": "Seller OS",
+      "description": "Seller highlight: briefing, 12 scenarios, operations, photo, CSV export ($0). 7 routes."
+    },
+    {
+      "name": "Vision",
+      "description": "Free local OCR + chart photo analysis. POST /vision/analyze, GET /vision/demo."
+    },
+    {
+      "name": "Verticals",
+      "description": "Labs packs (micro-biz, revenue ops). POST /micro/briefing, POST /revenue/health."
+    },
+    {
+      "name": "Admin",
+      "description": "API-key protected ops (not in snapshot; fail-closed)."
+    },
+    {
+      "name": "Ops",
+      "description": "Prometheus /metrics, tag catalog. GET /api/v1/openapi-tags."
+    }
+  ],
+  "paths": {
+    "/api/v1/seller/close": {
+      "post": {
+        "tags": [
+          "Seller OS"
+        ],
+        "summary": "DAILY CLOSE: profit + reorder/PO + reply drafts + leaks ($0)",
+        "description": "Runs the 5-minute morning ritual offline. Accepts demo=true (synthetic shop, seed 42) or folder=path. Returns CloseBundle JSON with kpis, reorder sheet, reply queue, leaks, po draft, ingest_report. Golden demo: true_profit $169.09, margin 61.7%. All numbers cite [file:line]. Citation rule: no citation, no action. The close refuses to invent tasks. Offline $0. See docs/handbook/01-morning-routine.md daily ritual, 02-supplier-playbook.md cover policy 14d, 03-reply-playbook.md P0<2h, 04-accountant-pack.md invariant true_profit<=gmv, 05-incidents.md S1<1h. Demo seed default 42. Shop default 'our shop'. All money USD 2dp.",
+        "operationId": "sellerClose",
+        "x-codegen-method-python": "seller_close",
+        "x-codegen-method-typescript": "seller_close",
+        "x-citation-policy": "Every derived number MUST carry [file:line]. If a number has no citation, do not trust it.",
+        "x-curl-example": "curl -s http://localhost:5003/api/v1/seller/close -X POST -H 'Content-Type: application/json' -d '{\"CloseRequest\": true}'",
+        "x-free-offline": true,
+        "x-version-added": "1.1.0",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success \u2014 DAILY CLOSE: profit + reorder/PO + reply drafts + leaks ($0). All numeric fields cite [file:line]; see citation fields in payload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Response payload for sellerClose. Citation-preserving: every derived number carries source file:line."
+                },
+                "example": {
+                  "ok": true,
+                  "method": "seller_close",
+                  "path": "/api/v1/seller/close",
+                  "citations": [
+                    "[inventory.csv:2]",
+                    "[shopify_orders.csv:5]"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request \u2014 missing folder/demo, bad CSV header, or path-traversal guard rejected folder. Fix source file, not spreadsheet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "folder must live inside ./data/inbox or /tmp demo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized \u2014 missing or invalid X-API-Key when server requires auth.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "invalid api key"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (60/min on photo/upload routes). Retry with backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "Rate limited. Try again shortly."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error \u2014 pipeline failure. Report with request_id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "internal error",
+                  "request_id": "abc-123"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {}
+        ],
+        "deprecated": false,
+        "externalDocs": {
+          "description": "Handbook reference for sellerClose",
+          "url": "https://example.com/docs/handbook/01-morning-routine"
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Request body for sellerClose. Pass demo=true for synthetic demo or folder=path inside ./data/inbox.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseRequest"
+              },
+              "example": {
+                "demo": true,
+                "seed": 42,
+                "folder": "/tmp/seller_demo",
+                "shop": "our shop"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/seller/close.csv": {
+      "get": {
+        "tags": [
+          "Seller OS"
+        ],
+        "summary": "DAILY CLOSE as CSV (accountant-ready)",
+        "description": "Same as POST /seller/close but rendered as close.csv with four sections: title row, metric,value ledger, do_today actions, reorder block, leak block. Suitable for 04-accountant-pack reconciliation. Content-Disposition: attachment; filename=close.csv. Citation rule: no citation, no action. The close refuses to invent tasks. Offline $0. See docs/handbook/01-morning-routine.md daily ritual, 02-supplier-playbook.md cover policy 14d, 03-reply-playbook.md P0<2h, 04-accountant-pack.md invariant true_profit<=gmv, 05-incidents.md S1<1h. Demo seed default 42. Shop default 'our shop'. All money USD 2dp.",
+        "operationId": "sellerCloseCsv",
+        "x-codegen-method-python": "seller_close_csv",
+        "x-codegen-method-typescript": "seller_close_csv",
+        "x-citation-policy": "Every derived number MUST carry [file:line]. If a number has no citation, do not trust it.",
+        "x-curl-example": "curl -s http://localhost:5003/api/v1/seller/close.csv -X GET",
+        "x-free-offline": true,
+        "x-version-added": "1.1.0",
+        "parameters": [
+          {
+            "name": "demo",
+            "in": "query",
+            "required": false,
+            "description": "Use synthetic demo shop",
+            "schema": {
+              "type": "boolean",
+              "example": true,
+              "description": "Use synthetic demo shop"
+            },
+            "example": true
+          },
+          {
+            "name": "seed",
+            "in": "query",
+            "required": false,
+            "description": "Demo seed",
+            "schema": {
+              "type": "integer",
+              "example": 42,
+              "description": "Demo seed"
+            },
+            "example": 42
+          },
+          {
+            "name": "shop",
+            "in": "query",
+            "required": false,
+            "description": "Shop display name",
+            "schema": {
+              "type": "string",
+              "example": "our shop",
+              "description": "Shop display name"
+            },
+            "example": "our shop"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success \u2014 DAILY CLOSE as CSV (accountant-ready). All numeric fields cite [file:line]; see citation fields in payload.",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "description": "Response payload for sellerCloseCsv. Citation-preserving: every derived number carries source file:line."
+                },
+                "example": "product,on_hand,sold_7d,days_left,reorder_qty_14d,supplier,urgency,citation\nTote Bag Handmade,2,6,2.3,10,Acme Textiles,ORDER TODAY,[inventory.csv:2]"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request \u2014 missing folder/demo, bad CSV header, or path-traversal guard rejected folder. Fix source file, not spreadsheet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "folder must live inside ./data/inbox or /tmp demo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized \u2014 missing or invalid X-API-Key when server requires auth.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "invalid api key"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (60/min on photo/upload routes). Retry with backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "Rate limited. Try again shortly."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error \u2014 pipeline failure. Report with request_id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "internal error",
+                  "request_id": "abc-123"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {}
+        ],
+        "deprecated": false,
+        "externalDocs": {
+          "description": "Handbook reference for sellerCloseCsv",
+          "url": "https://example.com/docs/handbook/01-morning-routine"
+        }
+      }
+    },
+    "/api/v1/seller/briefing": {
+      "post": {
+        "tags": [
+          "Seller OS"
+        ],
+        "summary": "Seller OS briefing \u2014 true profit, stockout risk, listing health",
+        "description": "THE focused product. Drop messy seller folder (shopify_orders.csv, etsy_settlement.csv, amazon_*.csv, inventory.csv, reviews.csv, instagram_dm.txt, supplier invoice photo). Returns Briefing with kpis, stockout_risk, listing health, win-back draft, chart. 100% free offline citations file:line. Citation rule: no citation, no action. The close refuses to invent tasks. Offline $0. See docs/handbook/01-morning-routine.md daily ritual, 02-supplier-playbook.md cover policy 14d, 03-reply-playbook.md P0<2h, 04-accountant-pack.md invariant true_profit<=gmv, 05-incidents.md S1<1h. Demo seed default 42. Shop default 'our shop'. All money USD 2dp.",
+        "operationId": "sellerBriefing",
+        "x-codegen-method-python": "seller_briefing",
+        "x-codegen-method-typescript": "seller_briefing",
+        "x-citation-policy": "Every derived number MUST carry [file:line]. If a number has no citation, do not trust it.",
+        "x-curl-example": "curl -s http://localhost:5003/api/v1/seller/briefing -X POST -H 'Content-Type: application/json' -d '{\"BriefingRequest\": true}'",
+        "x-free-offline": true,
+        "x-version-added": "1.1.0",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success \u2014 Seller OS briefing \u2014 true profit, stockout risk, listing health. All numeric fields cite [file:line]; see citation fields in payload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Response payload for sellerBriefing. Citation-preserving: every derived number carries source file:line."
+                },
+                "example": {
+                  "ok": true,
+                  "method": "seller_briefing",
+                  "path": "/api/v1/seller/briefing",
+                  "citations": [
+                    "[inventory.csv:2]",
+                    "[shopify_orders.csv:5]"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request \u2014 missing folder/demo, bad CSV header, or path-traversal guard rejected folder. Fix source file, not spreadsheet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "folder must live inside ./data/inbox or /tmp demo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized \u2014 missing or invalid X-API-Key when server requires auth.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "invalid api key"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (60/min on photo/upload routes). Retry with backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "Rate limited. Try again shortly."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error \u2014 pipeline failure. Report with request_id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "internal error",
+                  "request_id": "abc-123"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {}
+        ],
+        "deprecated": false,
+        "externalDocs": {
+          "description": "Handbook reference for sellerBriefing",
+          "url": "https://example.com/docs/handbook/01-morning-routine"
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Request body for sellerBriefing. Pass demo=true for synthetic demo or folder=path inside ./data/inbox.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BriefingRequest"
+              },
+              "example": {
+                "demo": true,
+                "seed": 42,
+                "folder": "/tmp/seller_demo",
+                "shop": "our shop"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/seller/operations": {
+      "post": {
+        "tags": [
+          "Seller OS"
+        ],
+        "summary": "Seller Operations \u2014 briefing + workshop queue + governance audit",
+        "description": "Full Palantir-style loop: briefing -> ontology twin (Product) -> Workshop decision queue (12 scenarios) -> AIP grounded check -> governance audit. Proves methodology loop surrounding core tech. Operates first decision (assign). Citation rule: no citation, no action. The close refuses to invent tasks. Offline $0. See docs/handbook/01-morning-routine.md daily ritual, 02-supplier-playbook.md cover policy 14d, 03-reply-playbook.md P0<2h, 04-accountant-pack.md invariant true_profit<=gmv, 05-incidents.md S1<1h. Demo seed default 42. Shop default 'our shop'. All money USD 2dp.",
+        "operationId": "sellerOperations",
+        "x-codegen-method-python": "seller_operations",
+        "x-codegen-method-typescript": "seller_operations",
+        "x-citation-policy": "Every derived number MUST carry [file:line]. If a number has no citation, do not trust it.",
+        "x-curl-example": "curl -s http://localhost:5003/api/v1/seller/operations -X POST -H 'Content-Type: application/json' -d '{\"OperationsRequest\": true}'",
+        "x-free-offline": true,
+        "x-version-added": "1.1.0",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success \u2014 Seller Operations \u2014 briefing + workshop queue + governance audit. All numeric fields cite [file:line]; see citation fields in payload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Response payload for sellerOperations. Citation-preserving: every derived number carries source file:line."
+                },
+                "example": {
+                  "ok": true,
+                  "method": "seller_operations",
+                  "path": "/api/v1/seller/operations",
+                  "citations": [
+                    "[inventory.csv:2]",
+                    "[shopify_orders.csv:5]"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request \u2014 missing folder/demo, bad CSV header, or path-traversal guard rejected folder. Fix source file, not spreadsheet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "folder must live inside ./data/inbox or /tmp demo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized \u2014 missing or invalid X-API-Key when server requires auth.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "invalid api key"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (60/min on photo/upload routes). Retry with backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "Rate limited. Try again shortly."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error \u2014 pipeline failure. Report with request_id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "internal error",
+                  "request_id": "abc-123"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {}
+        ],
+        "deprecated": false,
+        "externalDocs": {
+          "description": "Handbook reference for sellerOperations",
+          "url": "https://example.com/docs/handbook/01-morning-routine"
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Request body for sellerOperations. Pass demo=true for synthetic demo or folder=path inside ./data/inbox.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OperationsRequest"
+              },
+              "example": {
+                "demo": true,
+                "seed": 42,
+                "folder": "/tmp/seller_demo",
+                "shop": "our shop"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/seller/scenarios": {
+      "get": {
+        "tags": [
+          "Seller OS"
+        ],
+        "summary": "List 12 practical seller scenarios",
+        "description": "Static registry: id + trigger + Workshop action. No fees. Returns scenarios array (12), thresholds, total. Deterministic, idempotent. Citation rule: no citation, no action. The close refuses to invent tasks. Offline $0. See docs/handbook/01-morning-routine.md daily ritual, 02-supplier-playbook.md cover policy 14d, 03-reply-playbook.md P0<2h, 04-accountant-pack.md invariant true_profit<=gmv, 05-incidents.md S1<1h. Demo seed default 42. Shop default 'our shop'. All money USD 2dp.",
+        "operationId": "sellerScenariosList",
+        "x-codegen-method-python": "seller_scenarios_list",
+        "x-codegen-method-typescript": "seller_scenarios_list",
+        "x-citation-policy": "Every derived number MUST carry [file:line]. If a number has no citation, do not trust it.",
+        "x-curl-example": "curl -s http://localhost:5003/api/v1/seller/scenarios -X GET",
+        "x-free-offline": true,
+        "x-version-added": "1.1.0",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success \u2014 List 12 practical seller scenarios. All numeric fields cite [file:line]; see citation fields in payload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Response payload for sellerScenariosList. Citation-preserving: every derived number carries source file:line."
+                },
+                "example": {
+                  "ok": true,
+                  "method": "seller_scenarios_list",
+                  "path": "/api/v1/seller/scenarios",
+                  "citations": [
+                    "[inventory.csv:2]",
+                    "[shopify_orders.csv:5]"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request \u2014 missing folder/demo, bad CSV header, or path-traversal guard rejected folder. Fix source file, not spreadsheet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "folder must live inside ./data/inbox or /tmp demo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized \u2014 missing or invalid X-API-Key when server requires auth.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "invalid api key"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (60/min on photo/upload routes). Retry with backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "Rate limited. Try again shortly."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error \u2014 pipeline failure. Report with request_id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "internal error",
+                  "request_id": "abc-123"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {}
+        ],
+        "deprecated": false,
+        "externalDocs": {
+          "description": "Handbook reference for sellerScenariosList",
+          "url": "https://example.com/docs/handbook/01-morning-routine"
+        }
+      }
+    },
+    "/api/v1/seller/scenarios/run": {
+      "post": {
+        "tags": [
+          "Seller OS"
+        ],
+        "summary": "Run 12 scenarios on demo or folder -> Workshop queue + audit",
+        "description": "Deterministic O(n). Returns decisions sorted critical->low with stable IDs, by_scenario counts, total, workshop stats, governance stats. Supports demo=true or folder path with security guard. Citation rule: no citation, no action. The close refuses to invent tasks. Offline $0. See docs/handbook/01-morning-routine.md daily ritual, 02-supplier-playbook.md cover policy 14d, 03-reply-playbook.md P0<2h, 04-accountant-pack.md invariant true_profit<=gmv, 05-incidents.md S1<1h. Demo seed default 42. Shop default 'our shop'. All money USD 2dp.",
+        "operationId": "sellerScenariosRun",
+        "x-codegen-method-python": "seller_scenarios_run",
+        "x-codegen-method-typescript": "seller_scenarios_run",
+        "x-citation-policy": "Every derived number MUST carry [file:line]. If a number has no citation, do not trust it.",
+        "x-curl-example": "curl -s http://localhost:5003/api/v1/seller/scenarios/run -X POST -H 'Content-Type: application/json' -d '{\"ScenariosRunRequest\": true}'",
+        "x-free-offline": true,
+        "x-version-added": "1.1.0",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success \u2014 Run 12 scenarios on demo or folder -> Workshop queue + audit. All numeric fields cite [file:line]; see citation fields in payload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Response payload for sellerScenariosRun. Citation-preserving: every derived number carries source file:line."
+                },
+                "example": {
+                  "ok": true,
+                  "method": "seller_scenarios_run",
+                  "path": "/api/v1/seller/scenarios/run",
+                  "citations": [
+                    "[inventory.csv:2]",
+                    "[shopify_orders.csv:5]"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request \u2014 missing folder/demo, bad CSV header, or path-traversal guard rejected folder. Fix source file, not spreadsheet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "folder must live inside ./data/inbox or /tmp demo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized \u2014 missing or invalid X-API-Key when server requires auth.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "invalid api key"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (60/min on photo/upload routes). Retry with backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "Rate limited. Try again shortly."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error \u2014 pipeline failure. Report with request_id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "internal error",
+                  "request_id": "abc-123"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {}
+        ],
+        "deprecated": false,
+        "externalDocs": {
+          "description": "Handbook reference for sellerScenariosRun",
+          "url": "https://example.com/docs/handbook/01-morning-routine"
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Request body for sellerScenariosRun. Pass demo=true for synthetic demo or folder=path inside ./data/inbox.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScenariosRunRequest"
+              },
+              "example": {
+                "demo": true,
+                "seed": 42,
+                "folder": "/tmp/seller_demo",
+                "shop": "our shop"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/seller/export.csv": {
+      "get": {
+        "tags": [
+          "Seller OS"
+        ],
+        "summary": "Briefing KPIs + actions as CSV",
+        "description": "Renders briefing KPIs + actions as CSV for spreadsheet users. Query demo=true seed=42. Content-Disposition briefing.csv. Bumps briefings_total counter. Citation rule: no citation, no action. The close refuses to invent tasks. Offline $0. See docs/handbook/01-morning-routine.md daily ritual, 02-supplier-playbook.md cover policy 14d, 03-reply-playbook.md P0<2h, 04-accountant-pack.md invariant true_profit<=gmv, 05-incidents.md S1<1h. Demo seed default 42. Shop default 'our shop'. All money USD 2dp.",
+        "operationId": "sellerExportCsv",
+        "x-codegen-method-python": "seller_export_csv",
+        "x-codegen-method-typescript": "seller_export_csv",
+        "x-citation-policy": "Every derived number MUST carry [file:line]. If a number has no citation, do not trust it.",
+        "x-curl-example": "curl -s http://localhost:5003/api/v1/seller/export.csv -X GET",
+        "x-free-offline": true,
+        "x-version-added": "1.1.0",
+        "parameters": [
+          {
+            "name": "demo",
+            "in": "query",
+            "required": false,
+            "description": "Use demo",
+            "schema": {
+              "type": "boolean",
+              "example": true,
+              "description": "Use demo"
+            },
+            "example": true
+          },
+          {
+            "name": "seed",
+            "in": "query",
+            "required": false,
+            "description": "Seed",
+            "schema": {
+              "type": "integer",
+              "example": 42,
+              "description": "Seed"
+            },
+            "example": 42
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success \u2014 Briefing KPIs + actions as CSV. All numeric fields cite [file:line]; see citation fields in payload.",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "description": "Response payload for sellerExportCsv. Citation-preserving: every derived number carries source file:line."
+                },
+                "example": "product,on_hand,sold_7d,days_left,reorder_qty_14d,supplier,urgency,citation\nTote Bag Handmade,2,6,2.3,10,Acme Textiles,ORDER TODAY,[inventory.csv:2]"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request \u2014 missing folder/demo, bad CSV header, or path-traversal guard rejected folder. Fix source file, not spreadsheet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "folder must live inside ./data/inbox or /tmp demo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized \u2014 missing or invalid X-API-Key when server requires auth.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "invalid api key"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (60/min on photo/upload routes). Retry with backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "Rate limited. Try again shortly."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error \u2014 pipeline failure. Report with request_id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "internal error",
+                  "request_id": "abc-123"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {}
+        ],
+        "deprecated": false,
+        "externalDocs": {
+          "description": "Handbook reference for sellerExportCsv",
+          "url": "https://example.com/docs/handbook/01-morning-routine"
+        }
+      }
+    },
+    "/api/v1/seller/photo": {
+      "post": {
+        "tags": [
+          "Seller OS"
+        ],
+        "summary": "Seller Photo \u2014 supplier invoice or product photo (free OCR+chart+pipeline)",
+        "description": "Seller-tuned photo upload. Reuses free vision stack: supplier invoice -> COGS line items, product photo -> listing draft. Returns same as /vision/analyze plus seller briefing context. Rate limited 60/min, max 5MB. Citation rule: no citation, no action. The close refuses to invent tasks. Offline $0. See docs/handbook/01-morning-routine.md daily ritual, 02-supplier-playbook.md cover policy 14d, 03-reply-playbook.md P0<2h, 04-accountant-pack.md invariant true_profit<=gmv, 05-incidents.md S1<1h. Demo seed default 42. Shop default 'our shop'. All money USD 2dp.",
+        "operationId": "sellerPhoto",
+        "x-codegen-method-python": "seller_photo",
+        "x-codegen-method-typescript": "seller_photo",
+        "x-citation-policy": "Every derived number MUST carry [file:line]. If a number has no citation, do not trust it.",
+        "x-curl-example": "curl -s http://localhost:5003/api/v1/seller/photo -X POST -H 'Content-Type: application/json' -d '{\"demo\": true}'",
+        "x-free-offline": true,
+        "x-version-added": "1.1.0",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success \u2014 Seller Photo \u2014 supplier invoice or product photo (free OCR+chart+pipeline). All numeric fields cite [file:line]; see citation fields in payload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Response payload for sellerPhoto. Citation-preserving: every derived number carries source file:line."
+                },
+                "example": {
+                  "ok": true,
+                  "method": "seller_photo",
+                  "path": "/api/v1/seller/photo",
+                  "citations": [
+                    "[inventory.csv:2]",
+                    "[shopify_orders.csv:5]"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request \u2014 missing folder/demo, bad CSV header, or path-traversal guard rejected folder. Fix source file, not spreadsheet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "folder must live inside ./data/inbox or /tmp demo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized \u2014 missing or invalid X-API-Key when server requires auth.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "invalid api key"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (60/min on photo/upload routes). Retry with backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "Rate limited. Try again shortly."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error \u2014 pipeline failure. Report with request_id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "internal error",
+                  "request_id": "abc-123"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {}
+        ],
+        "deprecated": false,
+        "externalDocs": {
+          "description": "Handbook reference for sellerPhoto",
+          "url": "https://example.com/docs/handbook/01-morning-routine"
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Multipart upload for sellerPhoto. Field 'file' is jpg/png/pdf; 'lang' is OCR language (eng/spa). Max 5MB.",
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Image file bytes"
+                  },
+                  "lang": {
+                    "type": "string",
+                    "description": "OCR language",
+                    "example": "eng"
+                  },
+                  "generate_chart": {
+                    "type": "boolean",
+                    "description": "Auto-generate chart PNG",
+                    "example": true
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              },
+              "encoding": {
+                "file": {
+                  "contentType": "image/jpeg, image/png, application/pdf"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vision/analyze": {
+      "post": {
+        "tags": [
+          "Vision"
+        ],
+        "summary": "Photo -> Text + Chart -> Layered Analysis (100% free, local)",
+        "description": "Upload photo, get OCR (Tesseract offline) -> chart extraction (OpenCV heuristic) -> chart regen (Matplotlib base64 PNG) -> layered pipeline evidence + briefing. No keys/fees/cloud. Install: brew install tesseract + pip install pytesseract opencv-python pillow matplotlib. Citation rule: no citation, no action. The close refuses to invent tasks. Offline $0. See docs/handbook/01-morning-routine.md daily ritual, 02-supplier-playbook.md cover policy 14d, 03-reply-playbook.md P0<2h, 04-accountant-pack.md invariant true_profit<=gmv, 05-incidents.md S1<1h. Demo seed default 42. Shop default 'our shop'. All money USD 2dp.",
+        "operationId": "visionAnalyze",
+        "x-codegen-method-python": "vision_analyze",
+        "x-codegen-method-typescript": "vision_analyze",
+        "x-citation-policy": "Every derived number MUST carry [file:line]. If a number has no citation, do not trust it.",
+        "x-curl-example": "curl -s http://localhost:5003/api/v1/vision/analyze -X POST -H 'Content-Type: application/json' -d '{\"demo\": true}'",
+        "x-free-offline": true,
+        "x-version-added": "1.1.0",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success \u2014 Photo -> Text + Chart -> Layered Analysis (100% free, local). All numeric fields cite [file:line]; see citation fields in payload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Response payload for visionAnalyze. Citation-preserving: every derived number carries source file:line."
+                },
+                "example": {
+                  "ok": true,
+                  "method": "vision_analyze",
+                  "path": "/api/v1/vision/analyze",
+                  "citations": [
+                    "[inventory.csv:2]",
+                    "[shopify_orders.csv:5]"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request \u2014 missing folder/demo, bad CSV header, or path-traversal guard rejected folder. Fix source file, not spreadsheet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "folder must live inside ./data/inbox or /tmp demo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized \u2014 missing or invalid X-API-Key when server requires auth.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "invalid api key"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (60/min on photo/upload routes). Retry with backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "Rate limited. Try again shortly."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error \u2014 pipeline failure. Report with request_id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "internal error",
+                  "request_id": "abc-123"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {}
+        ],
+        "deprecated": false,
+        "externalDocs": {
+          "description": "Handbook reference for visionAnalyze",
+          "url": "https://example.com/docs/handbook/01-morning-routine"
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Multipart upload for visionAnalyze. Field 'file' is jpg/png/pdf; 'lang' is OCR language (eng/spa). Max 5MB.",
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Image file bytes"
+                  },
+                  "lang": {
+                    "type": "string",
+                    "description": "OCR language",
+                    "example": "eng"
+                  },
+                  "generate_chart": {
+                    "type": "boolean",
+                    "description": "Auto-generate chart PNG",
+                    "example": true
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              },
+              "encoding": {
+                "file": {
+                  "contentType": "image/jpeg, image/png, application/pdf"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vision/demo": {
+      "get": {
+        "tags": [
+          "Vision"
+        ],
+        "summary": "Vision Demo \u2014 synthetic receipt+chart photo analyzed (free)",
+        "description": "No upload needed. Generates synthetic receipt + bar chart (Maya's Tacos: Tacos al pastor 32x3.50=112, Birria 12x4.00=48, Total 160) via Pillow, runs same free pipeline (OCR->chart->layered), returns result with demo=true. Citation rule: no citation, no action. The close refuses to invent tasks. Offline $0. See docs/handbook/01-morning-routine.md daily ritual, 02-supplier-playbook.md cover policy 14d, 03-reply-playbook.md P0<2h, 04-accountant-pack.md invariant true_profit<=gmv, 05-incidents.md S1<1h. Demo seed default 42. Shop default 'our shop'. All money USD 2dp.",
+        "operationId": "visionDemo",
+        "x-codegen-method-python": "vision_demo",
+        "x-codegen-method-typescript": "vision_demo",
+        "x-citation-policy": "Every derived number MUST carry [file:line]. If a number has no citation, do not trust it.",
+        "x-curl-example": "curl -s http://localhost:5003/api/v1/vision/demo -X GET",
+        "x-free-offline": true,
+        "x-version-added": "1.1.0",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success \u2014 Vision Demo \u2014 synthetic receipt+chart photo analyzed (free). All numeric fields cite [file:line]; see citation fields in payload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Response payload for visionDemo. Citation-preserving: every derived number carries source file:line."
+                },
+                "example": {
+                  "ok": true,
+                  "method": "vision_demo",
+                  "path": "/api/v1/vision/demo",
+                  "citations": [
+                    "[inventory.csv:2]",
+                    "[shopify_orders.csv:5]"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request \u2014 missing folder/demo, bad CSV header, or path-traversal guard rejected folder. Fix source file, not spreadsheet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "folder must live inside ./data/inbox or /tmp demo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized \u2014 missing or invalid X-API-Key when server requires auth.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "invalid api key"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (60/min on photo/upload routes). Retry with backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "Rate limited. Try again shortly."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error \u2014 pipeline failure. Report with request_id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "internal error",
+                  "request_id": "abc-123"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {}
+        ],
+        "deprecated": false,
+        "externalDocs": {
+          "description": "Handbook reference for visionDemo",
+          "url": "https://example.com/docs/handbook/01-morning-routine"
+        }
+      }
+    },
+    "/api/v1/analyze": {
+      "post": {
+        "tags": [
+          "Data"
+        ],
+        "summary": "Data Analysis via multi-layer pipeline",
+        "description": "Analyze structured data: L1 fast ingest <1ms, L2 anomaly <10ms, L3 feature <100ms, L4 LLM gated. Dramatically reduces LLM calls. Request {records:[...]}. Returns analysis, records_processed, metrics, records_sample (3). Citation rule: no citation, no action. The close refuses to invent tasks. Offline $0. See docs/handbook/01-morning-routine.md daily ritual, 02-supplier-playbook.md cover policy 14d, 03-reply-playbook.md P0<2h, 04-accountant-pack.md invariant true_profit<=gmv, 05-incidents.md S1<1h. Demo seed default 42. Shop default 'our shop'. All money USD 2dp.",
+        "operationId": "analyzeData",
+        "x-codegen-method-python": "analyze",
+        "x-codegen-method-typescript": "analyze",
+        "x-citation-policy": "Every derived number MUST carry [file:line]. If a number has no citation, do not trust it.",
+        "x-curl-example": "curl -s http://localhost:5003/api/v1/analyze -X POST -H 'Content-Type: application/json' -d '{\"AnalyzeRequest\": true}'",
+        "x-free-offline": true,
+        "x-version-added": "1.1.0",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success \u2014 Data Analysis via multi-layer pipeline. All numeric fields cite [file:line]; see citation fields in payload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Response payload for analyzeData. Citation-preserving: every derived number carries source file:line."
+                },
+                "example": {
+                  "ok": true,
+                  "method": "analyze",
+                  "path": "/api/v1/analyze",
+                  "citations": [
+                    "[inventory.csv:2]",
+                    "[shopify_orders.csv:5]"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request \u2014 missing folder/demo, bad CSV header, or path-traversal guard rejected folder. Fix source file, not spreadsheet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "folder must live inside ./data/inbox or /tmp demo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized \u2014 missing or invalid X-API-Key when server requires auth.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "invalid api key"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (60/min on photo/upload routes). Retry with backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "Rate limited. Try again shortly."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error \u2014 pipeline failure. Report with request_id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "internal error",
+                  "request_id": "abc-123"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {}
+        ],
+        "deprecated": false,
+        "externalDocs": {
+          "description": "Handbook reference for analyzeData",
+          "url": "https://example.com/docs/handbook/01-morning-routine"
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Request body for analyzeData. Pass demo=true for synthetic demo or folder=path inside ./data/inbox.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeRequest"
+              },
+              "example": {
+                "demo": true,
+                "seed": 42,
+                "folder": "/tmp/seller_demo",
+                "shop": "our shop"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/synthesize": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "AI Synthesis for complex data",
+        "description": "Combines multi sources + AI models -> actionable insights. Multi-modal, RAG, model routing, caching, quality validation. Request {query, context[], task_type, user_tier, temperature, max_tokens}. Returns response, quality_score, model_used, latency_ms, citations. Citation rule: no citation, no action. The close refuses to invent tasks. Offline $0. See docs/handbook/01-morning-routine.md daily ritual, 02-supplier-playbook.md cover policy 14d, 03-reply-playbook.md P0<2h, 04-accountant-pack.md invariant true_profit<=gmv, 05-incidents.md S1<1h. Demo seed default 42. Shop default 'our shop'. All money USD 2dp.",
+        "operationId": "synthesize",
+        "x-codegen-method-python": "synthesize",
+        "x-codegen-method-typescript": "synthesize",
+        "x-citation-policy": "Every derived number MUST carry [file:line]. If a number has no citation, do not trust it.",
+        "x-curl-example": "curl -s http://localhost:5003/api/v1/synthesize -X POST -H 'Content-Type: application/json' -d '{\"SynthesizeRequest\": true}'",
+        "x-free-offline": true,
+        "x-version-added": "1.1.0",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success \u2014 AI Synthesis for complex data. All numeric fields cite [file:line]; see citation fields in payload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Response payload for synthesize. Citation-preserving: every derived number carries source file:line."
+                },
+                "example": {
+                  "ok": true,
+                  "method": "synthesize",
+                  "path": "/api/v1/synthesize",
+                  "citations": [
+                    "[inventory.csv:2]",
+                    "[shopify_orders.csv:5]"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request \u2014 missing folder/demo, bad CSV header, or path-traversal guard rejected folder. Fix source file, not spreadsheet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "folder must live inside ./data/inbox or /tmp demo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized \u2014 missing or invalid X-API-Key when server requires auth.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "invalid api key"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (60/min on photo/upload routes). Retry with backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "Rate limited. Try again shortly."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error \u2014 pipeline failure. Report with request_id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "internal error",
+                  "request_id": "abc-123"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {}
+        ],
+        "deprecated": false,
+        "externalDocs": {
+          "description": "Handbook reference for synthesize",
+          "url": "https://example.com/docs/handbook/01-morning-routine"
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Request body for synthesize. Pass demo=true for synthetic demo or folder=path inside ./data/inbox.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SynthesizeRequest"
+              },
+              "example": {
+                "demo": true,
+                "seed": 42,
+                "folder": "/tmp/seller_demo",
+                "shop": "our shop"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/revenue/health": {
+      "post": {
+        "tags": [
+          "Verticals"
+        ],
+        "summary": "RevOps Health Scoring (vertical pack)",
+        "description": "Generate synthetic accounts (1-500, seed), score via deterministic rules + 4-layer pipeline, return health tiers, recall, evidence bundles. Industry wedge per STRATEGY.md. Citation rule: no citation, no action. The close refuses to invent tasks. Offline $0. See docs/handbook/01-morning-routine.md daily ritual, 02-supplier-playbook.md cover policy 14d, 03-reply-playbook.md P0<2h, 04-accountant-pack.md invariant true_profit<=gmv, 05-incidents.md S1<1h. Demo seed default 42. Shop default 'our shop'. All money USD 2dp.",
+        "operationId": "revenueHealth",
+        "x-codegen-method-python": "revenue_health",
+        "x-codegen-method-typescript": "revenue_health",
+        "x-citation-policy": "Every derived number MUST carry [file:line]. If a number has no citation, do not trust it.",
+        "x-curl-example": "curl -s http://localhost:5003/api/v1/revenue/health -X POST -H 'Content-Type: application/json' -d '{\"RevenueHealthRequest\": true}'",
+        "x-free-offline": true,
+        "x-version-added": "1.1.0",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success \u2014 RevOps Health Scoring (vertical pack). All numeric fields cite [file:line]; see citation fields in payload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Response payload for revenueHealth. Citation-preserving: every derived number carries source file:line."
+                },
+                "example": {
+                  "ok": true,
+                  "method": "revenue_health",
+                  "path": "/api/v1/revenue/health",
+                  "citations": [
+                    "[inventory.csv:2]",
+                    "[shopify_orders.csv:5]"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request \u2014 missing folder/demo, bad CSV header, or path-traversal guard rejected folder. Fix source file, not spreadsheet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "folder must live inside ./data/inbox or /tmp demo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized \u2014 missing or invalid X-API-Key when server requires auth.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "invalid api key"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (60/min on photo/upload routes). Retry with backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "Rate limited. Try again shortly."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error \u2014 pipeline failure. Report with request_id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "internal error",
+                  "request_id": "abc-123"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {}
+        ],
+        "deprecated": false,
+        "externalDocs": {
+          "description": "Handbook reference for revenueHealth",
+          "url": "https://example.com/docs/handbook/01-morning-routine"
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Request body for revenueHealth. Pass demo=true for synthetic demo or folder=path inside ./data/inbox.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevenueHealthRequest"
+              },
+              "example": {
+                "demo": true,
+                "seed": 42,
+                "folder": "/tmp/seller_demo",
+                "shop": "our shop"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/micro/briefing": {
+      "post": {
+        "tags": [
+          "Verticals"
+        ],
+        "summary": "Micro-Biz Daily Briefing (no DB/website, LABS)",
+        "description": "Smallest-business endpoint. Accepts folder (messy receipts/chats/csv) OR events[] OR demo=true (Maya's Tacos synthetic). Zero integrations, just folder drop. Returns KPIs, alerts, reorder, at-risk, WhatsApp draft, all citations file:line. Citation rule: no citation, no action. The close refuses to invent tasks. Offline $0. See docs/handbook/01-morning-routine.md daily ritual, 02-supplier-playbook.md cover policy 14d, 03-reply-playbook.md P0<2h, 04-accountant-pack.md invariant true_profit<=gmv, 05-incidents.md S1<1h. Demo seed default 42. Shop default 'our shop'. All money USD 2dp.",
+        "operationId": "microBriefing",
+        "x-codegen-method-python": "micro_briefing",
+        "x-codegen-method-typescript": "micro_briefing",
+        "x-citation-policy": "Every derived number MUST carry [file:line]. If a number has no citation, do not trust it.",
+        "x-curl-example": "curl -s http://localhost:5003/api/v1/micro/briefing -X POST -H 'Content-Type: application/json' -d '{\"MicroBriefingRequest\": true}'",
+        "x-free-offline": true,
+        "x-version-added": "1.1.0",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success \u2014 Micro-Biz Daily Briefing (no DB/website, LABS). All numeric fields cite [file:line]; see citation fields in payload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Response payload for microBriefing. Citation-preserving: every derived number carries source file:line."
+                },
+                "example": {
+                  "ok": true,
+                  "method": "micro_briefing",
+                  "path": "/api/v1/micro/briefing",
+                  "citations": [
+                    "[inventory.csv:2]",
+                    "[shopify_orders.csv:5]"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request \u2014 missing folder/demo, bad CSV header, or path-traversal guard rejected folder. Fix source file, not spreadsheet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "folder must live inside ./data/inbox or /tmp demo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized \u2014 missing or invalid X-API-Key when server requires auth.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "invalid api key"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (60/min on photo/upload routes). Retry with backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "Rate limited. Try again shortly."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error \u2014 pipeline failure. Report with request_id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "internal error",
+                  "request_id": "abc-123"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {}
+        ],
+        "deprecated": false,
+        "externalDocs": {
+          "description": "Handbook reference for microBriefing",
+          "url": "https://example.com/docs/handbook/01-morning-routine"
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Request body for microBriefing. Pass demo=true for synthetic demo or folder=path inside ./data/inbox.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MicroBriefingRequest"
+              },
+              "example": {
+                "demo": true,
+                "seed": 42,
+                "folder": "/tmp/seller_demo",
+                "shop": "our shop"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/metrics": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "System metrics from live 200-record eval",
+        "description": "Runs internal benchmark(n=200,seed=42) -> ProcessingMetrics: total_records, successfully_processed, failed, llm_bypass_rate, avg times L1-L4, total_cost_usd. Fallback hard-coded if eval fails. Prometheus text also at GET /metrics alias. Citation rule: no citation, no action. The close refuses to invent tasks. Offline $0. See docs/handbook/01-morning-routine.md daily ritual, 02-supplier-playbook.md cover policy 14d, 03-reply-playbook.md P0<2h, 04-accountant-pack.md invariant true_profit<=gmv, 05-incidents.md S1<1h. Demo seed default 42. Shop default 'our shop'. All money USD 2dp.",
+        "operationId": "getMetrics",
+        "x-codegen-method-python": "get_metrics",
+        "x-codegen-method-typescript": "get_metrics",
+        "x-citation-policy": "Every derived number MUST carry [file:line]. If a number has no citation, do not trust it.",
+        "x-curl-example": "curl -s http://localhost:5003/api/v1/metrics -X GET",
+        "x-free-offline": true,
+        "x-version-added": "1.1.0",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success \u2014 System metrics from live 200-record eval. All numeric fields cite [file:line]; see citation fields in payload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Response payload for getMetrics. Citation-preserving: every derived number carries source file:line."
+                },
+                "example": {
+                  "ok": true,
+                  "method": "get_metrics",
+                  "path": "/api/v1/metrics",
+                  "citations": [
+                    "[inventory.csv:2]",
+                    "[shopify_orders.csv:5]"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request \u2014 missing folder/demo, bad CSV header, or path-traversal guard rejected folder. Fix source file, not spreadsheet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "folder must live inside ./data/inbox or /tmp demo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized \u2014 missing or invalid X-API-Key when server requires auth.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "invalid api key"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (60/min on photo/upload routes). Retry with backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "Rate limited. Try again shortly."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error \u2014 pipeline failure. Report with request_id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "internal error",
+                  "request_id": "abc-123"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {}
+        ],
+        "deprecated": false,
+        "externalDocs": {
+          "description": "Handbook reference for getMetrics",
+          "url": "https://example.com/docs/handbook/01-morning-routine"
+        }
+      }
+    },
+    "/api/v1/models": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "List available models with costs",
+        "description": "Tiers: fast (low latency high volume), balanced, premium (complex). Returns gemini-2.5-flash (fast 0.075/mtok 120ms), gemini-2-pro (premium 0.10 300ms), gpt-4o (premium 1.00 400ms). Citation rule: no citation, no action. The close refuses to invent tasks. Offline $0. See docs/handbook/01-morning-routine.md daily ritual, 02-supplier-playbook.md cover policy 14d, 03-reply-playbook.md P0<2h, 04-accountant-pack.md invariant true_profit<=gmv, 05-incidents.md S1<1h. Demo seed default 42. Shop default 'our shop'. All money USD 2dp.",
+        "operationId": "listModels",
+        "x-codegen-method-python": "list_models",
+        "x-codegen-method-typescript": "list_models",
+        "x-citation-policy": "Every derived number MUST carry [file:line]. If a number has no citation, do not trust it.",
+        "x-curl-example": "curl -s http://localhost:5003/api/v1/models -X GET",
+        "x-free-offline": true,
+        "x-version-added": "1.1.0",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success \u2014 List available models with costs. All numeric fields cite [file:line]; see citation fields in payload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Response payload for listModels. Citation-preserving: every derived number carries source file:line."
+                },
+                "example": {
+                  "ok": true,
+                  "method": "list_models",
+                  "path": "/api/v1/models",
+                  "citations": [
+                    "[inventory.csv:2]",
+                    "[shopify_orders.csv:5]"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request \u2014 missing folder/demo, bad CSV header, or path-traversal guard rejected folder. Fix source file, not spreadsheet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "folder must live inside ./data/inbox or /tmp demo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized \u2014 missing or invalid X-API-Key when server requires auth.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "invalid api key"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (60/min on photo/upload routes). Retry with backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "Rate limited. Try again shortly."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error \u2014 pipeline failure. Report with request_id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "internal error",
+                  "request_id": "abc-123"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {}
+        ],
+        "deprecated": false,
+        "externalDocs": {
+          "description": "Handbook reference for listModels",
+          "url": "https://example.com/docs/handbook/01-morning-routine"
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Liveness probe",
+        "description": "Returns {status:healthy, mode:mvp, enterprise:false} plus checks. Used by Docker HEALTHCHECK curl -f /health. No auth. Fast (<5ms). Citation rule: no citation, no action. The close refuses to invent tasks. Offline $0. See docs/handbook/01-morning-routine.md daily ritual, 02-supplier-playbook.md cover policy 14d, 03-reply-playbook.md P0<2h, 04-accountant-pack.md invariant true_profit<=gmv, 05-incidents.md S1<1h. Demo seed default 42. Shop default 'our shop'. All money USD 2dp.",
+        "operationId": "healthCheck",
+        "x-codegen-method-python": "health",
+        "x-codegen-method-typescript": "health",
+        "x-citation-policy": "Every derived number MUST carry [file:line]. If a number has no citation, do not trust it.",
+        "x-curl-example": "curl -s http://localhost:5003/health -X GET",
+        "x-free-offline": true,
+        "x-version-added": "1.1.0",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success \u2014 Liveness probe. All numeric fields cite [file:line]; see citation fields in payload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Response payload for healthCheck. Citation-preserving: every derived number carries source file:line."
+                },
+                "example": {
+                  "ok": true,
+                  "method": "health",
+                  "path": "/health",
+                  "citations": [
+                    "[inventory.csv:2]",
+                    "[shopify_orders.csv:5]"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request \u2014 missing folder/demo, bad CSV header, or path-traversal guard rejected folder. Fix source file, not spreadsheet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "folder must live inside ./data/inbox or /tmp demo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized \u2014 missing or invalid X-API-Key when server requires auth.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "invalid api key"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (60/min on photo/upload routes). Retry with backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "Rate limited. Try again shortly."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error \u2014 pipeline failure. Report with request_id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "internal error",
+                  "request_id": "abc-123"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {}
+        ],
+        "deprecated": false,
+        "externalDocs": {
+          "description": "Handbook reference for healthCheck",
+          "url": "https://example.com/docs/handbook/01-morning-routine"
+        }
+      }
+    },
+    "/api/v1/openapi-tags": {
+      "get": {
+        "tags": [
+          "Ops"
+        ],
+        "summary": "Tag catalog for integrators",
+        "description": "Returns tags [Health,AI,Data,Analytics,Seller OS,Vision,Verticals,Admin,Ops], mcp {server:src/omni_one/mcp_server.py, tools:6}, free:true. For SDK/codegen integrators. Citation rule: no citation, no action. The close refuses to invent tasks. Offline $0. See docs/handbook/01-morning-routine.md daily ritual, 02-supplier-playbook.md cover policy 14d, 03-reply-playbook.md P0<2h, 04-accountant-pack.md invariant true_profit<=gmv, 05-incidents.md S1<1h. Demo seed default 42. Shop default 'our shop'. All money USD 2dp.",
+        "operationId": "openapiTags",
+        "x-codegen-method-python": "openapi_tags",
+        "x-codegen-method-typescript": "openapi_tags",
+        "x-citation-policy": "Every derived number MUST carry [file:line]. If a number has no citation, do not trust it.",
+        "x-curl-example": "curl -s http://localhost:5003/api/v1/openapi-tags -X GET",
+        "x-free-offline": true,
+        "x-version-added": "1.1.0",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success \u2014 Tag catalog for integrators. All numeric fields cite [file:line]; see citation fields in payload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Response payload for openapiTags. Citation-preserving: every derived number carries source file:line."
+                },
+                "example": {
+                  "ok": true,
+                  "method": "openapi_tags",
+                  "path": "/api/v1/openapi-tags",
+                  "citations": [
+                    "[inventory.csv:2]",
+                    "[shopify_orders.csv:5]"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request \u2014 missing folder/demo, bad CSV header, or path-traversal guard rejected folder. Fix source file, not spreadsheet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "folder must live inside ./data/inbox or /tmp demo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized \u2014 missing or invalid X-API-Key when server requires auth.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "invalid api key"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited (60/min on photo/upload routes). Retry with backoff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "Rate limited. Try again shortly."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error \u2014 pipeline failure. Report with request_id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "detail": "internal error",
+                  "request_id": "abc-123"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          },
+          {}
+        ],
+        "deprecated": false,
+        "externalDocs": {
+          "description": "Handbook reference for openapiTags",
+          "url": "https://example.com/docs/handbook/01-morning-routine"
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "Optional API key; admin routes require it. SDK sends if provided."
+      }
+    },
+    "schemas": {
+      "KPIs": {
+        "title": "KPIs",
+        "description": "Ledger KPIs from close.csv Section A. Invariant true_profit<=gmv always (evals assert). Golden demo true_profit 169.09.",
+        "type": "object",
+        "required": [
+          "gmv",
+          "fees",
+          "shipping",
+          "net",
+          "cogs",
+          "true_profit",
+          "margin_pct",
+          "orders",
+          "aov",
+          "best_seller",
+          "money_at_risk_usd"
+        ],
+        "properties": {
+          "gmv": {
+            "type": "number",
+            "format": "float",
+            "description": "Gross merchandise value: sum order-row totals. Source shopify_orders.csv etc.",
+            "example": 274.0
+          },
+          "fees": {
+            "type": "number",
+            "description": "Channel fees parsed per row else estimated Etsy 6.5%+$0.20 Shopify 2.9%+$0.30 Amazon 15% other 8%",
+            "example": 18.5
+          },
+          "shipping": {
+            "type": "number",
+            "description": "Shipping paid/collected per order rows",
+            "example": 12.0
+          },
+          "net": {
+            "type": "number",
+            "description": "gmv - fees - shipping",
+            "example": 243.5
+          },
+          "cogs": {
+            "type": "number",
+            "description": "Cost of goods sold allocated per-unit from supplier invoices; fallback 30% GMV unmatched, 25% smallest invoice if none",
+            "example": 74.41
+          },
+          "true_profit": {
+            "type": "number",
+            "description": "net - cogs. THE number. Golden demo $169.09",
+            "example": 169.09
+          },
+          "margin_pct": {
+            "type": "number",
+            "description": "true_profit/gmv*100 (0 when gmv=0)",
+            "example": 61.7
+          },
+          "orders": {
+            "type": "integer",
+            "description": "Order rows ingested",
+            "example": 8
+          },
+          "aov": {
+            "type": "number",
+            "description": "gmv/orders (0 when none)",
+            "example": 34.25
+          },
+          "best_seller": {
+            "type": "object",
+            "description": "{product,qty,gmv} top by units",
+            "properties": {
+              "product": {
+                "type": "string",
+                "example": "Tote Bag Handmade"
+              },
+              "qty": {
+                "type": "integer",
+                "example": 6
+              },
+              "gmv": {
+                "type": "number",
+                "example": 120.0
+              }
+            }
+          },
+          "money_at_risk_usd": {
+            "type": "number",
+            "description": "len(reply_queue)*aov refund exposure",
+            "example": 102.75
+          },
+          "worst_seller": {
+            "type": "object",
+            "description": "Worst seller for kill/bundle/clearance decision",
+            "properties": {
+              "product": {
+                "type": "string"
+              },
+              "qty": {
+                "type": "integer"
+              }
+            }
+          },
+          "citations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "All [file:line] citations backing these KPIs",
+            "example": [
+              "[shopify_orders.csv:2]",
+              "[supplier_invoice_2024-09-10.txt:3]"
+            ]
+          }
+        },
+        "example": {
+          "gmv": 274.0,
+          "fees": 18.5,
+          "shipping": 12.0,
+          "net": 243.5,
+          "cogs": 74.41,
+          "true_profit": 169.09,
+          "margin_pct": 61.7,
+          "orders": 8,
+          "aov": 34.25,
+          "best_seller": {
+            "product": "Tote Bag Handmade",
+            "qty": 6,
+            "gmv": 120.0
+          },
+          "money_at_risk_usd": 102.75
+        },
+        "x-citation-note": "Every field cites file:line in close.json kpis_citations"
+      },
+      "ReorderLine": {
+        "title": "ReorderLine",
+        "description": "One row of reorder.csv. Cover policy 14d (velocity*14-on_hand). Urgency ORDER TODAY<3d this week<5d watch.",
+        "type": "object",
+        "required": [
+          "product",
+          "on_hand",
+          "sold_7d",
+          "daily_velocity",
+          "days_left",
+          "reorder_qty_14d",
+          "supplier",
+          "urgency",
+          "citation"
+        ],
+        "properties": {
+          "product": {
+            "type": "string",
+            "description": "Product title as in inventory.csv",
+            "example": "Tote Bag Handmade"
+          },
+          "on_hand": {
+            "type": "integer",
+            "description": "Units in inventory.csv now",
+            "example": 2
+          },
+          "sold_7d": {
+            "type": "integer",
+            "description": "Units sold last 7d order files",
+            "example": 6
+          },
+          "daily_velocity": {
+            "type": "number",
+            "description": "sold_7d/7",
+            "example": 0.86
+          },
+          "days_left": {
+            "type": "number",
+            "description": "on_hand/daily_velocity (999=no sales)",
+            "example": 2.3
+          },
+          "reorder_qty_14d": {
+            "type": "integer",
+            "description": "ceil(velocity*14-on_hand) floored 0",
+            "example": 10
+          },
+          "supplier": {
+            "type": "string",
+            "description": "Supplier name from COGS bible",
+            "example": "Acme Textiles"
+          },
+          "urgency": {
+            "type": "string",
+            "enum": [
+              "ORDER TODAY",
+              "this week",
+              "watch"
+            ],
+            "description": "ORDER TODAY<3d this week<5d watch",
+            "example": "ORDER TODAY"
+          },
+          "citation": {
+            "type": "string",
+            "description": "[file:line] proving on_hand",
+            "example": "[inventory.csv:2]"
+          }
+        },
+        "example": {
+          "product": "Tote Bag Handmade",
+          "on_hand": 2,
+          "sold_7d": 6,
+          "daily_velocity": 0.86,
+          "days_left": 2.3,
+          "reorder_qty_14d": 10,
+          "supplier": "Acme Textiles",
+          "urgency": "ORDER TODAY",
+          "citation": "[inventory.csv:2]"
+        }
+      },
+      "ReplyItem": {
+        "title": "ReplyItem",
+        "description": "One draft in replies.txt reply queue. P0-reply-in-2h (refund/hasnt-arrived/damaged/chargeback) vs P1-today.",
+        "type": "object",
+        "required": [
+          "id",
+          "priority",
+          "channel",
+          "customer",
+          "excerpt",
+          "draft",
+          "citation"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Stable draft id",
+            "example": "reply-001"
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "P0-reply-in-2h",
+              "P1-today"
+            ],
+            "description": "P0 refund/damaged/never-arrived/chargeback <2h else P1 same-day",
+            "example": "P0-reply-in-2h"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "dm",
+              "review",
+              "order"
+            ],
+            "description": "Source channel",
+            "example": "dm"
+          },
+          "customer": {
+            "type": "string",
+            "description": "Customer name (CJK/emoji byte-identical, never mangle)",
+            "example": "Maria"
+          },
+          "excerpt": {
+            "type": "string",
+            "description": "Customer words verbatim",
+            "example": "Where is my order??"
+          },
+          "draft": {
+            "type": "string",
+            "description": "Copy-paste draft with one personalise slot + citation kept",
+            "example": "Hi Maria! ... ([instagram_dm.txt:4])"
+          },
+          "citation": {
+            "type": "string",
+            "description": "[file:line] source",
+            "example": "[instagram_dm.txt:4]"
+          },
+          "template_id": {
+            "type": "string",
+            "description": "01-20 template used (see 03-reply-playbook)",
+            "example": "02"
+          },
+          "amount_at_risk_usd": {
+            "type": "number",
+            "description": "AOV exposure for this item",
+            "example": 34.25
+          }
+        },
+        "example": {
+          "id": "reply-001",
+          "priority": "P0-reply-in-2h",
+          "channel": "dm",
+          "customer": "Maria",
+          "excerpt": "Where is my order??",
+          "draft": "Hi Maria! ...",
+          "citation": "[instagram_dm.txt:4]"
+        }
+      },
+      "Briefing": {
+        "title": "Briefing",
+        "description": "Seller briefing bundle: kpis, stockout_risk, listing health, win-back, chart, ingest_report. All citations file:line.",
+        "type": "object",
+        "required": [
+          "kpis",
+          "headline",
+          "stockout_risk",
+          "citations"
+        ],
+        "properties": {
+          "kpis": {
+            "$ref": "#/components/schemas/KPIs",
+            "description": "Ledger KPIs"
+          },
+          "headline": {
+            "type": "string",
+            "description": "One coffee-brain line e.g. Profit $169.09 (61.7%) ...",
+            "example": "Profit $169.09 (61.7%) \u00b7 $102.75 at risk in 3 angry messages \u00b7 1 reorder(s) TODAY \u00b7 0 leak(s) to plug"
+          },
+          "stockout_risk": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReorderLine"
+            },
+            "description": "SKUs with low days_left"
+          },
+          "reply_queue": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReplyItem"
+            },
+            "description": "Draft replies P0 first"
+          },
+          "money_leaks": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "leak,amount_usd,note,evidence fee creep/shipping/margin"
+          },
+          "chart": {
+            "type": "object",
+            "description": "{labels,data} for briefing chart"
+          },
+          "ingest_report": {
+            "type": "object",
+            "description": "{files_seen,files_ingested,demo} dedup identical content"
+          },
+          "citations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Global citations",
+            "example": [
+              "[inventory.csv:2]"
+            ]
+          }
+        },
+        "example": {
+          "headline": "Profit $169.09 (61.7%) ...",
+          "kpis": {
+            "gmv": 274.0,
+            "true_profit": 169.09
+          }
+        },
+        "x-handbook": "docs/handbook/01-morning-routine.md"
+      },
+      "ScenarioDecision": {
+        "title": "ScenarioDecision",
+        "description": "One of 12 scenario decisions sorted critical->low with stable IDs. Workshop queue + audit grounded.",
+        "type": "object",
+        "required": [
+          "id",
+          "scenario_id",
+          "severity",
+          "title",
+          "action",
+          "citation"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Stable decision id",
+            "example": "dec-stockout-001"
+          },
+          "scenario_id": {
+            "type": "string",
+            "description": "One of 12 registry ids e.g. STOCKOUT, REVIEW_CRISIS, FEE_SPIKE",
+            "example": "STOCKOUT"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low"
+            ],
+            "description": "critical->low sort",
+            "example": "critical"
+          },
+          "title": {
+            "type": "string",
+            "description": "Human title",
+            "example": "Tote Bag Handmade hits zero in 2.3d"
+          },
+          "action": {
+            "type": "string",
+            "description": "Workshop action e.g. reorderProduct",
+            "example": "reorderProduct"
+          },
+          "product": {
+            "type": "string",
+            "description": "Affected product",
+            "example": "Tote Bag Handmade"
+          },
+          "evidence": {
+            "type": "object",
+            "description": "Thresholds + values proving trigger"
+          },
+          "citation": {
+            "type": "string",
+            "description": "[file:line] evidence",
+            "example": "[inventory.csv:2]"
+          },
+          "workshop_id": {
+            "type": "string",
+            "description": "Workshop queue id after scenarios_to_workshop",
+            "example": "ws-001"
+          }
+        },
+        "example": {
+          "id": "dec-stockout-001",
+          "scenario_id": "STOCKOUT",
+          "severity": "critical",
+          "title": "Tote hits zero",
+          "action": "reorderProduct",
+          "citation": "[inventory.csv:2]"
+        }
+      },
+      "CloseBundle": {
+        "title": "CloseBundle",
+        "description": "DAILY CLOSE bundle: briefing + scenarios + close.csv sections + po draft. Machine-readable everything, keep 12 months.",
+        "type": "object",
+        "required": [
+          "kpis",
+          "headline",
+          "reorder",
+          "reply_queue",
+          "money_leaks",
+          "po_draft",
+          "citations"
+        ],
+        "properties": {
+          "kpis": {
+            "$ref": "#/components/schemas/KPIs"
+          },
+          "briefing": {
+            "$ref": "#/components/schemas/Briefing",
+            "description": "Embedded briefing"
+          },
+          "headline": {
+            "type": "string",
+            "example": "Profit $169.09 (61.7%) \u00b7 $102.75 at risk in 3 angry messages \u00b7 1 reorder(s) TODAY \u00b7 0 leak(s) to plug"
+          },
+          "reorder": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReorderLine"
+            }
+          },
+          "reply_queue": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReplyItem"
+            }
+          },
+          "scenarios": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScenarioDecision"
+            }
+          },
+          "money_leaks": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "po_draft": {
+            "type": "string",
+            "description": "po.txt email with price+ETA ask",
+            "example": "Subject: Reorder request \u2014 Acme Textiles\nHi! Please send 10x Tote ... [[inventory.csv:2]]"
+          },
+          "close_csv": {
+            "type": "string",
+            "description": "Rendered close.csv text ( Sections A-D )"
+          },
+          "ingest_report": {
+            "type": "object",
+            "description": "{files_seen,files_ingested}"
+          },
+          "citations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "example": {
+          "headline": "Profit $169.09 ...",
+          "kpis": {
+            "true_profit": 169.09
+          }
+        },
+        "x-accountant": "docs/handbook/04-accountant-pack.md"
+      },
+      "CloseRequest": {
+        "title": "CloseRequest",
+        "type": "object",
+        "description": "POST /seller/close body. demo=true or folder path.",
+        "properties": {
+          "demo": {
+            "type": "boolean",
+            "example": true
+          },
+          "folder": {
+            "type": "string",
+            "example": "/tmp/seller_demo"
+          },
+          "seed": {
+            "type": "integer",
+            "example": 42
+          },
+          "shop": {
+            "type": "string",
+            "example": "our shop"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "es",
+              "zh",
+              "fr",
+              "de"
+            ],
+            "default": "en",
+            "description": "Reply/PO draft language. Numbers never change."
+          }
+        },
+        "example": {
+          "demo": true,
+          "seed": 42
+        }
+      },
+      "BriefingRequest": {
+        "title": "BriefingRequest",
+        "type": "object",
+        "description": "POST /seller/briefing body",
+        "properties": {
+          "demo": {
+            "type": "boolean"
+          },
+          "folder": {
+            "type": "string"
+          },
+          "seed": {
+            "type": "integer"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "OperationsRequest": {
+        "title": "OperationsRequest",
+        "type": "object",
+        "description": "POST /seller/operations body",
+        "properties": {
+          "demo": {
+            "type": "boolean"
+          },
+          "seed": {
+            "type": "integer"
+          }
+        }
+      },
+      "ScenariosRunRequest": {
+        "title": "ScenariosRunRequest",
+        "type": "object",
+        "description": "POST /seller/scenarios/run body",
+        "properties": {
+          "demo": {
+            "type": "boolean"
+          },
+          "folder": {
+            "type": "string"
+          },
+          "seed": {
+            "type": "integer"
+          }
+        }
+      },
+      "AnalyzeRequest": {
+        "title": "AnalyzeRequest",
+        "type": "object",
+        "description": "POST /analyze body {records[]}",
+        "properties": {
+          "records": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "SynthesizeRequest": {
+        "title": "SynthesizeRequest",
+        "type": "object",
+        "description": "POST /synthesize body",
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "context": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "task_type": {
+            "type": "string"
+          },
+          "user_tier": {
+            "type": "string"
+          },
+          "temperature": {
+            "type": "number"
+          },
+          "max_tokens": {
+            "type": "integer"
+          }
+        }
+      },
+      "RevenueHealthRequest": {
+        "title": "RevenueHealthRequest",
+        "type": "object",
+        "description": "POST /revenue/health body",
+        "properties": {
+          "accounts": {
+            "type": "integer"
+          },
+          "seed": {
+            "type": "integer"
+          }
+        }
+      },
+      "MicroBriefingRequest": {
+        "title": "MicroBriefingRequest",
+        "type": "object",
+        "description": "POST /micro/briefing body folder|events|demo",
+        "properties": {
+          "folder": {
+            "type": "string"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "demo": {
+            "type": "boolean"
+          },
+          "seed": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "externalDocs": {
+    "description": "Handbook 01-05 + evals/run.py invariant true_profit<=gmv",
+    "url": "https://example.com/docs/handbook"
+  }
+}

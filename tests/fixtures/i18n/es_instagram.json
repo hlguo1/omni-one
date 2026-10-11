@@ -1,0 +1,42 @@
+[
+  {
+    "channel": "instagram",
+    "locale": "es",
+    "citation": "instagram_dm.txt",
+    "raw": {
+      "sender": "Mar\u00eda",
+      "text": "Hola, mi pedido lleg\u00f3 tarde y lleg\u00f3 roto.\n\u00bfPueden ayudarme con este problema? Gracias.\nPor favor necesito una soluci\u00f3n de la tienda.",
+      "timestamp": "2026-09-12 10:15"
+    }
+  },
+  {
+    "channel": "instagram",
+    "locale": "es",
+    "citation": "instagram_dm.txt",
+    "raw": {
+      "sender": "Jos\u00e9",
+      "text": "Hola, todav\u00eda no he recibido mi pedido.\nQuiero un reembolso o la devoluci\u00f3n, por favor.\nGracias por su ayuda con el env\u00edo.",
+      "timestamp": "2026-09-13 11:02"
+    }
+  },
+  {
+    "channel": "instagram",
+    "locale": "es",
+    "citation": "instagram_dm.txt",
+    "raw": {
+      "sender": "Luc\u00eda",
+      "text": "Hola, recib\u00ed el producto equivocado y de mala calidad.\nEsto es inaceptable, estoy muy decepcionada.\n\u00bfD\u00f3nde est\u00e1 mi pedido correcto?",
+      "timestamp": "2026-09-14 09:40"
+    }
+  },
+  {
+    "channel": "instagram",
+    "locale": "es",
+    "citation": "instagram_dm.txt",
+    "raw": {
+      "sender": "Carlos",
+      "text": "Hola, el paquete nunca lleg\u00f3 y el producto no funciona.\nPor favor ay\u00fadenme, gracias.\nLleg\u00f3 con retraso y da\u00f1ado.",
+      "timestamp": "2026-09-15 16:20"
+    }
+  }
+]

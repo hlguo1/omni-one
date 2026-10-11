@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Daily Close shop icon">
+  <!-- Simple inline SVG shop icon: storefront + checkmark (close the day). -->
+  <!-- File: web/close/icon.svg -->
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#4f46e5"/>
+  <g fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+    <!-- awning -->
+    <path d="M12 26 L16 16 H48 L52 26"/>
+    <path d="M12 26 H52"/>
+    <!-- shop body -->
+    <path d="M16 26 V46 H48 V26"/>
+    <!-- door -->
+    <path d="M28 46 V36 H36 V46"/>
+    <!-- close check -->
+    <path d="M24 30 L30 34 L42 24" stroke="#a5b4fc"/>
+  </g>
+  <circle cx="47" cy="47" r="9" fill="#059669" stroke="#ffffff" stroke-width="2.5"/>
+  <path d="M43.5 47 L46 49.5 L51 44.5" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

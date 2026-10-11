@@ -1,0 +1,13 @@
+Stitch Supply
+Invoice INV-1187 Date: 2024-09-10
+Bill to: shop_11 (healthy)
+Order ref: shop_11-2024-09
+Silver Ring 59 x 17.60 1038.40
+Tote Bag Handmade 31 x 10.92 338.52
+Ceramic Mug 44 x 7.70 338.80
+Shipping 15.50
+Total $1731.22
+Payment terms: Net 30
+Thank you for your business!
+Questions? Contact Stitch Supply
+--- end of invoice ---
