@@ -10,7 +10,11 @@ from datetime import datetime
 from enum import Enum
 import asyncio
 import platform
-import psutil
+
+try:
+    import psutil  # type: ignore
+except ImportError:  # pragma: no cover - optional in minimal installs
+    psutil = None  # type: ignore
 
 from .exceptions import ServiceError
 from .logging_config import get_logger
@@ -101,6 +105,8 @@ class SystemHealthMonitor:
     @staticmethod
     async def get_system_metrics() -> Dict[str, Any]:
         """Get system-level metrics."""
+        if psutil is None:
+            return {"degraded": True, "reason": "'psutil' package not installed (pip install psutil)"}
         try:
             cpu_percent = psutil.cpu_percent(interval=0.1)
             memory = psutil.virtual_memory()

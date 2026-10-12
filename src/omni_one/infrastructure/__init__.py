@@ -10,7 +10,13 @@ import threading
 import logging
 from typing import Dict, List, Any, Optional, Callable
 from datetime import datetime
-from flask import Blueprint, request, jsonify
+
+try:
+    from flask import Blueprint, request, jsonify  # type: ignore
+except ImportError:  # pragma: no cover - legacy Flask gateway, optional in minimal/FastAPI installs
+    Blueprint = None  # type: ignore
+    request = None  # type: ignore
+    jsonify = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +61,8 @@ def initialize_enterprise_workers():
 
 def create_api_gateway_app() -> Blueprint:
     """Create API Gateway Flask blueprint."""
+    if Blueprint is None or jsonify is None:
+        raise ImportError("create_api_gateway_app requires the 'flask' package (pip install flask)")
     gateway_bp = Blueprint('gateway', __name__)
 
     @gateway_bp.route('/health')

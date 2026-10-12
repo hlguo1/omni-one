@@ -14,6 +14,7 @@ import json
 import sys
 import tempfile
 from pathlib import Path
+from typing import Optional
 
 import typer
 from rich.console import Console
@@ -30,7 +31,7 @@ def _seller_mods():
     return ingest_seller_folder, build_seller_briefing, make_seller_demo_folder
 
 
-def _resolve_folder(folder: str | None, demo: bool, seed: int) -> Path:
+def _resolve_folder(folder: Optional[str], demo: bool, seed: int) -> Path:
     from pathlib import Path as _P
     ingest, _, make_demo = _seller_mods()
     if demo or not folder:
@@ -87,8 +88,8 @@ def demo(seed: int = 42):
 
 
 @app.command()
-def briefing(folder: str | None = typer.Option(None), demo: bool = typer.Option(False),
-             seed: int = 42, json_out: str | None = typer.Option(None, "--json")):
+def briefing(folder: Optional[str] = typer.Option(None), demo: bool = typer.Option(False),
+             seed: int = 42, json_out: Optional[str] = typer.Option(None, "--json")):
     """Build Seller briefing: true profit, stockout, alerts, draft."""
     ingest, build, _ = _seller_mods()
     p = _resolve_folder(folder, demo, seed)
@@ -108,7 +109,7 @@ def briefing(folder: str | None = typer.Option(None), demo: bool = typer.Option(
 
 
 @app.command()
-def scenarios(folder: str | None = typer.Option(None), demo: bool = typer.Option(False), seed: int = 42):
+def scenarios(folder: Optional[str] = typer.Option(None), demo: bool = typer.Option(False), seed: int = 42):
     """Run 12 Seller scenarios -> ranked Workshop decisions."""
     ingest, _, _ = _seller_mods()
     p = _resolve_folder(folder, demo, seed)
@@ -166,7 +167,7 @@ def operations(demo: bool = typer.Option(True), seed: int = 42):
 
 
 @app.command()
-def export(folder: str | None = typer.Option(None), demo: bool = typer.Option(False),
+def export(folder: Optional[str] = typer.Option(None), demo: bool = typer.Option(False),
            seed: int = 42, out: str = "briefing.csv"):
     """Export briefing KPIs + actions to CSV (for sheets/accounting)."""
     ingest, build, _ = _seller_mods()
@@ -179,7 +180,7 @@ def export(folder: str | None = typer.Option(None), demo: bool = typer.Option(Fa
 
 
 @app.command()
-def close(folder: str | None = typer.Option(None), demo: bool = typer.Option(False),
+def close(folder: Optional[str] = typer.Option(None), demo: bool = typer.Option(False),
           seed: int = 42, out: str = typer.Option("./close_today"),
           shop: str = typer.Option("our shop"),
           locale: str = typer.Option("en", help="Reply/PO draft language: en|es|zh|fr|de (numbers never change)")):
@@ -225,7 +226,7 @@ def vision_close(out: str = typer.Option("./vision_close")):
 
 
 @app.command(name="micro-close")
-def micro_close(folder: str | None = typer.Option(None), demo: bool = typer.Option(True), seed: int = 42,
+def micro_close(folder: Optional[str] = typer.Option(None), demo: bool = typer.Option(True), seed: int = 42,
                 out: str = typer.Option("./micro_close"),
                 shop: str = typer.Option("Maya's Tacos"),
                 locale: str = typer.Option("en", help="Draft language: en|es (numbers never change)")):
@@ -348,7 +349,7 @@ def rollup_close(seed: int = typer.Option(42), out: str = typer.Option("./rollup
 
 
 @app.command(name="auto")
-def auto(folder: str | None = typer.Option(None), out: str = typer.Option("./auto_today"),
+def auto(folder: Optional[str] = typer.Option(None), out: str = typer.Option("./auto_today"),
          seed: int = typer.Option(42), shop: str = typer.Option("our shop"),
          deep: bool = typer.Option(False, help="Also run the methodology audit bundle")):
     """AUTO: sniff the folder, run the right closes, say why. No folder = demo showcase."""
