@@ -1,7 +1,11 @@
-import requests
 from typing import List, Dict, Any
 from datetime import datetime
 from .base import BaseConnector
+
+try:
+    import requests  # type: ignore
+except ImportError:  # pragma: no cover - allow offline/minimal installs
+    requests = None  # type: ignore
 
 class SalesforceConnector(BaseConnector):
     def __init__(self, config: Dict[str, Any]):
@@ -14,6 +18,9 @@ class SalesforceConnector(BaseConnector):
         self.access_token = None
 
     def connect(self) -> bool:
+        if requests is None:
+            print("Salesforce connection failed: 'requests' package not installed (pip install requests)")
+            return False
         try:
             # OAuth login
             login_url = 'https://login.salesforce.com/services/oauth2/token'
@@ -71,6 +78,8 @@ class SalesforceConnector(BaseConnector):
         return transformed
 
     def _query(self, soql: str) -> List[Dict]:
+        if requests is None:
+            raise RuntimeError("'requests' package not installed (pip install requests)")
         headers = {
             'Authorization': f'Bearer {self.access_token}',
             'Content-Type': 'application/json'

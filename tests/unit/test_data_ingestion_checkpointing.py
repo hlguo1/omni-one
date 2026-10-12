@@ -1,13 +1,18 @@
-import sys
 from datetime import datetime
-from pathlib import Path
 
+try:
+    # Preferred: proper package import (works with PYTHONPATH=src in CI).
+    from omni_one.data.connectors.base import BaseConnector
+    from omni_one.data.connectors.ingestion import DataIngestionService
+except ImportError:  # pragma: no cover - fallback for legacy direct path
+    import sys
+    from pathlib import Path
 
-DATA_DIR = Path(__file__).resolve().parents[2] / "src" / "omni_one" / "data"
-sys.path.insert(0, str(DATA_DIR))
+    DATA_DIR = Path(__file__).resolve().parents[2] / "src" / "omni_one" / "data"
+    sys.path.insert(0, str(DATA_DIR))
 
-from connectors.base import BaseConnector
-from connectors.ingestion import DataIngestionService
+    from connectors.base import BaseConnector  # type: ignore
+    from connectors.ingestion import DataIngestionService  # type: ignore
 
 
 class FakeConnector(BaseConnector):

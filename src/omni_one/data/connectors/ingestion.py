@@ -2,8 +2,16 @@ from typing import Dict, Any, List, TYPE_CHECKING
 from datetime import datetime
 from .base import BaseConnector
 from .email import EmailConnector
-from .slack import SlackConnector
-from .salesforce import SalesforceConnector
+
+try:
+    from .slack import SlackConnector
+except Exception:  # pragma: no cover - optional dep (requests) missing
+    SlackConnector = None  # type: ignore
+
+try:
+    from .salesforce import SalesforceConnector
+except Exception:  # pragma: no cover - optional dep (requests) missing
+    SalesforceConnector = None  # type: ignore
 
 if TYPE_CHECKING:
     from omni_one.core.rag_engine import RAGEngine
@@ -18,8 +26,12 @@ class DataIngestionService:
         if connector_type == 'email':
             connector = EmailConnector(config)
         elif connector_type == 'slack':
+            if SlackConnector is None:
+                raise ImportError("SlackConnector requires the 'requests' package (pip install requests)")
             connector = SlackConnector(config)
         elif connector_type == 'salesforce':
+            if SalesforceConnector is None:
+                raise ImportError("SalesforceConnector requires the 'requests' package (pip install requests)")
             connector = SalesforceConnector(config)
         else:
             raise ValueError(f"Unknown connector type: {connector_type}")

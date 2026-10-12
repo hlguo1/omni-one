@@ -95,14 +95,14 @@ class ProcessingResult:
     layer2_result: Optional[Dict[str, Any]] = None
     layer3_result: Optional[Dict[str, Any]] = None
     layer4_llm_response: Optional[str] = None
-    
+
     # Timing
     layer1_time_ms: float = 0.0
     layer2_time_ms: float = 0.0
     layer3_time_ms: float = 0.0
     layer4_time_ms: float = 0.0
     total_time_ms: float = 0.0
-    
+
     # Metrics
     llm_bypassed: bool = False
     confidence_score: float = 0.0
@@ -111,6 +111,12 @@ class ProcessingResult:
     evidence_bundle: Any = None  # EvidenceBundle when available, else dict
     cost_ledger: Any = None  # CostLedgerEntry when available
     evidence_steps: List[Dict[str, Any]] = field(default_factory=list)  # flat for JSON serialization
+    # Layer 4 user-LLM handoff: deterministic analytics always returned (Layers 1-3),
+    # plus a short copy-paste prompt only when the system really cannot resolve
+    # the record itself (no router / LLM error / degraded offline mode).
+    basic_analytics: Optional[Dict[str, Any]] = None
+    copy_paste_prompt: Optional[str] = None
+    needs_user_llm: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
         base = {
@@ -123,8 +129,97 @@ class ProcessingResult:
             "cost_ledger": self.cost_ledger.model_dump() if hasattr(self.cost_ledger, "model_dump") else self.cost_ledger,
             "evidence_bundle": self.evidence_bundle.model_dump() if hasattr(self.evidence_bundle, "model_dump") else self.evidence_bundle,
             "evidence_steps": self.evidence_steps,
+            "basic_analytics": self.basic_analytics,
+            "copy_paste_prompt": self.copy_paste_prompt,
+            "needs_user_llm": self.needs_user_llm,
         }
         return base
+
+
+def _is_degraded_llm_response(text: Optional[str]) -> bool:
+    """True when the router returned an offline/degraded placeholder, not a real synthesis."""
+    if not text or not isinstance(text, str):
+        return True
+    return text.startswith("[DEGRADED")
+
+
+def build_basic_analytics(
+    final_record: Optional[Dict[str, Any]],
+    layer2_result: Optional[Dict[str, Any]] = None,
+    layer3_result: Optional[Dict[str, Any]] = None,
+    confidence_score: float = 0.0,
+) -> Dict[str, Any]:
+    """Deterministic summary from Layers 1-3. No LLM needed. Always safe to return."""
+    final_record = final_record or {}
+    layer2_result = layer2_result or {}
+    layer3_result = layer3_result or {}
+    predictions = layer3_result.get("predictions", {}) or {}
+    priority = predictions.get("priority", {}) or {}
+    sentiment = predictions.get("sentiment", {}) or {}
+    churn = predictions.get("churn_risk", {}) or {}
+    anomalies = layer2_result.get("anomalies", []) or []
+    # Keep it small + JSON-safe.
+    clean_anomalies = []
+    for a in anomalies[:3]:
+        if isinstance(a, dict):
+            clean_anomalies.append({
+                "type": str(a.get("type", "unknown"))[:40],
+                "severity": str(a.get("severity", "low"))[:16],
+                "explanation": str(a.get("explanation", ""))[:220],
+            })
+    value = final_record.get("value")
+    try:
+        value_repr = str(value)[:300]
+    except Exception:
+        value_repr = "n/a"
+    return {
+        "entity_id": str(final_record.get("entity_id", "unknown"))[:80],
+        "source": str(final_record.get("source", "unknown"))[:40],
+        "value": value_repr,
+        "priority": str(priority.get("value", "low"))[:16],
+        "priority_score": float(priority.get("score", 0.0) or 0.0),
+        "priority_reasons": list(priority.get("reasons", []) or [])[:4],
+        "sentiment": sentiment.get("value") if sentiment else None,
+        "churn_risk": churn.get("value") if churn else None,
+        "anomalies": clean_anomalies,
+        "anomaly_detected": bool(layer2_result.get("anomaly_detected", False)),
+        "confidence": float(confidence_score or 0.0),
+        "verdict": (
+            "needs_human_review"
+            if (priority.get("value") in ("high", "critical") or any(a.get("severity") in ("high", "critical") for a in clean_anomalies))
+            else "resolved_locally"
+        ),
+    }
+
+
+def build_copy_paste_prompt(analytics: Dict[str, Any]) -> str:
+    """Short, well-written prompt for the user to paste into any LLM.
+
+    Used ONLY when Layers 1-3 + gated Layer 4 cannot resolve the record
+    (no router configured, LLM call failed, or offline/degraded mode).
+    Keep it short (<~900 chars) and self-contained.
+    """
+    anomalies = analytics.get("anomalies", []) or []
+    if anomalies:
+        anomaly_txt = "; ".join(
+            f"{a.get('type', '?')} ({a.get('severity', '?')}): {a.get('explanation', '')[:140]}"
+            for a in anomalies[:2]
+        )[:380]
+    else:
+        anomaly_txt = "none flagged"
+    return (
+        "Help me review one flagged business record (paste this into any LLM):\n"
+        f"- Entity: {analytics.get('entity_id')} | Source: {analytics.get('source')}\n"
+        f"- Value: {str(analytics.get('value', ''))[:200]}\n"
+        f"- Local analysis: priority={analytics.get('priority')} "
+        f"({float(analytics.get('priority_score', 0) or 0):.2f}), "
+        f"sentiment={analytics.get('sentiment')}, churn={analytics.get('churn_risk')}, "
+        f"anomalies: {anomaly_txt}.\n"
+        "Based only on these facts, reply with: "
+        "1) 2-3 likely causes, 2) 2-3 concrete next actions, "
+        "3) one question to ask the customer/owner. "
+        "Keep it under 150 words, no jargon."
+    )
 
 
 @dataclass
@@ -379,6 +474,54 @@ class MultiLayerDataPipeline:
         except Exception:
             pass
 
+    def attach_user_llm_handoff(
+        self,
+        result: ProcessingResult,
+        reason: str,
+    ) -> ProcessingResult:
+        """Layer 4 fallback: keep deterministic analytics, add copy-paste prompt.
+
+        Used ONLY when the system really cannot resolve the record itself
+        (no router / LLM error / degraded offline mode). Never throws.
+        Preserves the existing processing_stage/decision for backward compat;
+        only adds basic_analytics + copy_paste_prompt + needs_user_llm.
+        """
+        try:
+            analytics = build_basic_analytics(
+                result.final_record if isinstance(result.final_record, dict) else {},
+                result.layer2_result if isinstance(result.layer2_result, dict) else {},
+                result.layer3_result if isinstance(result.layer3_result, dict) else {},
+                result.confidence_score,
+            )
+            result.basic_analytics = analytics
+            result.copy_paste_prompt = build_copy_paste_prompt(analytics)
+            result.needs_user_llm = True
+            try:
+                audit = result.llm_decision_audit if isinstance(result.llm_decision_audit, dict) else {}
+                audit["handoff_reason"] = str(reason)[:200]
+                audit["has_copy_paste_prompt"] = True
+                result.llm_decision_audit = audit
+            except Exception:
+                pass
+        except Exception as e:
+            logger.warning(f"user LLM handoff build failed: {e}")
+        return result
+
+    def ensure_basic_analytics(self, result: ProcessingResult) -> ProcessingResult:
+        """Attach deterministic Layers 1-3 summary to every result (cheap, no LLM)."""
+        if result.basic_analytics is not None:
+            return result
+        try:
+            result.basic_analytics = build_basic_analytics(
+                result.final_record if isinstance(result.final_record, dict) else {},
+                result.layer2_result if isinstance(result.layer2_result, dict) else {},
+                result.layer3_result if isinstance(result.layer3_result, dict) else {},
+                result.confidence_score,
+            )
+        except Exception:
+            result.basic_analytics = {"verdict": "resolved_locally", "confidence": 0.0}
+        return result
+
     def _finalize_evidence(
         self,
         result: ProcessingResult,
@@ -455,6 +598,11 @@ class MultiLayerDataPipeline:
                 with self._metrics_lock:
                     self.metrics.total_cost_usd += float(cost_val or 0)
                     self.metrics.evidence_bundles_produced += 1
+            except Exception:
+                pass
+            # Layers 1-3 analytics are always returned, even when Layer 4 is bypassed.
+            try:
+                self.ensure_basic_analytics(result)
             except Exception:
                 pass
         except Exception as e:
@@ -667,6 +815,8 @@ class MultiLayerDataPipeline:
                 cache_status="not_configured"
             )
             self._inc("records_resolved_at_layer3")
+            # Layer 4 fallback: return Layers 1-3 analytics + copy-paste prompt.
+            self.attach_user_llm_handoff(result, "no_model_router")
         else:
             # Check if LLM gate approves (batch_context=None for standard processing)
             try:
@@ -711,10 +861,16 @@ class MultiLayerDataPipeline:
                     result.processing_stage = ProcessingStage.LLM_REQUIRED
                     result.llm_bypassed = False
                     self._inc("records_requiring_llm")
+                    # Offline/degraded placeholder is not a real synthesis:
+                    # keep the response, but also hand the user a copy-paste prompt.
+                    if _is_degraded_llm_response(result.layer4_llm_response):
+                        self.attach_user_llm_handoff(result, "degraded_offline_llm")
                 except Exception as e:
                     logger.error(f"LLM generation failed: {e}")
                     result.layer4_llm_response = f"LLM Error: {str(e)}"
                     cache_status = "error"
+                    result.processing_stage = ProcessingStage.LLM_REQUIRED
+                    self.attach_user_llm_handoff(result, f"llm_error:{e}")
                 result.llm_decision_audit = self._build_llm_decision_audit(
                     decision="invoked",
                     llm_bypassed=False,
@@ -1032,6 +1188,7 @@ Priority: {predictions.get('priority', {}).get('value', 'unknown')}
                     layer3_skipped=False, cache_status="not_configured",
                 )
                 self._inc("records_resolved_at_layer3")
+                self.attach_user_llm_handoff(result, "no_model_router")
 
             # LLM invocation with batch context awareness
             if requires_llm and self.model_router and not skip_layer3:
@@ -1071,11 +1228,16 @@ Priority: {predictions.get('priority', {}).get('value', 'unknown')}
                         result.processing_stage = ProcessingStage.LLM_REQUIRED
                         result.llm_bypassed = False
                         self._inc("records_requiring_llm")
+                        if _is_degraded_llm_response(result.layer4_llm_response):
+                            self.attach_user_llm_handoff(result, "degraded_offline_llm")
                     except Exception as e:
                         logger.error(f"LLM generation failed: {e}")
                         result.layer4_llm_response = f"LLM Error: {str(e)}"
                         result.layer4_time_ms = (time.time() - l4_start) * 1000
                         cache_status = "error"
+                        result.processing_stage = ProcessingStage.LLM_REQUIRED
+                        self.attach_user_llm_handoff(result, f"llm_error:{e}")
+                        self.attach_user_llm_handoff(result, f"llm_error:{e}")
                     result.llm_decision_audit = self._build_llm_decision_audit(
                         decision="invoked", llm_bypassed=False,
                         priority_score=priority_score, anomaly_severity=anomaly_severity,

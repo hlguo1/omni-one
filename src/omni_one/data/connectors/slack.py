@@ -1,7 +1,11 @@
-import requests
 from typing import List, Dict, Any
 from datetime import datetime
 from .base import BaseConnector
+
+try:
+    import requests  # type: ignore
+except ImportError:  # pragma: no cover - allow offline/minimal installs
+    requests = None  # type: ignore
 
 class SlackConnector(BaseConnector):
     def __init__(self, config: Dict[str, Any]):
@@ -11,11 +15,17 @@ class SlackConnector(BaseConnector):
         self.base_url = 'https://slack.com/api'
 
     def connect(self) -> bool:
+        if requests is None:
+            print("Slack connection failed: 'requests' package not installed (pip install requests)")
+            return False
         # Test connection
         response = requests.get(f'{self.base_url}/auth.test', headers=self._headers())
         return response.json().get('ok', False)
 
     def fetch_data(self, since: datetime = None) -> List[Dict[str, Any]]:
+        if requests is None:
+            print("Slack fetch failed: 'requests' package not installed (pip install requests)")
+            return []
         messages = []
         oldest = since.timestamp() if since else 0
 

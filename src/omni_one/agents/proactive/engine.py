@@ -212,6 +212,11 @@ class ProactiveEngine:
                 'priority': result.layer3_result.get('predictions', {}).get('priority', {}).get('value') if result.layer3_result else 'unknown',
                 'anomalies': result.layer2_result.get('anomalies', []) if result.layer2_result else [],
                 'insights': result.layer4_llm_response if result.layer4_llm_response else 'Processed without LLM',
+                # Layer 4 handoff: deterministic analytics always present;
+                # copy_paste_prompt only when the system could not resolve itself.
+                'basic_analytics': getattr(result, 'basic_analytics', None),
+                'copy_paste_prompt': getattr(result, 'copy_paste_prompt', None),
+                'needs_user_llm': getattr(result, 'needs_user_llm', False),
                 'timing_ms': {
                     'layer1': result.layer1_time_ms,
                     'layer2': result.layer2_time_ms,
@@ -243,6 +248,9 @@ class ProactiveEngine:
             'layer2_anomalies': result.layer2_result.get('anomalies', []) if result.layer2_result else [],
             'layer3_predictions': result.layer3_result.get('predictions', {}) if result.layer3_result else {},
             'llm_insight': result.layer4_llm_response,
+            'basic_analytics': getattr(result, 'basic_analytics', None),
+            'copy_paste_prompt': getattr(result, 'copy_paste_prompt', None),
+            'needs_user_llm': getattr(result, 'needs_user_llm', False),
             'timing_ms': result.total_time_ms
         }
     
