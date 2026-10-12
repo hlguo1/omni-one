@@ -4,6 +4,30 @@ All notable changes. Format: Keep a Changelog. Versioning: SemVer.
 
 ## [Unreleased]
 
+### Fixed
+- `GET /status` 500 (`HealthStatus.components.checks` was a list, model demands dicts): endpoint wraps checks as `{items, total, healthy}`; tolerant test hardened into strict 200 + dict-components regression test
+
+### Fixed/CI
+- CI `ci.yml`: new API probe job step (`/status` 200 + all 12 closes 200 + tools/tags/counters cross-checked against code), regen now fails on drift (`grep REGEN PASS`), CLI smoke covers `auto` + wave-2 closes, docker job probes `/status` + `/api/v1/auto/close`; `permissions: read` + `concurrency` cancel on both workflows; `seller-ci.yml` normalized to `python3`
+- Makefile: new `make auto` (one-command router) + `make closes` (wave-2 smoke)
+
+### Added (close-pack wave 2 + AUTO router)
+- Returns Close `src/omni_one/packs/returns_close.py` + docs/RETURNS_CLOSE.md ($868.73 refunded, top leak wrong_item $359.02)
+- Cash-Flow Close `src/omni_one/packs/cashflow_close.py` + docs/CASHFLOW_CLOSE.md ($4,948.69 net 7d, runway 50.3d)
+- Reputation Close `src/omni_one/packs/reputation_close.py` + docs/REPUTATION_CLOSE.md (4.2★, reply queue, gripe themes)
+- Forecast Close `src/omni_one/packs/forecast_close.py` + docs/FORECAST_CLOSE.md (safety stock, stockout dates, PO)
+- Multi-Shop Rollup Close `src/omni_one/packs/rollup_close.py` + docs/ROLLUP_CLOSE.md (4 shops, $101,127 GMV, ranking)
+- **AUTO router `src/omni_one/packs/auto_close.py` + docs/AUTO_CLOSE.md**: `omni-one auto --folder ./my_shop` sniffs files/pics/docs, runs the right closes with cited reasons, never hard-fails (demo fallback); no folder = demo showcase
+- Wiring wave 2: CLI (6 commands), SDK (6 methods), API (6 endpoints), MCP (17 tools), Prometheus (17 counters)
+
+### Added (close-pack wave: 5 new flagship closes, 1399 tests green)
+- Pipeline Analyze Close `src/omni_one/packs/pipeline_close.py` + docs/PIPELINE_CLOSE.md (evidence + cost ledger + verdict, mock-LLM, $0)
+- Vision Close `src/omni_one/packs/vision_close.py` + docs/VISION_CLOSE.md (photo→OCR + numbers + COGS + chart, offline)
+- Micro-biz Close `src/omni_one/packs/micro_close.py` + docs/MICRO_CLOSE.md (taco-shop ritual: revenue, buys, win-backs, vendor SMS, locale)
+- RevOps Close `src/omni_one/packs/revops_close.py` + docs/REVOPS_CLOSE.md (pipeline tiers, churn $ at risk, call sheet, top plays)
+- Ops-loop Close `src/omni_one/packs/ops_close.py` + docs/OPS_CLOSE.md (foundry→ontology→workshop→AIP→audit, hash-verified)
+- Wiring: CLI (`pipeline-close`, `vision-close`, `micro-close`, `revops-close`, `ops-close`), SDK (`pipeline_close`/`vision_close`/`micro_close`/`revops_close`/`ops_close`), API (`POST /api/v1/{pipeline,vision,micro,revenue,ops}/close`), MCP (11 tools), Prometheus (+5 counters)
+
 ### Added (scale push: ~100k LOC, 1350+ tests)
 - Connectors universe `src/omni_one/connectors/` (10 channels + payouts reconcile, 58 fixtures, fee/refund/currency/date hardened)
 - i18n `src/omni_one/i18n/` (EN/ES/ZH/FR/DE drafts + channel DM/review normalizers, 30 fixtures)

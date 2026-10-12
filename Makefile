@@ -1,4 +1,4 @@
-.PHONY: install install-dev demo briefing test test-cov e2e serve docker lint format doctor eval clean
+.PHONY: install install-dev demo briefing test test-cov e2e serve docker lint format doctor eval clean auto closes
 
 PY ?= python3
 SRC = PYTHONPATH=src
@@ -16,6 +16,16 @@ demo:
 
 close:
 	$(SRC) $(PY) -m omni_one.cli close --demo --out ./close_today --locale $(LOCALE)
+
+auto:
+	$(SRC) $(PY) -m omni_one.cli auto --out ./auto_today
+
+closes:
+	$(SRC) $(PY) -m omni_one.cli returns-close --out /tmp/closes/returns
+	$(SRC) $(PY) -m omni_one.cli cashflow-close --out /tmp/closes/cashflow
+	$(SRC) $(PY) -m omni_one.cli reputation-close --out /tmp/closes/reputation
+	$(SRC) $(PY) -m omni_one.cli forecast-close --out /tmp/closes/forecast
+	$(SRC) $(PY) -m omni_one.cli rollup-close --out /tmp/closes/rollup
 
 briefing:
 	$(SRC) $(PY) -m omni_one.cli briefing --demo

@@ -384,7 +384,7 @@ def test_metrics_help_header(prom):
 def test_metrics_counters_nonneg(prom):
     """All counters must be non-negative ints."""
     d = _counters(prom["text"])
-    assert len(d) == 6, d
+    assert len(d) == 17, d
     assert all(isinstance(v, int) and v >= 0 for v in d.values())
 
 def test_models_list(client):
@@ -444,15 +444,14 @@ def test_ping_shape(client):
     assert r.status_code == 200 and r.json() == {"pong": True}
 
 def test_status_shape_tolerant(client):
-    """GET /status: 200 healthy/degraded OR 500 structured error (known HealthStatus bug tolerated, never hang)."""
+    """GET /status: 200 healthy/degraded/unhealthy with dict-shaped components (HealthStatus bug fixed)."""
     r = client.get("/status")
-    assert r.status_code in (200, 500), r.status_code
+    assert r.status_code == 200, r.text[:800]
     d = r.json(); assert isinstance(d, dict)
-    if r.status_code == 200:
-        assert d.get("status") in ("healthy", "degraded", "unhealthy")
-        assert "components" in d and "version" in d
-    else:
-        assert d.get("code") == "INTERNAL_SERVER_ERROR" and "request_id" in d
+    assert d.get("status") in ("healthy", "degraded", "unhealthy")
+    assert "components" in d and "version" in d
+    assert isinstance(d["components"], dict)
+    assert all(isinstance(v, dict) for v in d["components"].values()), d["components"].keys()
 
 def test_health_matrix_0(client):
     """Health matrix repeat 0: all probes respond JSON quickly."""

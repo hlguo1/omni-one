@@ -195,7 +195,8 @@ class OmniOneAPIFactory:
             return HealthStatus(
                 status=overall_status,
                 components={
-                    "checks": all_checks["checks"],
+                    "checks": {"items": all_checks["checks"], "total": total_count,
+                               "healthy": healthy_count},
                     "system_metrics": system_metrics,
                     "system_info": system_info,
                 },

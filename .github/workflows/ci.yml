@@ -4,6 +4,13 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -35,7 +42,29 @@ jobs:
           PYTHONPATH=src python3 -m pytest sdks/gen/python/tests/ -q
           node sdks/gen/typescript/tests/contract.mjs
           node sdks/ts/tests/run.mjs
-          python3 sdks/gen/regen.py | tail -n 1
+          python3 sdks/gen/regen.py | tee /tmp/regen.log | tail -n 1
+          grep -q "REGEN PASS" /tmp/regen.log
+      - name: API probe (/status 200 + all 12 closes + tags + counters)
+        run: |
+          PYTHONPATH=src python3 -c "
+          from fastapi.testclient import TestClient
+          from omni_one.api.fastapi_app import create_omni_one_app
+          from omni_one.api.ops import COUNTERS
+          import omni_one.mcp_server as mcp
+          client = TestClient(create_omni_one_app(), raise_server_exceptions=False)
+          r = client.get('/status'); assert r.status_code == 200, r.text[:500]
+          assert all(isinstance(v, dict) for v in r.json()['components'].values())
+          routes = ['/api/v1/seller/close','/api/v1/pipeline/close','/api/v1/vision/close','/api/v1/micro/close','/api/v1/revenue/close','/api/v1/ops/close','/api/v1/returns/close','/api/v1/cashflow/close','/api/v1/reputation/close','/api/v1/forecast/close','/api/v1/rollup/close','/api/v1/auto/close']
+          payloads = {'/api/v1/revenue/close': {'n': 5}}
+          for path in routes:
+              rr = client.post(path, json=payloads.get(path, {}))
+              assert rr.status_code == 200, (path, rr.status_code, rr.text[:300])
+          t = client.get('/api/v1/openapi-tags').json()
+          assert t['mcp']['tools'] == len(mcp.TOOLS) == 17, t['mcp']
+          assert len(t['closes']) == 12, t['closes']
+          assert len(COUNTERS) == 17, dict(COUNTERS)
+          print('API probe PASS: /status 200, 12 closes 200, tools 17, counters 17')
+          "
       - name: Corpus + evals (80 shops + golden set)
         run: |
           python3 -c "import csv; rows=list(csv.DictReader(open('evals/corpus_big/manifest.csv'))); assert len(rows)==80, len(rows); print('manifest 80 OK')"
@@ -47,6 +76,10 @@ jobs:
           PYTHONPATH=src python3 -m omni_one.cli scenarios --demo | head -n 20
           PYTHONPATH=src python3 -m omni_one.cli close --demo --out /tmp/close_today
           ls /tmp/close_today && grep -E "ORDER TODAY|at risk" /tmp/close_today/replies.txt | head -n 5
+          PYTHONPATH=src python3 -m omni_one.cli auto --out /tmp/auto_smoke | tail -n 3
+          ls /tmp/auto_smoke && grep -c "✓" /tmp/auto_smoke/AUTO.txt
+          PYTHONPATH=src python3 -m omni_one.cli returns-close --out /tmp/smoke_ret | tail -n 1
+          PYTHONPATH=src python3 -m omni_one.cli forecast-close --out /tmp/smoke_fc | tail -n 1
       - name: Seller demo golden KPIs
         run: PYTHONPATH=src python3 scripts/demo_seller_os.py --folder /tmp/seller_demo | grep -E "GMV|True Profit|Stockout"
       - name: Core methodology E2E
@@ -75,4 +108,6 @@ jobs:
           sleep 8
           curl -sf http://localhost:5003/health
           curl -sf http://localhost:5003/readiness | head -c 500
+          curl -sf http://localhost:5003/status | grep -o '"status":"[a-z]*"'
+          curl -sf -X POST http://localhost:5003/api/v1/auto/close -H 'Content-Type: application/json' -d '{}' | head -c 300
           docker compose down

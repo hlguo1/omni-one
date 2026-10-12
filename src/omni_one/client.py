@@ -148,3 +148,98 @@ class OmniOneClient:
             scen = run_all_scenarios(events)
             return build_daily_close(events, b, scen, shop=shop, locale=locale)
         return self._post("/api/v1/seller/close", {"demo": demo, "folder": folder, "seed": seed, "shop": shop, "locale": locale})
+
+    def pipeline_close(self, seed: int = 42) -> dict:
+        """Pipeline evidence+cost+verdict bundle. Local or HTTP."""
+        if self.is_local:
+            from omni_one.packs.pipeline_close import DEMO_RECORDS, build_pipeline_close
+            return build_pipeline_close(DEMO_RECORDS(seed))
+        return self._post("/api/v1/pipeline/close", {"seed": seed})
+
+    def vision_close(self, image_bytes: bytes | None = None, filename: str = "demo_receipt.png") -> dict:
+        """Vision OCR+numbers+COGS bundle. Local bytes or HTTP demo bundle (uploads: use vision_analyze)."""
+        if self.is_local:
+            from omni_one.packs.vision_close import make_demo_image, build_vision_close
+            data = image_bytes or make_demo_image("receipt")
+            return build_vision_close(data, filename=filename or "demo_receipt.png")
+        if image_bytes:
+            from omni_one.packs.vision_close import build_vision_close as _b
+            return _b(image_bytes, filename=filename or "upload.png")
+        return self._post("/api/v1/vision/close", {})
+
+    def micro_close(self, demo: bool = True, seed: int = 42, shop: str = "Maya's Tacos", locale: str = "en") -> dict:
+        """Micro-biz daily ritual bundle. Local or HTTP."""
+        if self.is_local:
+            import tempfile
+            from omni_one.packs._labs.micro_biz import make_demo_folder, ingest_folder, build_briefing
+            from omni_one.packs.micro_close import build_micro_close
+            with tempfile.TemporaryDirectory() as tmp:
+                d = make_demo_folder(Path(tmp) / "m", seed=seed)
+                events, _ = ingest_folder(d)
+                return build_micro_close(events, build_briefing(events), shop=shop, locale=locale)
+        return self._post("/api/v1/micro/close", {"demo": demo, "seed": seed, "shop": shop, "locale": locale})
+
+    def revops_close(self, n: int = 20, seed: int = 42) -> dict:
+        """RevOps pipeline-review bundle. Local or HTTP."""
+        if self.is_local:
+            from omni_one.packs.revops_close import build_revops_close
+            return build_revops_close(None, n=n, seed=seed)
+        return self._post("/api/v1/revenue/close", {"n": n, "seed": seed})
+
+    def ops_close(self, seed: int = 42, namespace: str = "ops-daily") -> dict:
+        """Methodology-loop bundle (foundry->audit, verified). Local or HTTP."""
+        if self.is_local:
+            import tempfile
+            from omni_one.packs.seller_os import make_seller_demo_folder, ingest_seller_folder, build_seller_briefing
+            from omni_one.packs.seller_scenarios import run_all_scenarios
+            from omni_one.packs.ops_close import build_ops_close
+            with tempfile.TemporaryDirectory() as tmp:
+                d = make_seller_demo_folder(Path(tmp) / "d", seed=seed)
+                events, _ = ingest_seller_folder(d)
+                return build_ops_close(events, build_seller_briefing(events), run_all_scenarios(events), namespace=namespace)
+        return self._post("/api/v1/ops/close", {"seed": seed, "namespace": namespace})
+
+    def returns_close(self, seed: int = 42) -> dict:
+        """Refund leaks + restock + drafts. Local or HTTP."""
+        if self.is_local:
+            from omni_one.packs.returns_close import DEMO_RETURNS, build_returns_close
+            return build_returns_close(DEMO_RETURNS(seed))
+        return self._post("/api/v1/returns/close", {"seed": seed})
+
+    def cashflow_close(self, seed: int = 42) -> dict:
+        """Payouts in, bills out, runway. Local or HTTP."""
+        if self.is_local:
+            from omni_one.packs.cashflow_close import build_cashflow_close
+            return build_cashflow_close(None, None, seed=seed)
+        return self._post("/api/v1/cashflow/close", {"seed": seed})
+
+    def reputation_close(self, seed: int = 42, shop: str = "our shop") -> dict:
+        """Reply queue + star repair. Local or HTTP."""
+        if self.is_local:
+            from omni_one.packs.reputation_close import DEMO_REVIEWS, build_reputation_close
+            return build_reputation_close(DEMO_REVIEWS(seed), seed=seed, shop=shop)
+        return self._post("/api/v1/reputation/close", {"seed": seed, "shop": shop})
+
+    def forecast_close(self, seed: int = 42) -> dict:
+        """Stockout dates + safety stock + PO. Local or HTTP."""
+        if self.is_local:
+            from omni_one.packs.forecast_close import DEMO_SKUS, build_forecast_close
+            return build_forecast_close(DEMO_SKUS(seed), seed=seed)
+        return self._post("/api/v1/forecast/close", {"seed": seed})
+
+    def rollup_close(self, seed: int = 42) -> dict:
+        """Portfolio ranking + cross-shop plays. Local or HTTP."""
+        if self.is_local:
+            from omni_one.packs.rollup_close import DEMO_SHOPS, build_rollup_close
+            return build_rollup_close(DEMO_SHOPS(seed), seed=seed)
+        return self._post("/api/v1/rollup/close", {"seed": seed})
+
+    def auto(self, folder: str | None = None, seed: int = 42, shop: str = "our shop", deep: bool = False) -> dict:
+        """Sniff folder -> run the right closes -> plan + headlines. Local or HTTP."""
+        if self.is_local:
+            from omni_one.packs.auto_close import run_auto
+            import tempfile as _t
+            if folder:
+                return run_auto(folder, out=_t.mkdtemp(prefix="omni-auto-"), seed=seed, shop=shop, deep=deep)
+            return run_auto(None, out=_t.mkdtemp(prefix="omni-auto-"), seed=seed, shop=shop, deep=deep)
+        return self._post("/api/v1/auto/close", {"folder": folder, "seed": seed, "shop": shop, "deep": deep})

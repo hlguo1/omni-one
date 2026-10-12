@@ -725,9 +725,9 @@ def test_openapi_tags_ops(openapi_tags):
     assert isinstance(d["tags"], list) and len(d["tags"]) >= 8
 
 def test_openapi_tags_mcp6(openapi_tags):
-    """openapi-tags: mcp6."""
+    """openapi-tags: mcp tools count matches wired tool registry."""
     d = openapi_tags
-    assert d["mcp"]["tools"] == 6, f"{d}"
+    assert d["mcp"]["tools"] == 17, f"{d}"
     assert isinstance(d["tags"], list) and len(d["tags"]) >= 8
 
 def test_openapi_tags_mcp_server(openapi_tags):

@@ -78,13 +78,35 @@ PYTHONPATH=src python3 examples/daily_close_demo.py
 |---|---|
 | `POST /api/v1/seller/close {"demo":true}` | Daily Close bundle (hero) |
 | `GET /api/v1/seller/close.csv?demo=true` | accountant CSV download |
+| `POST /api/v1/pipeline/close` | pipeline evidence + cost + verdict |
+| `POST /api/v1/vision/close` | photo → OCR + COGS + numbers bundle |
+| `POST /api/v1/micro/close` | micro-biz (taco shop) daily ritual |
+| `POST /api/v1/revenue/close` | RevOps pipeline review (tiers, churn $) |
+| `POST /api/v1/ops/close` | methodology loop bundle (foundry→audit, verified) |
+| `POST /api/v1/returns/close` | refund leaks + restock + reply drafts |
+| `POST /api/v1/cashflow/close` | payouts in, bills out, runway |
+| `POST /api/v1/reputation/close` | review reply queue + star repair |
+| `POST /api/v1/forecast/close` | stockout forecast + safety stock + PO |
+| `POST /api/v1/rollup/close` | multi-shop ranking + cross-shop plays |
+| `POST /api/v1/auto/close` | **sniff a folder → run the right closes, with reasons** |
 | `POST /api/v1/seller/briefing` / `operations` / `scenarios/run` | briefing / full loop / 12 decisions |
 | `POST /api/v1/seller/photo` (multipart) | invoice photo → OCR+COGS |
 | `POST /api/v1/analyze {"records":[...]}` | raw 4-layer pipeline |
-| `GET /metrics` | Prometheus counters (closes/briefings/scenarios/vision) |
-| MCP `python3 -m omni_one.mcp_server` | tools for Claude/Cursor: `seller_close`, `seller_briefing`, `seller_scenarios`, `seller_operations`, `pipeline_analyze`, `vision_analyze` |
+| `GET /metrics` | Prometheus counters (12 closes/briefings/scenarios/vision) |
+| MCP `python3 -m omni_one.mcp_server` | 17 tools for Claude/Cursor: `seller_close`, `pipeline_close`, `vision_close`, `micro_close`, `revops_close`, `ops_close`, `returns_close`, `cashflow_close`, `reputation_close`, `forecast_close`, `rollup_close`, `auto`, `seller_briefing`, `seller_scenarios`, `seller_operations`, `pipeline_analyze`, `vision_analyze` |
+
+**Don't know which close to run?** Dump everything into one folder and run one command —
+it sniffs your files/pics/docs and runs the right closes, telling you why:
+
+```bash
+omni-one auto --folder ./my_shop --out ./auto_today
+# [✓] vision: 2 photo(s) found — OCR + COGS [receipt_001.png, ...]
+# [✓] returns: return/refund files found — plug the leak [refunds.csv]
+```
 
 Python SDK: `from omni_one.client import OmniOneClient; OmniOneClient.local().close(demo=True)`.
+Also `client.pipeline_close()`, `.vision_close()`, `.micro_close()`, `.revops_close()`, `.ops_close()`, `.returns_close()`, `.cashflow_close()`, `.reputation_close()`, `.forecast_close()`, `.rollup_close()`, `.auto(folder)` — local or HTTP.
+CLI: `omni-one close | pipeline-close | vision-close | micro-close | revops-close | ops-close | returns-close | cashflow-close | reputation-close | forecast-close | rollup-close | auto`.
 
 ## vs. the world
 

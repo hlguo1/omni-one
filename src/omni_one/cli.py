@@ -199,6 +199,170 @@ def close(folder: str | None = typer.Option(None), demo: bool = typer.Option(Fal
     console.print(f"[green]wrote {len(paths)} files -> {out}/[/green] {sorted(paths.values())}")
 
 
+@app.command(name="pipeline-close")
+def pipeline_close(out: str = typer.Option("./pipeline_close"),
+                   seed: int = 42):
+    """PIPELINE CLOSE: evidence + cost + verdict bundle for any records ($0, mock LLM)."""
+    from omni_one.packs.pipeline_close import DEMO_RECORDS, build_pipeline_close, write_close_bundle
+    c = build_pipeline_close(DEMO_RECORDS(seed))
+    paths = write_close_bundle(c, out)
+    console.print(f"[bold]PIPELINE CLOSE[/bold] — {c['kpis']} verdict={c['verdict']}")
+    for t in c["do_today"]:
+        console.print(f"  • {t}")
+    console.print(f"[green]wrote {len(paths)} files -> {out}/[/green]")
+
+
+@app.command(name="vision-close")
+def vision_close(out: str = typer.Option("./vision_close")):
+    """VISION CLOSE: photo -> OCR + numbers + COGS + evidence bundle ($0, offline)."""
+    from omni_one.packs.vision_close import make_demo_image, build_vision_close, write_close_bundle
+    c = build_vision_close(make_demo_image("receipt"), filename="demo_receipt.png")
+    paths = write_close_bundle(c, out)
+    console.print(f"[bold]VISION CLOSE[/bold] — verdict={c['verdict']} numbers={len(c['numbers'])}")
+    for t in c["do_today"]:
+        console.print(f"  • {t}")
+    console.print(f"[green]wrote {len(paths)} files -> {out}/[/green]")
+
+
+@app.command(name="micro-close")
+def micro_close(folder: str | None = typer.Option(None), demo: bool = typer.Option(True), seed: int = 42,
+                out: str = typer.Option("./micro_close"),
+                shop: str = typer.Option("Maya's Tacos"),
+                locale: str = typer.Option("en", help="Draft language: en|es (numbers never change)")):
+    """MICRO CLOSE: taco-shop daily ritual — revenue, buys, win-backs, vendor SMS ($0)."""
+    import tempfile as _t
+    from pathlib import Path as _P
+    from omni_one.packs._labs.micro_biz import make_demo_folder, ingest_folder, build_briefing
+    from omni_one.packs.micro_close import build_micro_close, write_close_bundle
+    use_demo = demo or not folder
+    if use_demo:
+        with _t.TemporaryDirectory() as tmp:
+            d = make_demo_folder(_P(tmp) / "m", seed=seed)
+            events, _ = ingest_folder(d)
+            c = build_micro_close(events, build_briefing(events), shop=shop, locale=locale)
+    else:
+        events, _ = ingest_folder(_P(folder).expanduser())
+        from omni_one.packs._labs.micro_biz import build_briefing as _bb
+        c = build_micro_close(events, _bb(events), shop=shop, locale=locale)
+    paths = write_close_bundle(c, out)
+    console.print(f"[bold]MICRO CLOSE[/bold] — {c['headline']}")
+    for t in c["do_today"]:
+        console.print(f"  • {t}")
+    console.print(f"[green]wrote {len(paths)} files -> {out}/[/green]")
+
+
+@app.command(name="revops-close")
+def revops_close(n: int = typer.Option(20), seed: int = 42,
+                 out: str = typer.Option("./revops_close")):
+    """REVOPS CLOSE: pipeline review — tiers, churn $, call sheet ($0, seeded)."""
+    from omni_one.packs.revops_close import build_revops_close, write_close_bundle
+    c = build_revops_close(None, n=n, seed=seed)
+    paths = write_close_bundle(c, out)
+    console.print(f"[bold]REVOPS CLOSE[/bold] — {c['headline']}")
+    for t in c["do_today"]:
+        console.print(f"  • {t}")
+    console.print(f"[green]wrote {len(paths)} files -> {out}/[/green]")
+
+
+@app.command(name="ops-close")
+def ops_close(demo: bool = typer.Option(True), seed: int = 42,
+              out: str = typer.Option("./ops_close"),
+              namespace: str = typer.Option("ops-daily")):
+    """OPS CLOSE: full methodology loop bundle — foundry→ontology→workshop→AIP→audit ($0)."""
+    import tempfile as _t
+    from pathlib import Path as _P
+    from omni_one.packs.seller_os import make_seller_demo_folder, ingest_seller_folder, build_seller_briefing
+    from omni_one.packs.seller_scenarios import run_all_scenarios
+    from omni_one.packs.ops_close import build_ops_close, write_close_bundle
+    with _t.TemporaryDirectory() as tmp:
+        d = make_seller_demo_folder(_P(tmp) / "d", seed=seed)
+        events, _ = ingest_seller_folder(d)
+        b, scen = build_seller_briefing(events), run_all_scenarios(events)
+        c = build_ops_close(events, b, scen, namespace=namespace)
+    paths = write_close_bundle(c, out)
+    console.print(f"[bold]OPS CLOSE[/bold] — {c['headline']}")
+    for t in c["do_today"]:
+        console.print(f"  • {t}")
+    console.print(f"[green]wrote {len(paths)} files -> {out}/[/green]")
+
+
+@app.command(name="returns-close")
+def returns_close(seed: int = typer.Option(42), out: str = typer.Option("./returns_close")):
+    """RETURNS CLOSE: refund leaks + restock + reply drafts ($0, seeded)."""
+    from omni_one.packs.returns_close import DEMO_RETURNS, build_returns_close, write_close_bundle
+    c = build_returns_close(DEMO_RETURNS(seed))
+    paths = write_close_bundle(c, out)
+    console.print(f"[bold]RETURNS CLOSE[/bold] — {c['headline']}")
+    for t in c["do_today"]:
+        console.print(f"  • {t}")
+    console.print(f"[green]wrote {len(paths)} files -> {out}/[/green]")
+
+
+@app.command(name="cashflow-close")
+def cashflow_close(seed: int = typer.Option(42), out: str = typer.Option("./cashflow_close")):
+    """CASHFLOW CLOSE: payouts in, bills out, runway ($0, seeded)."""
+    from omni_one.packs.cashflow_close import build_cashflow_close, write_close_bundle
+    c = build_cashflow_close(None, None, seed=seed)
+    paths = write_close_bundle(c, out)
+    console.print(f"[bold]CASHFLOW CLOSE[/bold] — {c['headline']}")
+    for t in c["do_today"]:
+        console.print(f"  • {t}")
+    console.print(f"[green]wrote {len(paths)} files -> {out}/[/green]")
+
+
+@app.command(name="reputation-close")
+def reputation_close(seed: int = typer.Option(42), out: str = typer.Option("./reputation_close"),
+                     shop: str = typer.Option("our shop")):
+    """REPUTATION CLOSE: reply queue + star repair ($0, seeded)."""
+    from omni_one.packs.reputation_close import DEMO_REVIEWS, build_reputation_close, write_close_bundle
+    c = build_reputation_close(DEMO_REVIEWS(seed), seed=seed, shop=shop)
+    paths = write_close_bundle(c, out)
+    console.print(f"[bold]REPUTATION CLOSE[/bold] — {c['headline']}")
+    for t in c["do_today"]:
+        console.print(f"  • {t}")
+    console.print(f"[green]wrote {len(paths)} files -> {out}/[/green]")
+
+
+@app.command(name="forecast-close")
+def forecast_close(seed: int = typer.Option(42), out: str = typer.Option("./forecast_close")):
+    """FORECAST CLOSE: stockout dates + safety stock + PO ($0, seeded)."""
+    from omni_one.packs.forecast_close import DEMO_SKUS, build_forecast_close, write_close_bundle
+    c = build_forecast_close(DEMO_SKUS(seed), seed=seed)
+    paths = write_close_bundle(c, out)
+    console.print(f"[bold]FORECAST CLOSE[/bold] — {c['headline']}")
+    for t in c["do_today"]:
+        console.print(f"  • {t}")
+    console.print(f"[green]wrote {len(paths)} files -> {out}/[/green]")
+
+
+@app.command(name="rollup-close")
+def rollup_close(seed: int = typer.Option(42), out: str = typer.Option("./rollup_close")):
+    """ROLLUP CLOSE: portfolio ranking + cross-shop plays ($0, seeded)."""
+    from omni_one.packs.rollup_close import DEMO_SHOPS, build_rollup_close, write_close_bundle
+    c = build_rollup_close(DEMO_SHOPS(seed), seed=seed)
+    paths = write_close_bundle(c, out)
+    console.print(f"[bold]ROLLUP CLOSE[/bold] — {c['headline']}")
+    for t in c["do_today"]:
+        console.print(f"  • {t}")
+    console.print(f"[green]wrote {len(paths)} files -> {out}/[/green]")
+
+
+@app.command(name="auto")
+def auto(folder: str | None = typer.Option(None), out: str = typer.Option("./auto_today"),
+         seed: int = typer.Option(42), shop: str = typer.Option("our shop"),
+         deep: bool = typer.Option(False, help="Also run the methodology audit bundle")):
+    """AUTO: sniff the folder, run the right closes, say why. No folder = demo showcase."""
+    from omni_one.packs.auto_close import run_auto
+    s = run_auto(folder, out=out, seed=seed, shop=shop, deep=deep)
+    console.print(f"[bold]AUTO CLOSE[/bold] {s['folder']} — ran {len(s['ran'])}/{len(s['plan'])}")
+    for item in s["plan"]:
+        mark = "green" if item["close"] in s["ran"] else "red"
+        console.print(f"  [{mark}]✓ {item['close']}[/{mark}]: {item['reason']} [{item['evidence']}]")
+    for k in s["ran"]:
+        console.print(f"  → {k}: {s['headlines'].get(k, '?')}")
+    console.print(f"[green]wrote auto.json + AUTO.txt -> {out}/[/green]")
+
+
 @app.command()
 def serve(port: int = 5003, host: str = "0.0.0.0"):
     """Run the FastAPI server (engine + Seller OS)."""

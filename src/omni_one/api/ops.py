@@ -15,6 +15,17 @@ COUNTERS: Counter = Counter({
     "vision_total": 0,
     "analyzes_total": 0,
     "closes_total": 0,
+    "pipeline_closes_total": 0,
+    "vision_closes_total": 0,
+    "micro_closes_total": 0,
+    "revops_closes_total": 0,
+    "ops_closes_total": 0,
+    "returns_closes_total": 0,
+    "cashflow_closes_total": 0,
+    "reputation_closes_total": 0,
+    "forecast_closes_total": 0,
+    "rollup_closes_total": 0,
+    "auto_runs_total": 0,
 })
 
 
@@ -59,7 +70,9 @@ def setup_ops_routes(app: FastAPI) -> None:
     @app.get("/api/v1/openapi-tags", tags=["Ops"], summary="Tag catalog for integrators")
     async def tags() -> dict:
         return {"tags": ["Health", "AI", "Data", "Analytics", "Seller OS", "Vision", "Verticals", "Admin", "Ops"],
-                "mcp": {"server": "src/omni_one/mcp_server.py", "tools": 6}, "free": True}
+                "closes": ["seller", "pipeline", "vision", "micro", "revenue", "ops",
+                           "returns", "cashflow", "reputation", "forecast", "rollup", "auto"],
+                "mcp": {"server": "src/omni_one/mcp_server.py", "tools": 17}, "free": True}
 
     @app.post("/api/v1/seller/close", tags=["Seller OS"], summary="DAILY CLOSE: profit + reorder/PO + reply drafts + leaks ($0)")
     async def seller_close(payload: dict) -> dict:
@@ -119,3 +132,106 @@ def setup_ops_routes(app: FastAPI) -> None:
             bump("closes_total")
             return _R(content=close_to_csv(c), media_type="text/csv",
                       headers={"Content-Disposition": "attachment; filename=close.csv"})
+
+    @app.post("/api/v1/pipeline/close", tags=["Ops"], summary="PIPELINE CLOSE: evidence + cost + verdict ($0)")
+    async def pipeline_close(payload: dict) -> dict:
+        from ..packs.pipeline_close import DEMO_RECORDS, build_pipeline_close
+        c = build_pipeline_close(DEMO_RECORDS(int(payload.get("seed", 42))))
+        bump("pipeline_closes_total")
+        return c
+
+    @app.post("/api/v1/vision/close", tags=["Vision"], summary="VISION CLOSE: photo -> OCR + COGS + evidence ($0)")
+    async def vision_close(payload: dict) -> dict:
+        """Demo bundle (no upload). For uploads use POST /api/v1/vision/analyze."""
+        from ..packs.vision_close import make_demo_image, build_vision_close
+        c = build_vision_close(make_demo_image("receipt"), filename="demo_receipt.png")
+        bump("vision_closes_total")
+        return c
+
+    @app.post("/api/v1/micro/close", tags=["Verticals"], summary="MICRO CLOSE: taco-shop ritual ($0)")
+    async def micro_close(payload: dict) -> dict:
+        import tempfile
+        from pathlib import Path as _P
+        from ..packs._labs.micro_biz import make_demo_folder, ingest_folder, build_briefing
+        from ..packs.micro_close import build_micro_close
+        seed = int(payload.get("seed", 42))
+        with tempfile.TemporaryDirectory() as tmp:
+            d = make_demo_folder(_P(tmp) / "m", seed=seed)
+            events, _ = ingest_folder(d)
+            c = build_micro_close(events, build_briefing(events),
+                                  shop=str(payload.get("shop", "Maya's Tacos")),
+                                  locale=str(payload.get("locale", "en")))
+            bump("micro_closes_total")
+            return c
+
+    @app.post("/api/v1/revenue/close", tags=["Verticals"], summary="REVOPS CLOSE: pipeline review ($0)")
+    async def revenue_close(payload: dict) -> dict:
+        from ..packs.revops_close import build_revops_close
+        c = build_revops_close(None, n=int(payload.get("n", 20)), seed=int(payload.get("seed", 42)))
+        bump("revops_closes_total")
+        return c
+
+    @app.post("/api/v1/ops/close", tags=["Ops"], summary="OPS CLOSE: methodology loop bundle ($0)")
+    async def ops_close(payload: dict) -> dict:
+        import tempfile
+        from pathlib import Path as _P
+        from ..packs.seller_os import make_seller_demo_folder, ingest_seller_folder, build_seller_briefing
+        from ..packs.seller_scenarios import run_all_scenarios
+        from ..packs.ops_close import build_ops_close
+        seed = int(payload.get("seed", 42))
+        with tempfile.TemporaryDirectory() as tmp:
+            d = make_seller_demo_folder(_P(tmp) / "d", seed=seed)
+            events, _ = ingest_seller_folder(d)
+            c = build_ops_close(events, build_seller_briefing(events), run_all_scenarios(events),
+                                namespace=str(payload.get("namespace", "ops-daily")))
+            bump("ops_closes_total")
+            return c
+
+    @app.post("/api/v1/returns/close", tags=["Verticals"], summary="RETURNS CLOSE: refund leaks + restock ($0)")
+    async def returns_close(payload: dict) -> dict:
+        from ..packs.returns_close import DEMO_RETURNS, build_returns_close
+        c = build_returns_close(DEMO_RETURNS(int(payload.get("seed", 42))))
+        bump("returns_closes_total")
+        return c
+
+    @app.post("/api/v1/cashflow/close", tags=["Verticals"], summary="CASHFLOW CLOSE: payouts + runway ($0)")
+    async def cashflow_close(payload: dict) -> dict:
+        from ..packs.cashflow_close import build_cashflow_close
+        c = build_cashflow_close(None, None, seed=int(payload.get("seed", 42)))
+        bump("cashflow_closes_total")
+        return c
+
+    @app.post("/api/v1/reputation/close", tags=["Verticals"], summary="REPUTATION CLOSE: reply queue ($0)")
+    async def reputation_close(payload: dict) -> dict:
+        from ..packs.reputation_close import DEMO_REVIEWS, build_reputation_close
+        c = build_reputation_close(DEMO_REVIEWS(int(payload.get("seed", 42))),
+                                   seed=int(payload.get("seed", 42)),
+                                   shop=str(payload.get("shop", "our shop")))
+        bump("reputation_closes_total")
+        return c
+
+    @app.post("/api/v1/forecast/close", tags=["Verticals"], summary="FORECAST CLOSE: stockouts + PO ($0)")
+    async def forecast_close(payload: dict) -> dict:
+        from ..packs.forecast_close import DEMO_SKUS, build_forecast_close
+        c = build_forecast_close(DEMO_SKUS(int(payload.get("seed", 42))), seed=int(payload.get("seed", 42)))
+        bump("forecast_closes_total")
+        return c
+
+    @app.post("/api/v1/rollup/close", tags=["Verticals"], summary="ROLLUP CLOSE: portfolio ranking ($0)")
+    async def rollup_close(payload: dict) -> dict:
+        from ..packs.rollup_close import DEMO_SHOPS, build_rollup_close
+        c = build_rollup_close(DEMO_SHOPS(int(payload.get("seed", 42))), seed=int(payload.get("seed", 42)))
+        bump("rollup_closes_total")
+        return c
+
+    @app.post("/api/v1/auto/close", tags=["Ops"], summary="AUTO: sniff folder -> run the right closes ($0)")
+    async def auto_close(payload: dict) -> dict:
+        import tempfile as _t
+        from ..packs.auto_close import run_auto
+        folder = payload.get("folder")
+        s = run_auto(folder, out=_t.mkdtemp(prefix="omni-auto-"),
+                     seed=int(payload.get("seed", 42)),
+                     shop=str(payload.get("shop", "our shop")),
+                     deep=bool(payload.get("deep", False)))
+        bump("auto_runs_total")
+        return s
