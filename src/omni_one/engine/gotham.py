@@ -1,17 +1,16 @@
 """
-Gotham — Free alternative to Palantir Gotham (investigation graph)
-===============================================================
-Palantir Gotham: $10M+ for intel, entity resolution, link analysis.
-Free alternative: ontology traversal + simple entity resolution (deterministic), no fees.
+Gotham — investigation graph
+===========================
+Ontology traversal + deterministic entity resolution for link analysis.
 
-Mirrors:
-  Object search (Gotham Object Explorer) → ontology.search()
-  Graph expansion (Gotham Graph) → ontology.traverse()
-  Entity resolution (Gotham Resolve) → deterministic blocking + Levenshtein (free)
+Capabilities:
+  Object search → ontology.search()
+  Graph expansion → ontology.traverse()
+  Entity resolution → deterministic blocking + string similarity
 
-Tech: Python only, no GraphDB fees. Deterministic, explainable.
+Tech: Python only. Deterministic, explainable.
 
-Use case: upload transactions + chat logs + photos → find fraud ring or intel cell.
+Use case: upload transactions + chat logs + photos → find fraud ring or related entities.
 """
 from __future__ import annotations
 from typing import List, Dict, Any, Set, Tuple
@@ -28,8 +27,8 @@ def _norm(s: str) -> str:
 
 def entity_resolution_candidates(objects: List[ObjectInstance], threshold: float = 0.85) -> List[Tuple[str, str, float]]:
     """
-    Free entity resolution. Compares title/primary properties via SequenceMatcher.
-    Like Gotham Resolve but deterministic, free.
+    Entity resolution. Compares title/primary properties via SequenceMatcher.
+    Deterministic, explainable.
     Returns [(pk1, pk2, score), ...] where score >= threshold.
     """
     # Blocking: first letter to reduce O(n^2) — free optimization
@@ -60,7 +59,7 @@ def entity_resolution_candidates(objects: List[ObjectInstance], threshold: float
 
 class Investigation:
     """
-    Free Gotham-like investigation. Holds a working set (like Gotham's dossier)
+    Investigation. Holds a working set (working set)
     and supports graph expansion, path finding, and timeline.
     """
     def __init__(self, ontology: Ontology, name: str = "investigation"):
@@ -76,7 +75,7 @@ class Investigation:
             self.events.append({"op": "add", "key": key})
 
     def expand(self, link_type: str, depth: int = 1) -> int:
-        """Expand all working_set objects via link_type, like Gotham graph expand."""
+        """Expand all working_set objects via link_type, via link traversal."""
         new_keys: Set[str] = set()
         for key in list(self.working_set):
             t, pk = key.split(":", 1)

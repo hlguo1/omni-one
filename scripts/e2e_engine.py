@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
 """
-E2E — Free Palantir Alternative (Omni-One)
-==========================================
-Proves the free stack actually works end-to-end, $0 cost, no Palantir fees.
+E2E Engine (Omni-One)
+=====================
+Proves the offline stack works end-to-end ($0 default).
 
-Mirrors Palantir use cases:
+Covers:
 
   1. Foundry: Data integration (CSV, receipt photo, WhatsApp) → DuckDB datasets → lineage
   2. Ontology: Digital twin (Supplier, Shipment, Patient, Ward, Transaction, Person) → links
   3. Gotham: Investigation graph expansion + entity resolution (fraud ring)
-  4. AIP: Ontology-grounded LLM logic (supply delay, hospital overflow, fraud) — mock, free
-  5. Vision: Photo → OCR (tesseract free) → Chart (opencv+matplotlib free) → pipeline (free)
-  6. Apollo: Generate docker-compose (free deploy)
+  4. AIP: Ontology-grounded logic (supply delay, hospital overflow, fraud) — mock, offline
+  5. Vision: Photo → OCR (tesseract) → Chart (opencv+matplotlib) → pipeline
+  6. Apollo: Generate docker-compose (offline deploy)
 
 Run:
-  PYTHONPATH=src python scripts/e2e_palantir_free.py
-  PYTHONPATH=src python scripts/e2e_palantir_free.py --out /tmp/e2e_out
+  PYTHONPATH=src python scripts/e2e_engine.py
+  PYTHONPATH=src python scripts/e2e_engine.py --out /tmp/e2e_out
 
-Verify: asserts + prints. If it exits 0, your free Palantir works.
+Verify: asserts + prints. Exit 0 means the engine works.
 """
 import sys
 from pathlib import Path
@@ -32,36 +32,36 @@ from datetime import datetime
 
 def log(step, msg): print(f"[{step}] {msg}")
 
-def main(out_dir: str = "/tmp/e2e_palantir_free"):
+def main(out_dir: str = "/tmp/e2e_engine"):
     out = Path(out_dir)
     if out.exists():
         shutil.rmtree(out)
     out.mkdir(parents=True)
 
-    # --- Check free deps ---
-    log("SETUP", "Checking free stack (all local, $0)...")
+    # --- Check deps ---
+    log("SETUP", "Checking stack (all local, $0 default)...")
     try:
-        import duckdb; log("SETUP", f"duckdb {duckdb.__version__} (free, in-process OLAP)")
+        import duckdb; log("SETUP", f"duckdb {duckdb.__version__} (in-process OLAP)")
     except ImportError:
-        log("SETUP", "duckdb missing — pip install duckdb (free)")
+        log("SETUP", "duckdb missing — pip install duckdb")
     try:
-        import pandas; log("SETUP", f"pandas {pandas.__version__} (free)")
+        import pandas; log("SETUP", f"pandas {pandas.__version__}")
     except ImportError:
         log("SETUP", "pandas missing")
     try:
-        import pytesseract; pytesseract.get_tesseract_version(); log("SETUP", f"tesseract {pytesseract.get_tesseract_version()} (free OCR)")
+        import pytesseract; pytesseract.get_tesseract_version(); log("SETUP", f"tesseract {pytesseract.get_tesseract_version()} (OCR)")
     except Exception as e:
-        log("SETUP", f"tesseract not ready: {e} — brew install tesseract (free)")
+        log("SETUP", f"tesseract not ready: {e} — brew install tesseract")
 
     # ================================================================
-    # 1. FOUNDRY — free data integration
+    # 1. FOUNDRY — data integration
     # ================================================================
-    log("1/6 FOUNDRY", "Creating Foundry datasets (DuckDB+Parquet, free) like Palantir Foundry...")
-    from omni_one.palantir_free.foundry import FoundryDataset, Transform, FoundryBranch
-    from omni_one.palantir_free.ontology import Ontology, ObjectTypeDef, PropertyDef, LinkTypeDef, ObjectInstance, ActionDef
-    from omni_one.palantir_free.gotham import Investigation, entity_resolution_candidates
-    from omni_one.palantir_free.aip import AIPLogic, logic_supply_delay, logic_hospital_overflow, logic_fraud_ring
-    from omni_one.palantir_free.apollo import generate as apollo_generate
+    log("1/6 FOUNDRY", "Creating Foundry datasets (DuckDB+Parquet)...")
+    from omni_one.engine.foundry import FoundryDataset, Transform, FoundryBranch
+    from omni_one.engine.ontology import Ontology, ObjectTypeDef, PropertyDef, LinkTypeDef, ObjectInstance, ActionDef
+    from omni_one.engine.gotham import Investigation, entity_resolution_candidates
+    from omni_one.engine.aip import AIPLogic, logic_supply_delay, logic_hospital_overflow, logic_fraud_ring
+    from omni_one.engine.apollo import generate as apollo_generate
     from omni_one.core.vision import analyze_photo
 
     base = out / "foundry"
@@ -101,9 +101,9 @@ def main(out_dir: str = "/tmp/e2e_palantir_free"):
     assert ds_enriched.versions()[-1]["lineage"].startswith("transform:enrich_shipments")
 
     # ================================================================
-    # 2. ONTOLOGY — free digital twin
+    # 2. ONTOLOGY — digital twin
     # ================================================================
-    log("2/6 ONTOLOGY", "Building Ontology (free alternative to Palantir Ontology $1M/yr)...")
+    log("2/6 ONTOLOGY", "Building Ontology...")
     onto = Ontology(name="supply-ontology")
     onto.define_object_type(ObjectTypeDef(api_name="Supplier", display_name="Supplier", primary_key="supplier_id", title_property="name", properties=[PropertyDef(name="supplier_id", type="string", required=True), PropertyDef(name="name", type="string"), PropertyDef(name="reliability", type="double")]))
     onto.define_object_type(ObjectTypeDef(api_name="Shipment", display_name="Shipment", primary_key="shipment_id", properties=[PropertyDef(name="shipment_id", type="string", required=True), PropertyDef(name="delay_hours", type="double"), PropertyDef(name="status", type="string")]))
@@ -145,12 +145,12 @@ def main(out_dir: str = "/tmp/e2e_palantir_free"):
     # Action test
     onto.apply_action("rerouteShipment", "SH2", {"status": "REROUTED"})
     assert onto.get("Shipment", "SH2").properties["status"] == "REROUTED"
-    log("2/6 ONTOLOGY", "Action rerouteShipment applied, free, no Palantir fees")
+    log("2/6 ONTOLOGY", "Action rerouteShipment applied")
 
     # ================================================================
-    # 3. GOTHAM — free investigation graph
+    # 3. GOTHAM — investigation graph
     # ================================================================
-    log("3/6 GOTHAM", "Gotham investigation (free graph + entity res)...")
+    log("3/6 GOTHAM", "Gotham investigation (graph + entity resolution)...")
     inv = Investigation(onto, name="fraud-ring")
     inv.add("Person", "P1")
     added = inv.expand("MADE_TRANSACTION", depth=1)
@@ -158,7 +158,7 @@ def main(out_dir: str = "/tmp/e2e_palantir_free"):
     # Entity resolution: P1 and P2 same phone, similar name -> should candidate
     persons = onto.search("Person")
     cands = entity_resolution_candidates(persons, threshold=0.80)
-    log("3/6 GOTHAM", f"entity resolution candidates {cands} (free, deterministic)")
+    log("3/6 GOTHAM", f"entity resolution candidates {cands} (deterministic)")
     assert any(set([a, b]) == {"P1", "P2"} for a, b, _ in cands), "Gotham resolve failed to link Maria Lopez/Lopes"
     # Path finding: P1 -> T2 via P2? (P1 -? No direct, but via phone similarity we can link)
     # For demo, path P1 -> T1 is direct, P1 -> T2 via resolve
@@ -172,9 +172,9 @@ def main(out_dir: str = "/tmp/e2e_palantir_free"):
     assert len(inv.working_set) >= 4
 
     # ================================================================
-    # 4. AIP — free ontology-grounded LLM logic
+    # 4. AIP — ontology-grounded logic
     # ================================================================
-    log("4/6 AIP", "AIP logic grounded in ontology (free mock, no OpenAI fees)...")
+    log("4/6 AIP", "AIP logic grounded in ontology (mock, offline)...")
     aip_logic = AIPLogic(onto, name="supply-aip")
     res1 = aip_logic.run(logic_supply_delay, shipment_id="SH1")
     log("4/6 AIP", f"supply SH1: {res1['answer']} citations={res1['citations'][:1]}")
@@ -188,13 +188,13 @@ def main(out_dir: str = "/tmp/e2e_palantir_free"):
     res4 = aip_logic.run(logic_fraud_ring, transaction_id="T2")
     log("4/6 AIP", f"fraud T2: {res4['answer']}")
     assert "ANOMALY" in res4["answer"]
-    log("4/6 AIP", f"AIP cost {res3.get('cost_usd')} free={res3.get('free')}")
+    log("4/6 AIP", f"AIP cost {res3.get('cost_usd')}")
 
     # ================================================================
-    # 5. VISION — free photo -> text + chart -> pipeline
+    # 5. VISION — photo -> text + chart -> pipeline
     # ================================================================
-    log("5/6 VISION", "Vision: photo -> OCR (tesseract free) -> chart (opencv+matplotlib free) -> pipeline (free)...")
-    # Generate synthetic receipt+chart image via vision demo (free)
+    log("5/6 VISION", "Vision: photo -> OCR (tesseract) -> chart (opencv+matplotlib) -> pipeline...")
+    # Generate synthetic receipt+chart image via vision demo
     from PIL import Image, ImageDraw, ImageFont
     import io
     img = Image.new("RGB", (1000, 600), "white")
@@ -217,7 +217,7 @@ def main(out_dir: str = "/tmp/e2e_palantir_free"):
     result = analyze_photo(photo_bytes, filename="e2e_receipt.png", run_pipeline=True)
     log("5/6 VISION", f"OCR chars={result['ocr']['meta'].get('chars')} engine={result['engines']['ocr']}")
     log("5/6 VISION", f"chart {result['chart']['detected']['reason'][:60]} data={result['chart']['data']}")
-    assert result["cost_usd"] == 0.0, "Vision should be free"
+    assert result["cost_usd"] == 0.0, "Vision should run at $0 default"
     assert result["ocr"]["text"] != "", "OCR failed"
     assert result["pipeline"] is not None
     log("5/6 VISION", f"pipeline events {result['pipeline']['events']} summary {result['pipeline']['summary']['llm_bypass_rate']}")
@@ -228,16 +228,16 @@ def main(out_dir: str = "/tmp/e2e_palantir_free"):
     client = TestClient(app)
     r = client.get("/api/v1/vision/demo")
     assert r.status_code == 200 and r.json()["cost_usd"] == 0.0
-    log("5/6 VISION", "FastAPI /vision/demo 200 free=$0")
+    log("5/6 VISION", "FastAPI /vision/demo 200 cost=$0")
 
     # ================================================================
-    # 6. APOLLO — free deploy
+    # 6. APOLLO — deploy
     # ================================================================
-    log("6/6 APOLLO", "Apollo free alternative (Docker Compose, $0)...")
+    log("6/6 APOLLO", "Apollo deploy bundle (Docker Compose)...")
     apollo_out = apollo_generate(out / "apollo")
     assert (apollo_out / "docker-compose.yml").exists()
     assert (apollo_out / "apollo_manifest.json").exists()
-    log("6/6 APOLLO", f"generated {apollo_out} with compose + manifest, free")
+    log("6/6 APOLLO", f"generated {apollo_out} with compose + manifest")
 
     # --- Final verify ---
     log("E2E", f"Ontology hash {onto.lineage_hash()}, Foundry versions {len(ds_suppliers.versions())}, Gotham candidates {len(cands)}, AIP runs {len(aip_logic.runs)}")
@@ -250,21 +250,21 @@ def main(out_dir: str = "/tmp/e2e_palantir_free"):
         "vision": {"ocr_chars": result["ocr"]["meta"].get("chars"), "chart_free": True, "pipeline_free": True},
         "apollo": str(apollo_out),
         "free": True,
-        "palantir_alternative_cost": "$0 (vs $1-5M/yr Palantir)",
+        "engine_cost": "$0 default, offline",
         "cheapest_tech": ["Python", "DuckDB (free OLAP)", "Pandas+Parquet (free)", "FastAPI (free)", "Pydantic (free)", "Tesseract+OpenCV+Matplotlib (free)", "Local mock LLM (free, Ollama optional)"],
     }
     (out / "e2e_summary.json").write_text(json.dumps(summary, indent=2, default=str))
     log("E2E", f"Wrote {out / 'e2e_summary.json'}")
     print("\n" + "="*70)
-    print("E2E FREE PALANTIR ALTERNATIVE — PASSED")
+    print("E2E ENGINE — PASSED")
     print("="*70)
     print(json.dumps(summary, indent=2))
-    print("\nAll 6 pillars free, local, no API fees. Run again: PYTHONPATH=src python scripts/e2e_palantir_free.py")
+    print("\nAll 6 pillars local, offline. Run again: PYTHONPATH=src python scripts/e2e_engine.py")
     return summary
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--out", type=str, default="/tmp/e2e_palantir_free")
+    parser.add_argument("--out", type=str, default="/tmp/e2e_engine")
     args = parser.parse_args()
     main(out_dir=args.out)

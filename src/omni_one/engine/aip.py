@@ -1,21 +1,20 @@
 """
-AIP — Free alternative to Palantir AIP (AI Logic grounded in Ontology)
-============================================================
-Palantir AIP: ontology-grounded LLM, $500k/yr. Free alternative: deterministic
-pipeline + ontology context + local LLM mock/Ollama, $0.
+AIP — ontology-grounded logic
+============================
+Deterministic pipeline + ontology context + local LLM mock/Ollama. Runs offline.
 
-Mirrors:
-  AIP Logic  →  ontology-grounded function calling (deterministic)
-  AIP Agent  →  loops over ontology objects, like our ProactiveEngine but ontology-aware
+Capabilities:
+  Logic      →  ontology-grounded function calling (deterministic)
+  Agent      →  loops over ontology objects, ontology-aware
   Guardrails →  evidence bundle + budget + checks (already built)
 
-Tech: cheapest efficient:
-  - MultiLayerDataPipeline (free, 90% bypass) for all data ops
-  - Ontology as context (free, no vector DB fees if you want — but we can use local Weaviate)
-  - Local LLM: Ollama (llama3.2:3b, mistral) free, or mock if no Ollama — still works offline
-  - No OpenAI/Gemini fees unless you opt-in.
+Tech:
+  - MultiLayerDataPipeline (90% bypass) for data ops
+  - Ontology as context (local; optional local vector store)
+  - Local LLM: Ollama (llama3.2:3b, mistral) or mock if no Ollama — still works offline
+  - No external LLM fees unless you opt in.
 
-Use: hospital ops asks "which wards will overflow tomorrow?" — AIP logic queries ontology
+Use: hospital ops asks "which wards will overflow tomorrow?" — logic queries ontology
 (Patient, Bed, Admission), runs pipeline to detect anomaly, then drafts action grounded in objects.
 """
 from __future__ import annotations
@@ -42,7 +41,7 @@ except ImportError:
 
 
 def check_grounding(ontology: Ontology, citations: List[str]) -> Dict[str, Any]:
-    """Validate citations reference real ontology objects (anti-hallucination gate). Free.
+    """Validate citations reference real ontology objects (anti-hallucination gate).
     Accepts 'ontology:Type:pk...', 'Type:pk', or containing 'Type:pk'. Returns score + ungrounded list.
     """
     import re as _re
@@ -75,7 +74,7 @@ def check_grounding(ontology: Ontology, citations: List[str]) -> Dict[str, Any]:
 
 
 class FunctionRegistry:
-    """Registry of ontology-grounded functions (like Palantir Functions). Free."""
+    """Registry of ontology-grounded functions (ontology-grounded functions)."""
     def __init__(self):
         self._fns: Dict[str, Dict[str, Any]] = {}
 
@@ -97,7 +96,7 @@ DEFAULT_REGISTRY = FunctionRegistry()
 
 class AIPLogic:
     """
-    Ontology-grounded logic. Like Palantir AIP Logic but free.
+    Ontology-grounded logic. Ontology-grounded logic with citation checks.
     Reuses single pipeline, validates grounding, supports registry + eval.
     """
     def __init__(self, ontology: Ontology, name: str, registry: Optional[FunctionRegistry] = None):
@@ -124,7 +123,7 @@ class AIPLogic:
 
     def run_registered(self, fn_name: str, grounding_threshold: float = 0.5, **inputs) -> Dict[str, Any]:
         fn = self.registry.get(fn_name)
-        # Validate required inputs early (like Palantir)
+        # Validate required inputs early
         meta = self.registry._fns[fn_name]
         missing = [r for r in meta["required"] if r not in inputs]
         if missing:
@@ -140,7 +139,7 @@ class AIPLogic:
         result["cost_usd"] = 0.0
         if "citations" not in result or not result["citations"]:
             result["citations"] = []
-        # Grounding gate (anti-hallucination, like Palantir guardrails)
+        # Grounding gate (anti-hallucination)
         g = check_grounding(self.ontology, list(result.get("citations", [])))
         result["grounding"] = g
         result["grounded"] = bool(g.get("ok"))
@@ -150,7 +149,7 @@ class AIPLogic:
         return result
 
     def evaluate(self, cases: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Eval harness for AIP (like Palantir Eval): cases=[{fn, inputs, expect_contains, expect_actions}]. Free."""
+        """Eval harness for AIP: cases=[{fn, inputs, expect_contains, expect_actions}]."""
         passed, total = 0, 0
         details = []
         for c in cases:
@@ -200,10 +199,10 @@ class AIPAgent:
         return out
 
 
-# --- Example free logics (mirroring Palantir use cases) ---
+# --- Example logics ---
 def logic_supply_delay(ontology: Ontology, inputs: Dict[str, Any], pipeline) -> Dict[str, Any]:
     """
-    Palantir Foundry supply chain use case, free.
+    Supply-chain delay use case.
     Checks Shipments linked to Suppliers, flags delays via pipeline anomaly.
     """
     # inputs: {"shipment_id": "..."} or scan
@@ -287,7 +286,7 @@ def logic_seller_stockout(ontology: Ontology, inputs: Dict[str, Any], pipeline) 
     }
 
 
-# Register built-ins (methodology: discoverable functions, like Palantir)
+# Register built-ins (discoverable functions)
 DEFAULT_REGISTRY.register("supply_delay", logic_supply_delay, "Shipment delay check", ["shipment_id"])
 DEFAULT_REGISTRY.register("hospital_overflow", logic_hospital_overflow, "Ward overflow check", ["ward_id"])
 DEFAULT_REGISTRY.register("fraud_ring", logic_fraud_ring, "Transaction anomaly check", ["transaction_id"])

@@ -1,17 +1,19 @@
 """
-Palantir-Free — The free alternative to Palantir Foundry/Gotham/AIP/Apollo
-==========================================================================
-Built on cheapest efficient OSS: Python + DuckDB + Pandas + FastAPI + Pydantic
+Engine — deterministic data + ontology + operations layer
+=========================================================
+Built on efficient OSS: Python + DuckDB + Pandas + FastAPI + Pydantic
 + Tesseract + OpenCV + Matplotlib + local LLM mock (or Ollama).
 
-This package mirrors Palantir's pillars with 0 cloud fees:
+Modules:
 
-  Palantir Foundry  →  foundry.py   (Datasets, Transforms, Lineage, Builds — DuckDB+Parquet, free)
-  Palantir Ontology →  ontology.py  (Object Types, Links, Actions — in-memory graph, free)
-  Palantir Gotham   →  gotham.py    (Investigation graph, entity res — free)
-  Palantir AIP      →  aip.py       (Ontology-grounded LLM logic — free mock/Ollama)
-  Palantir Apollo   →  apollo.py    (Deploy via Docker Compose — free)
+  foundry.py    (Datasets, Transforms, Lineage, Builds — DuckDB+Parquet, offline)
+  ontology.py   (Object Types, Links, Actions — in-memory graph, offline)
+  gotham.py     (Investigation graph, entity resolution — deterministic)
+  aip.py        (Ontology-grounded logic — mock/Ollama, offline)
+  apollo.py     (Deploy via Docker Compose)
+  workshop.py   (Operations queue on the ontology)
+  governance.py (Audit log, lineage, markings)
 
 All pipelines reuse the deterministic 4-layer pipeline (core/data_processing_pipeline.py)
-so LLM costs are 0 for 90% of data (Local first). Total cost for e2e demo: $0.00.
+so LLM calls are bypassed for ~90% of data (local-first). E2E demo runs offline.
 """

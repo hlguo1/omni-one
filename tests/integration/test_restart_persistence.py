@@ -4,9 +4,9 @@ from pathlib import Path
 
 
 def test_restart_persistence():
-    from omni_one.palantir_free.ontology import Ontology, ObjectTypeDef, PropertyDef, ObjectInstance
-    from omni_one.palantir_free.workshop import WorkshopApp
-    from omni_one.palantir_free.governance import AuditLog
+    from omni_one.engine.ontology import Ontology, ObjectTypeDef, PropertyDef, ObjectInstance
+    from omni_one.engine.workshop import WorkshopApp
+    from omni_one.engine.governance import AuditLog
     from omni_one.infra.store import LocalStore
 
     with tempfile.TemporaryDirectory() as tmp:

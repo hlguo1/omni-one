@@ -90,9 +90,9 @@ class OmniOneClient:
             # reuse CLI logic without printing
             import tempfile
             from omni_one.packs.seller_os import make_seller_demo_folder, ingest_seller_folder, build_seller_briefing
-            from omni_one.palantir_free.ontology import Ontology, ObjectTypeDef, PropertyDef, ObjectInstance
-            from omni_one.palantir_free.workshop import WorkshopApp
-            from omni_one.palantir_free.governance import AuditLog, ingest_workshop
+            from omni_one.engine.ontology import Ontology, ObjectTypeDef, PropertyDef, ObjectInstance
+            from omni_one.engine.workshop import WorkshopApp
+            from omni_one.engine.governance import AuditLog, ingest_workshop
             with tempfile.TemporaryDirectory() as tmp:
                 d = make_seller_demo_folder(Path(tmp) / "d", seed=seed)
                 events, _ = ingest_seller_folder(d)

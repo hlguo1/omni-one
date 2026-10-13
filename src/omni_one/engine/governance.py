@@ -1,8 +1,8 @@
 """
-Governance — Unified audit + lineage + markings (methodology like Palantir)
-============================================================================
-Palantir's core methodology: every read/write/decision is audited, lineage-tracked,
-and markings-enforced. We don't replicate their stack — same methodology, free:
+Governance — unified audit + lineage + markings
+==============================================
+Every read/write/decision is audited, lineage-tracked,
+and markings-enforced:
 
   Append-only hash-chained AuditLog ingests:
     - pipeline evidence bundles (Layer1-4 citations + cost)
@@ -12,9 +12,9 @@ and markings-enforced. We don't replicate their stack — same methodology, free
     - foundry builds (dataset versions)
 
   Markings: objects carry ["public","internal","restricted"]; actors have clearance;
-  governance filters (like Palantir markings).
+  governance filters reads by marking.
 
-Free: stdlib hashlib/json only.
+Stdlib hashlib/json only.
 """
 from __future__ import annotations
 from typing import List, Dict, Any, Optional
@@ -33,7 +33,7 @@ def _hash(prev: str, event: Dict[str, Any]) -> str:
 
 
 class AuditLog:
-    """Append-only hash chain. Verify detects tampering (like Palantir audit). Thread-safe + file-backed."""
+    """Append-only hash chain. Verify detects tampering. Thread-safe + file-backed."""
 
     def __init__(self, name: str = "omni-audit", persist_path=None):
         self.name = name
@@ -211,7 +211,7 @@ class AuditLog:
         }
 
 
-# --- markings (like Palantir markings) ---
+# --- markings ---
 def can_access(obj_markings: List[str], actor_clearance: List[str]) -> bool:
     """Actor must hold at least one of the object's markings (simple intersection)."""
     return bool(set(obj_markings) & set(actor_clearance))

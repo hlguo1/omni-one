@@ -4,7 +4,7 @@ import threading
 
 def test_concurrent_writes_safe():
     from omni_one.core.cache import SemanticCache
-    from omni_one.palantir_free.ontology import Ontology, ObjectTypeDef, PropertyDef, ObjectInstance
+    from omni_one.engine.ontology import Ontology, ObjectTypeDef, PropertyDef, ObjectInstance
     cache = SemanticCache()
     errs = []
 

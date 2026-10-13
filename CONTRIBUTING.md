@@ -34,7 +34,7 @@ make demo        # Seller OS demo, golden KPIs
 ## Project layout
 
 - `src/omni_one/core/` — 4-layer deterministic pipeline (ingest → statistical → ML features → gated LLM)
-- `src/omni_one/palantir_free/` — Foundry / Ontology / Workshop / AIP / Governance / Apollo / Gotham ($0 methodology)
+- `src/omni_one/engine/` — Foundry / Ontology / Workshop / AIP / Governance / Apollo / Gotham ($0 methodology)
 - `src/omni_one/packs/seller_os.py` — THE highlight app + `seller_scenarios.py` (12 scenarios) + `seller_parse.py`
 - `src/omni_one/api/fastapi_app.py` — REST: `/seller/*`, `/vision/*`, `/analyze`
 - `src/omni_one/cli.py` — `omni-one` CLI; `src/omni_one/client.py` — Python SDK; `src/omni_one/mcp_server.py` — MCP

@@ -1,17 +1,17 @@
 """
-Ontology — Free alternative to Palantir Ontology (digital twin)
-==============================================================
-Palantir Ontology costs ~$1M/yr. This is free, local, typed.
+Ontology — typed digital twin
+=============================
+Local, typed object layer for operational data.
 
 Concepts:
-  ObjectType  — e.g., Supplier, Shipment, Patient, Transaction (like Palantir)
+  ObjectType  — e.g., Supplier, Shipment, Patient, Transaction
   Property    — typed field with lineage
   LinkType    — e.g., SUPPLIES, TREATS, SENT
   Object      — instance with id, properties, links
-  Action      — state transition with checks (like Palantir Actions)
+  Action      — state transition with checks and optional approval
 
-Storage: in-memory dict + optional Parquet backing via Foundry. No DB fees.
-Graph: adjacency dict (no Neo4j fees). Queries are Python, free.
+Storage: in-memory dict + optional Parquet backing via Foundry.
+Graph: adjacency dict. Queries are plain Python.
 """
 from __future__ import annotations
 from typing import Dict, Any, List, Optional, Set
@@ -24,7 +24,7 @@ import threading
 
 
 def _coerce_value(ptype: str, value: Any) -> Any:
-    """Strict-ish type coercion for ontology properties. Raises ValueError on mismatch. Free."""
+    """Strict-ish type coercion for ontology properties. Raises ValueError on mismatch."""
     if value is None:
         return None
     t = (ptype or "string").lower()
@@ -86,7 +86,7 @@ class ObjectTypeDef(BaseModel):
     primary_key: str
     properties: List[PropertyDef] = Field(default_factory=list)
     icon: str = "cube"
-    # Palantir-like: title property for display
+    # Title property for display
     title_property: Optional[str] = None
     # Governance: default markings for objects of this type
     default_markings: List[str] = Field(default_factory=lambda: ["internal"])
@@ -102,11 +102,11 @@ class ObjectInstance(BaseModel):
     object_type: str
     primary_key: str
     properties: Dict[str, Any] = Field(default_factory=dict)
-    # Palantir-like: __ontology edges
+    # Internal ontology edges
     links: Dict[str, List[str]] = Field(default_factory=dict)  # linkType -> [targetPk ...]
     updated_at: str = Field(default_factory=lambda: datetime.now().isoformat())
     lineage: Optional[str] = None  # which dataset/build produced it
-    # Methodology: version + markings + validity (like Palantir time + markings)
+    # Version + markings + validity tracking
     version: int = 1
     markings: List[str] = Field(default_factory=lambda: ["internal"])
     valid_from: Optional[str] = None
@@ -129,14 +129,14 @@ class ActionDef(BaseModel):
     parameters: List[PropertyDef] = Field(default_factory=list)
     # Simple checks: e.g., {"field": "status", "allowed": ["SHIPPED","DELAYED"]}
     checks: List[Dict[str, Any]] = Field(default_factory=list)
-    # Methodology: approval workflow (like Palantir Actions with review)
+    # Approval workflow (propose + approve with review)
     requires_approval: bool = False
     allowed_approvers: List[str] = Field(default_factory=list)
 
 
 class Ontology:
     """
-    In-memory Ontology. Free, no DB. Mirrors Palantir's central semantic layer.
+    In-memory Ontology. No DB required. Central semantic layer.
     All writes are versioned via lineage string (like Foundry builds).
     """
     def __init__(self, name: str = "free-ontology"):
@@ -146,7 +146,7 @@ class Ontology:
         self.link_types: Dict[str, LinkTypeDef] = {}
         self.actions: Dict[str, ActionDef] = {}
         self.objects: Dict[str, Dict[str, ObjectInstance]] = {}  # type -> pk -> obj
-        self._edits: List[Dict[str, Any]] = []  # Palantir-like edit log
+        self._edits: List[Dict[str, Any]] = []  # Edit log
         self._history: Dict[str, List[Dict[str, Any]]] = {}  # "Type:pk" -> [snapshots]
         self._proposals: Dict[str, Dict[str, Any]] = {}  # proposal_id -> {action, pk, params, status}
         self._proposal_seq = 0
@@ -198,7 +198,7 @@ class Ontology:
                 except ValueError as e:
                     raise ValueError(f"{obj.object_type}.{k}: {e}")
             else:
-                coerced[k] = v  # undeclared props allowed (flexible, like Palantir)
+                coerced[k] = v  # undeclared props allowed (flexible)
         obj.properties = coerced
         # Default markings from type if not set
         if not obj.markings or obj.markings == ["internal"]:
@@ -220,7 +220,7 @@ class Ontology:
             self.create_object(o, lineage=lineage)
 
     def _check_cardinality(self, lt: LinkTypeDef, from_obj: ObjectInstance, to_pk: str):
-        """Enforce Palantir-like cardinality.
+        """Enforce link cardinality.
         ONE_TO_ONE: from single, to single.
         ONE_TO_MANY (one Supplier -> many Shipments): from multiple, to single.
         MANY_TO_ONE (many Tx -> one Account): from single, to multiple.
@@ -303,7 +303,7 @@ class Ontology:
         self._snapshot(obj, f"action:{action_api}")
         return obj
 
-    # --- Approval workflow (methodology: human-in-the-loop, like Palantir Actions) ---
+    # --- Approval workflow (human-in-the-loop) ---
     def propose_action(self, action_api: str, pk: str, parameters: Dict[str, Any], proposer: str = "user") -> str:
         assert action_api in self.actions, f"unknown action {action_api}"
         adef = self.actions[action_api]
@@ -414,7 +414,7 @@ class Ontology:
             return obj
         if set(obj.markings) & set(allowed_markings):
             return obj
-        return None  # hidden by markings (like Palantir)
+        return None  # hidden by markings
 
     def traverse(self, start_type: str, start_pk: str, link_type: str, depth: int = 1) -> List[ObjectInstance]:
         """BFS traverse links, like Gotham graph expansion. Free."""

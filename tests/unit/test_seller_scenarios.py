@@ -5,8 +5,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from omni_one.packs.seller_os import make_seller_demo_folder, ingest_seller_folder
 from omni_one.packs.seller_scenarios import run_all_scenarios, scenarios_to_workshop, SCENARIOS
-from omni_one.palantir_free.ontology import Ontology, ObjectTypeDef, PropertyDef, ObjectInstance
-from omni_one.palantir_free.workshop import WorkshopApp
+from omni_one.engine.ontology import Ontology, ObjectTypeDef, PropertyDef, ObjectInstance
+from omni_one.engine.workshop import WorkshopApp
 import tempfile, time
 
 def _demo_events():

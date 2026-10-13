@@ -46,7 +46,7 @@ Day 1: one refund saved pays for the year (it's $0). Day 7: velocity learned, PO
 Day 30: `money_at_risk → $0` streak. Principles: **$0 default, offline-first, cited numbers,
 no phantom tasks, mock-by-default LLM, laptop-private data.**
 
-## Engine underneath (deterministic-first, Palantir methodology — not a clone)
+## Engine underneath (deterministic-first)
 
 ```
 messy folder → [Foundry: versioned datasets, expectations gate, DuckDB $0]
@@ -58,7 +58,7 @@ messy folder → [Foundry: versioned datasets, expectations gate, DuckDB $0]
 ```
 
 - **Pipeline** `src/omni_one/core/data_processing_pipeline.py` (+ `layer_1/2/3`, `types.py` evidence/cost)
-- **Suite** `src/omni_one/palantir_free/`: `foundry.py` `ontology.py` `workshop.py` `aip.py` `governance.py` `apollo.py`
+- **Suite** `src/omni_one/engine/`: `foundry.py` `ontology.py` `workshop.py` `aip.py` `governance.py` `apollo.py`
 - **Vision** `src/omni_one/core/vision.py`: Tesseract + OpenCV + Matplotlib ($0, offline, photo→text+chart)
 - **Seller packs** `src/omni_one/packs/`: `seller_os.py` (parsers+briefing) `seller_scenarios.py` (12)
   `seller_close.py` (Daily Close) `seller_export.py` (CSV) `seller_parse.py` (money/fuzzy shared)
@@ -110,9 +110,9 @@ CLI: `omni-one close | pipeline-close | vision-close | micro-close | revops-clos
 
 ## vs. the world
 
-| | Omni-One Daily Close | Shopify reports | LangChain/RAG demo | Palantir |
+| | Omni-One Daily Close | Shopify reports | LangChain/RAG demo | Enterprise suite |
 |---|---|---|---|---|
-| True profit (fees+ship+COGS, cited) | yes, `file:line` | GMV-centric | no | yes, $$$ |
+| True profit (fees+ship+COGS, cited) | yes, `file:line` | GMV-centric | no | yes, enterprise cost |
 | Stockout→PO draft | yes, offline | alerts only | no | custom build |
 | Angry-customer drafts now | yes, copy-paste | no | generic chat | no |
 | Cost / privacy | $0, laptop-private | subscription + cloud | API $$$ | enterprise $$$ |

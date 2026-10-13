@@ -1,23 +1,23 @@
 """
-Foundry — Free alternative to Palantir Foundry
-=============================================
-Palantir Foundry: $1-5M/yr for data integration, transforms, lineage, builds.
-Free alternative: DuckDB + Pandas + Parquet + Python — same power, $0.
+Foundry — versioned datasets, transforms, lineage, builds
+=========================================================
+DuckDB + Pandas + Parquet + Python for data integration, transforms,
+lineage, and builds. Runs offline.
 
-Concepts mirrored:
-  Dataset  — versioned Parquet folder (like Foundry dataset)
-  Transform — Python function with inputs/outputs, lineage tracked (like PySpark transform)
-  Build    — incremental run with checks, backed by DuckDB (free Spark alternative)
-  Branch   — like Foundry branches, just a folder suffix
-  Checks   — deterministic data quality, like Foundry Expectations
+Concepts:
+  Dataset   — versioned Parquet folder
+  Transform — Python function with inputs/outputs, lineage tracked
+  Build     — incremental run with checks, backed by DuckDB
+  Branch    — isolated dataset namespace, backed by a folder suffix
+  Checks    — deterministic data quality expectations
 
-Tech: cheapest efficient:
-  - DuckDB 1.5.5 (free, in-process OLAP, 10x faster than Spark for <100GB)
-  - Pandas 2.x (free, ETL)
-  - Parquet (free, columnar, compressed)
+Tech:
+  - DuckDB 1.5.5 (in-process OLAP, fast for <100GB)
+  - Pandas 2.x (ETL)
+  - Parquet (columnar, compressed)
   - Nothing else.
 
-Use: Foundry datasets feed Ontology objects (free digital twin).
+Use: Foundry datasets feed Ontology objects (typed digital twin).
 """
 from __future__ import annotations
 import shutil
@@ -43,7 +43,7 @@ except ImportError:
 
 
 class FoundryDataset:
-    """Versioned dataset, like Foundry dataset. Parquet on disk, free."""
+    """Versioned dataset. Parquet on disk."""
     def __init__(self, path: Path, name: str):
         from threading import RLock as _RL
         self._lock = _RL()
@@ -65,9 +65,9 @@ class FoundryDataset:
                 self.versions_path.write_text(json.dumps([]))
 
     def write(self, df, lineage: str):
-        """Write new version (like Foundry transaction). df is pandas DataFrame or list[dict]. Free: Parquet if pyarrow else CSV."""
+        """Write new version. df is pandas DataFrame or list[dict]. Parquet if pyarrow else CSV."""
         if not PD_AVAILABLE:
-            raise RuntimeError("pandas not installed: pip install pandas (free)")
+            raise RuntimeError("pandas not installed: pip install pandas")
         if isinstance(df, list):
             df = pd.DataFrame(df)
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")

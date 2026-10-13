@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-E2E Core Methodology — Palantir-style suite WITHOUT replicating Palantir
-========================================================================
-Methodology (like Palantir, not a clone):
+E2E Core Methodology — deterministic engine suite
+=================================================
+Pipeline:
   Foundry (datasets+transforms+lineage) -> Ontology (typed twin+actions) ->
   Pipeline (4-layer evidence) -> Workshop (decision queue) -> AIP (grounded logic) ->
   Governance (hash-chained audit) -> Apollo (compose)
@@ -12,7 +12,7 @@ Highlights wired through ONE loop:
   - Supply: Shipment delay reroute
   - Hospital: Ward overflow
 
-Free, $0, offline. Verifies robustness of strengthened core.
+Offline, $0 default. Verifies robustness of strengthened core.
 
 Run:
   PYTHONPATH=src python3 scripts/e2e_core_methodology.py --out /tmp/e2e_method
@@ -33,12 +33,12 @@ def main(out_dir="/tmp/e2e_method"):
     if out.exists(): shutil.rmtree(out)
     out.mkdir(parents=True)
 
-    from omni_one.palantir_free.foundry import FoundryDataset, FoundryBranch, Transform, check_not_null, check_unique, check_range, profile_dataset, sql_join
-    from omni_one.palantir_free.ontology import Ontology, ObjectTypeDef, PropertyDef, LinkTypeDef, ObjectInstance, ActionDef
-    from omni_one.palantir_free.workshop import WorkshopApp
-    from omni_one.palantir_free.governance import AuditLog, ingest_pipeline_results, ingest_ontology_edits, ingest_workshop, ingest_aip_runs, ingest_foundry_versions, can_access
-    from omni_one.palantir_free.aip import AIPLogic, DEFAULT_REGISTRY
-    from omni_one.palantir_free.apollo import generate as apollo_generate
+    from omni_one.engine.foundry import FoundryDataset, FoundryBranch, Transform, check_not_null, check_unique, check_range, profile_dataset, sql_join
+    from omni_one.engine.ontology import Ontology, ObjectTypeDef, PropertyDef, LinkTypeDef, ObjectInstance, ActionDef
+    from omni_one.engine.workshop import WorkshopApp
+    from omni_one.engine.governance import AuditLog, ingest_pipeline_results, ingest_ontology_edits, ingest_workshop, ingest_aip_runs, ingest_foundry_versions, can_access
+    from omni_one.engine.aip import AIPLogic, DEFAULT_REGISTRY
+    from omni_one.engine.apollo import generate as apollo_generate
     import pandas as pd
 
     # ---------- 1. Foundry: expectations gate + profiling + incremental + join ----------
@@ -147,7 +147,7 @@ def main(out_dir="/tmp/e2e_method"):
 
     # ---------- 4. Workshop: decision queue on ontology ----------
     log("4/6 WORKSHOP", "Decision queue FROM ontology (no phantoms)...")
-    from omni_one.palantir_free.workshop import WorkshopApp
+    from omni_one.engine.workshop import WorkshopApp
     app = WorkshopApp(onto2, "seller-daily")
     # Generic builder from ontology search (supply/hospital style)
     made = app.build_from_search("Shipment", {"shipment_id": "SH2"}, title_fn=lambda o: f"Reroute {o.primary_key} delay {o.properties.get('delay_hours')}h",
@@ -172,14 +172,14 @@ def main(out_dir="/tmp/e2e_method"):
 
     # ---------- 5. AIP: registry + grounding + eval ----------
     log("5/6 AIP", "Registry + grounding gate + eval...")
-    from omni_one.palantir_free.aip import AIPLogic, check_grounding
+    from omni_one.engine.aip import AIPLogic, check_grounding
     logic = AIPLogic(onto2, "ops-aip")
     assert any(f["name"] == "seller_stockout" for f in logic.registry.list())
     r1 = logic.run_registered("seller_stockout", sku="TB001")
     assert "TB001" in r1["answer"] and r1["grounded"], f"ungrounded: {r1}"
     log("5/6", f"seller_stockout grounded {r1['grounding']} — robust")
     # Ungrounded should warn
-    from omni_one.palantir_free.aip import logic_supply_delay
+    from omni_one.engine.aip import logic_supply_delay
     r_bad = logic.run(lambda o, i, p: {"answer": "ghost", "citations": ["Product:GHOST"]}, test=1)
     assert not r_bad["grounded"]
     ev = logic.evaluate([
@@ -192,7 +192,7 @@ def main(out_dir="/tmp/e2e_method"):
 
     # ---------- 6. Governance: unified audit ----------
     log("6/6 GOVERNANCE", "Hash-chained audit across all layers...")
-    from omni_one.palantir_free.governance import AuditLog
+    from omni_one.engine.governance import AuditLog
     audit = AuditLog("methodology-e2e")
     # Ingest pipeline results from briefing pipeline? Re-run pipeline for events sample
     from omni_one.core.data_processing_pipeline import MultiLayerDataPipeline
@@ -214,12 +214,12 @@ def main(out_dir="/tmp/e2e_method"):
     audit.export(out / "audit.json")
 
     # Apollo
-    from omni_one.palantir_free.apollo import generate as apollo_generate
+    from omni_one.engine.apollo import generate as apollo_generate
     apollo_generate(out / "apollo")
     summary = {"out": str(out), "foundry": {"products": v_p, "joined": v_j}, "ontology_hash": onto2.lineage_hash(),
                "workshop": app.stats(), "aip_eval": ev, "audit": audit.stats(), "free": True}
     (out / "summary.json").write_text(json.dumps(summary, indent=2, default=str))
-    print("\n" + "="*70 + "\nE2E CORE METHODOLOGY — PASSED (Palantir-style suite, not a clone)\n" + "="*70)
+    print("\n" + "="*70 + "\nE2E CORE METHODOLOGY — PASSED\n" + "="*70)
     print(json.dumps(summary, indent=2))
     return summary
 

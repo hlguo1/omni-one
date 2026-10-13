@@ -1,5 +1,5 @@
 """Audit tamper: flipping a byte must fail verify()."""
-from omni_one.palantir_free.governance import AuditLog
+from omni_one.engine.governance import AuditLog
 
 
 def test_audit_tamper():

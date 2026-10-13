@@ -1,6 +1,6 @@
 # Focus — One Outstanding Product
 
-**We were building in too many directions.** Revenue OS, Micro-Biz, Palantir-free, Vision generic — overlapping, diluted.
+**We were building in too many directions.** Revenue OS, Micro-Biz, custom ontology engine, Vision generic — overlapping, diluted.
 
 **Decision: ONE product — Seller OS for people selling stuff online (1-5 person shops on Shopify/Etsy/Amazon/Instagram).**
 
@@ -9,7 +9,7 @@
 - **Non-overlapping:** Not generic AI platform (everyone does that), not enterprise RevOps (too broad), not hospital Gotham (unfocused). Seller profit + stockout is unsolved and measurable.
 - **Outstanding bar:** Must be *obviously better than spreadsheet* in 5 minutes, with evidence, for $0.
 
-Other packs moved to `src/omni_one/packs/_labs/` (still runnable, not primary). `palantir_free/` remains as internal engine but not marketed.
+Other packs moved to `src/omni_one/packs/_labs/` (still runnable, not primary). `engine/` remains as internal engine but not marketed.
 
 ## What Outstanding Means (must pass)
 - **True profit** GMV - fees - shipping - COGS (per-unit from supplier invoice OCR) with `file:line` citations — competitors show GMV only.

@@ -1,7 +1,7 @@
 """
-Ops-loop Close — flagship-grade methodology loop bundle (PACK E).
+Ops-loop Close — deterministic operations bundle (PACK E).
 ===============================================================================
-The full Palantir-style loop, closed daily, free and offline:
+The full operations loop, closed daily, offline:
 
     foundry -> ontology -> scenarios -> workshop -> aip -> governance -> bundle
 
@@ -13,15 +13,15 @@ The full Palantir-style loop, closed daily, free and offline:
       -> GOVERNANCE audit chain (verify(), head, by_kind)
       -> BUNDLE: close.json + decisions.csv + audit.json
 
-What this pack proves (the "suite surrounding core tech"):
+What this pack proves (the engine surrounding core tech):
   - Foundry feeds the Ontology (versioned datasets, lineage-tracked).
   - The Workshop queue is built FROM the ontology, never from raw tables.
   - AIP answers are grounding-checked, with an evaluate() harness that
     must stay green before close.
   - Governance hash-chains every workshop + ontology write; verify()
-    detects tampering (like Palantir audit, free).
+    detects tampering.
   - The bundle (close.json + decisions.csv + audit.json) is what the
-    operator files every morning — deterministic, mock-only, $0.
+    operator files every morning — deterministic, mock-only, offline.
 
 NO-PHANTOMS RULE (load-bearing):
   Every ``decisions[]`` entry carries ``object_ref`` (``Type:pk``) that
@@ -30,7 +30,7 @@ NO-PHANTOMS RULE (load-bearing):
   NEVER invented. Tests check each ``object_ref`` against
   ``ontology.refs``.
 
-APPROVAL FLOW (human-in-the-loop, like Palantir Actions):
+APPROVAL FLOW (human-in-the-loop):
   1. ``add_decision`` queues (``open``) with a ``proposed_action``.
   2. Lead runs ``assign(decision_id, "ops-1")`` to own it.
   3. Lead runs ``approve(decision_id, "lead")`` — propose + approve
@@ -49,7 +49,7 @@ Intended wiring (NOT implemented here — see docs/OPS_CLOSE.md):
   - CLI: ``omni-one ops-close --demo --out ./ops_close_today``
   - API: ``POST /api/v1/ops/close`` -> same ``build_ops_close`` result.
 
-Free: stdlib + repo-local packs only. No fees.
+Free: stdlib + repo-local packs only. Runs offline.
 """
 
 from __future__ import annotations
@@ -250,7 +250,7 @@ def _run_foundry_stage(events: List[Dict[str, Any]],
         "datasets_path": None,
     }
     try:
-        from omni_one.palantir_free.foundry import FoundryDataset
+        from omni_one.engine.foundry import FoundryDataset
     except Exception as e:  # pragma: no cover - import guard
         stage["status"] = "skipped"
         stage["reason"] = f"foundry import failed: {e}"[:200]
@@ -271,7 +271,7 @@ def _run_foundry_stage(events: List[Dict[str, Any]],
             stage["orders_version"] = ods.write(orders, lineage=lineage)
         # Join products x orders on normalized name when possible.
         try:
-            from omni_one.palantir_free.foundry import sql_join
+            from omni_one.engine.foundry import sql_join
             import pandas as _pd
             pdf = _pd.DataFrame(products) if products else _pd.DataFrame([{"sku": "NONE", "name": "none", "on_hand": 0, "sold_7d": 0}])
             odf = _pd.DataFrame(orders) if orders else _pd.DataFrame([{"order_id": "NONE", "product": "none", "qty": 0, "gmv": 0.0}])
@@ -299,7 +299,7 @@ def _define_ops_ontology(onto: Any) -> None:
     Actions cover every ``proposed_action`` the 12-scenario library can
     emit, so propose -> approve -> resolve works for any queued decision.
     """
-    from omni_one.palantir_free.ontology import (
+    from omni_one.engine.ontology import (
         ActionDef, ObjectTypeDef, PropertyDef,
     )
 
@@ -335,7 +335,7 @@ def _define_ops_ontology(onto: Any) -> None:
 
     # Links (best-effort enrichment; the twin works without them).
     try:
-        from omni_one.palantir_free.ontology import LinkTypeDef
+        from omni_one.engine.ontology import LinkTypeDef
         onto.define_link_type(LinkTypeDef(
             api_name="ORDER_CONTAINS", display_name="Order contains",
             from_type="Order", to_type="Product",
@@ -416,7 +416,7 @@ def _seed_ops_ontology(onto: Any,
     Returns counts plus ``refs`` — the full ``Type:pk`` inventory used
     by the no-phantoms test.
     """
-    from omni_one.palantir_free.ontology import ObjectInstance
+    from omni_one.engine.ontology import ObjectInstance
 
     lineage = f"ops-close:{namespace}:briefing"
     counts = {"products": 0, "orders": 0, "shipments": 0}
@@ -523,7 +523,7 @@ def _build_workshop_queue(onto: Any,
     Fallback: ``build_seller_queue`` (recorded in ``via``).
     Returns ``(app, decisions, via)``.
     """
-    from omni_one.palantir_free.workshop import WorkshopApp
+    from omni_one.engine.workshop import WorkshopApp
     app = WorkshopApp(onto, f"{namespace}-queue")
     via = "scenarios_to_workshop"
     try:
@@ -568,7 +568,7 @@ def _run_aip_stage(onto: Any, namespace: str) -> Dict[str, Any]:
     With zero Products the stage records a skip (with reason) and a
     vacuous 1.0 eval — the loop never crashes on empty.
     """
-    from omni_one.palantir_free.aip import AIPLogic
+    from omni_one.engine.aip import AIPLogic
     logic = AIPLogic(onto, f"{namespace}-aip")
     try:
         first_sku = sorted((onto.objects.get("Product", {}) or {}).keys())[0]
@@ -627,7 +627,7 @@ def _run_governance_stage(app: Any, onto: Any,
     Returns ``(audit_log, audit_summary)``; the summary is JSON-safe:
     ``{"head", "verified", "by_kind", "total", "verify"}``.
     """
-    from omni_one.palantir_free.governance import (
+    from omni_one.engine.governance import (
         AuditLog, ingest_ontology_edits, ingest_workshop,
     )
     audit = AuditLog(f"{namespace}-audit")
@@ -723,7 +723,7 @@ def build_ops_close(events: List[Dict[str, Any]],
     ``audit``, ``do_today`` plus per-stage detail. Deterministic and
     mock-only; empty events return a valid (empty) close, never raise.
     """
-    from omni_one.palantir_free.ontology import Ontology
+    from omni_one.engine.ontology import Ontology
 
     events = list(events or [])
     ns = (namespace or DEFAULT_NAMESPACE).strip() or DEFAULT_NAMESPACE

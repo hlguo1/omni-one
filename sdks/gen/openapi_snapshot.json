@@ -447,7 +447,7 @@
           "Seller OS"
         ],
         "summary": "Seller Operations \u2014 briefing + workshop queue + governance audit",
-        "description": "Full Palantir-style loop: briefing -> ontology twin (Product) -> Workshop decision queue (12 scenarios) -> AIP grounded check -> governance audit. Proves methodology loop surrounding core tech. Operates first decision (assign). Citation rule: no citation, no action. The close refuses to invent tasks. Offline $0. See docs/handbook/01-morning-routine.md daily ritual, 02-supplier-playbook.md cover policy 14d, 03-reply-playbook.md P0<2h, 04-accountant-pack.md invariant true_profit<=gmv, 05-incidents.md S1<1h. Demo seed default 42. Shop default 'our shop'. All money USD 2dp.",
+        "description": "Full operations loop: briefing -> ontology twin (Product) -> Workshop decision queue (12 scenarios) -> AIP grounded check -> governance audit. Proves the engine surrounding core tech. Operates first decision (assign). Citation rule: no citation, no action. The close refuses to invent tasks. Offline $0. See docs/handbook/01-morning-routine.md daily ritual, 02-supplier-playbook.md cover policy 14d, 03-reply-playbook.md P0<2h, 04-accountant-pack.md invariant true_profit<=gmv, 05-incidents.md S1<1h. Demo seed default 42. Shop default 'our shop'. All money USD 2dp.",
         "operationId": "sellerOperations",
         "x-codegen-method-python": "seller_operations",
         "x-codegen-method-typescript": "seller_operations",

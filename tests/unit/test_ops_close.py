@@ -390,14 +390,14 @@ def test_approval_flow_on_twin():
     reorderProduct, queue one grounded decision, then walk the full
     human-in-the-loop path. Every transition is asserted.
     """
-    from omni_one.palantir_free.ontology import (
+    from omni_one.engine.ontology import (
         ActionDef,
         ObjectInstance,
         ObjectTypeDef,
         Ontology,
         PropertyDef,
     )
-    from omni_one.palantir_free.workshop import WorkshopApp
+    from omni_one.engine.workshop import WorkshopApp
 
     onto = Ontology("ops-close-approval-probe")
     onto.define_object_type(ObjectTypeDef(

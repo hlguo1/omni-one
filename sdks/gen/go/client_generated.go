@@ -811,7 +811,7 @@ func (r BriefingRequest) ToMap() map[string]any {
 // Citation rule travels with the response, not the request.
 type OperationsRequest struct {
 	// Demo: Use the synthetic demo shop.
-	// Full Palantir-style loop offline.
+	// Full operations loop offline.
 	Demo bool `json:"demo,omitempty"`
 
 	// Seed: Demo seed.
@@ -1542,7 +1542,7 @@ func (c *Client) SellerBriefing(ctx context.Context, req BriefingRequest) (*Brie
 // - use CitationsOf(out) for the audit trail.
 // - error: *httpError on non-2xx (status preserved for callers).
 //
-// Proves the Palantir-style loop surrounding the core tech; operates first decision.
+// Proves the operations loop surrounding the core tech; operates first decision.
 //
 // Curl example:
 //

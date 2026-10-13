@@ -1,25 +1,24 @@
 """
-Apollo — Free alternative to Palantir Apollo (deployment)
-=========================================================
-Palantir Apollo: manages deploys across classified air-gapped envs, $M fees.
-Free alternative: Docker Compose + FastAPI + health checks + versioned configs, $0.
+Apollo — deployment packaging
+============================
+Docker Compose + FastAPI + health checks + versioned configs. Runs offline.
 
 This module generates:
-  - docker-compose.yml (free orchestration, no Kubernetes fees for small)
-  - .env (free config)
-  - health manifest (like Apollo's health checks)
+  - docker-compose.yml (orchestration for small deployments)
+  - .env (config)
+  - health manifest (health checks)
 
-Tech: Docker (free), Python (free). Cheapest efficient: single compose file instead of K8s.
+Tech: Docker, Python. Single compose file instead of K8s for small shops.
 
-Use: `python -m omni_one.palantir_free.apollo --out /tmp/omni_apollo`
+Use: `python -m omni_one.engine.apollo --out /tmp/omni_apollo`
 """
 from __future__ import annotations
 from pathlib import Path
 from datetime import datetime
 import json
 
-COMPOSE_TEMPLATE = """# Omni-One Apollo-Free — Generated {at}
-# Cost: $0 (vs Palantir Apollo licensed). Run: docker compose up
+COMPOSE_TEMPLATE = """# Omni-One — Generated {at}
+# Run: docker compose up
 version: "3.9"
 services:
   api:
@@ -36,13 +35,13 @@ services:
   duckdb:
     image: duckdb/duckdb:latest
     volumes: ["./data:/data"]
-  # Optional: add weaviate local free instead of Pinecone fees
+  # Optional: local weaviate
   # weaviate:
   #   image: semitechnologies/weaviate:1.25.0
   #   ports: ["8080:8080"]
 """
 
-ENV_TEMPLATE = """# Free Apollo env — no Palantir license
+ENV_TEMPLATE = """# Omni-One env
 ENVIRONMENT=production
 GOOGLE_API_KEY=
 # Leave empty for free mock LLM; set for live (SELLER_LLM=google + key)
@@ -52,7 +51,7 @@ SELLER_MAX_LLM_USD=0.0
 # demo-key is REJECTED in production by settings validator
 VALID_API_KEYS=change-me-to-random-32-chars-min
 SECRET_KEY=change-me-to-random-32-chars-minimum
-# Free: use DuckDB file, no Snowflake fees
+# Use DuckDB file
 DUCKDB_PATH=/data/omni.duckdb
 AUDIT_PATH=/data/audit.jsonl
 ALLOWED_ROOT=/data/inbox
@@ -66,18 +65,18 @@ def generate(out_dir: Path, with_weaviate: bool = False) -> Path:
     manifest = {
         "generated_at": datetime.now().isoformat(),
         "free": True,
-        "palantir_alternative": "Apollo -> Docker Compose (free)",
+        "deploy": "Docker Compose",
         "cost_usd": 0.0,
         "services": ["api", "duckdb"] + (["weaviate"] if with_weaviate else []),
         "health_endpoint": "/health",
-        "note": "Run `docker compose up` — no Palantir fees. For air-gapped, `docker save` images.",
+        "note": "Run `docker compose up`. For air-gapped, `docker save` images.",
     }
     (out / "apollo_manifest.json").write_text(json.dumps(manifest, indent=2))
     return out
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="Generate free Apollo alternative")
+    parser = argparse.ArgumentParser(description="Generate deployment bundle")
     parser.add_argument("--out", type=str, default="/tmp/omni_apollo")
     parser.add_argument("--with-weaviate", action="store_true")
     args = parser.parse_args()

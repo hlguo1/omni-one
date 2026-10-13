@@ -1,17 +1,17 @@
 """
-Workshop — Free operational apps on the Ontology (methodology like Palantir Workshop)
-=====================================================================================
-Palantir Workshop: operators work a queue of ontology-backed decisions, take Actions,
-everything audited. We don't replicate their UI — same methodology, free:
+Workshop — operational apps on the Ontology
+===========================================
+Operators work a queue of ontology-backed decisions, take Actions,
+everything audited:
 
   Queue built FROM ontology (not from raw tables) → each Decision cites Type:pk +
   pipeline evidence → operator assigns/approves → writeback via Ontology Actions
   (with approval workflow) → Governance audit log captures all.
 
-This is the "suite surrounding core tech": Foundry feeds Ontology, Workshop acts on it,
+Pipeline: Foundry feeds Ontology, Workshop acts on it,
 Gotham investigates it, AIP drafts for it, Apollo ships it.
 
-Free: stdlib only. No fees.
+Stdlib only. Runs offline.
 """
 from __future__ import annotations
 from typing import List, Dict, Any, Optional
@@ -79,7 +79,7 @@ class WorkshopApp:
                      evidence: Optional[List[str]] = None,
                      proposed_action: Optional[Dict[str, Any]] = None,
                      source: str = "manual", stable_id: Optional[str] = None) -> Decision:
-        # Grounding check: object must exist (like Palantir — no phantom decisions)
+        # Grounding check: object must exist (no phantom decisions)
         try:
             t, pk = object_ref.split(":", 1)
         except ValueError:

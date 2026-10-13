@@ -129,10 +129,10 @@ def operations(demo: bool = typer.Option(True), seed: int = 42):
     import tempfile as _t
     from pathlib import Path as _P
     from omni_one.packs.seller_os import make_seller_demo_folder, ingest_seller_folder, build_seller_briefing
-    from omni_one.palantir_free.ontology import Ontology, ObjectTypeDef, PropertyDef, ActionDef, ObjectInstance
-    from omni_one.palantir_free.workshop import WorkshopApp
-    from omni_one.palantir_free.governance import AuditLog, ingest_workshop, ingest_ontology_edits
-    from omni_one.palantir_free.aip import AIPLogic
+    from omni_one.engine.ontology import Ontology, ObjectTypeDef, PropertyDef, ActionDef, ObjectInstance
+    from omni_one.engine.workshop import WorkshopApp
+    from omni_one.engine.governance import AuditLog, ingest_workshop, ingest_ontology_edits
+    from omni_one.engine.aip import AIPLogic
     with _t.TemporaryDirectory() as tmp:
         demo_folder = make_seller_demo_folder(_P(tmp) / "seller_demo", seed=seed)
         events, _ = ingest_seller_folder(demo_folder)

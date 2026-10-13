@@ -21,7 +21,7 @@ Run: `POST /api/v1/seller/scenarios/run {"demo":true}` or `PYTHONPATH=src python
 
 **Tech sound:** `packs/seller_scenarios.py:1` single-pass `_ctx()` O(n), stable `_sid()` IDs (same events → same decisions), severity-sorted, pure functions. `scenarios_to_workshop()` grounds to `Product:*` (no phantoms) with `stable_id` upsert.
 
-**Methodology mapping (Palantir-style, not clone):**
+**Engine mapping:**
 - Foundry datasets → Ontology `Product/Order` twins → Pipeline evidence → **Scenarios** → Workshop queue → AIP draft → Governance audit. See `scripts/e2e_core_methodology.py:1`, `POST /api/v1/seller/operations`.
 
 **Thresholds:** `SCENARIO_THRESHOLDS` in code (stockout 5d, fee 12%, ship 20%, margin 10%, backlog 3, price 5%). Tune per shop.

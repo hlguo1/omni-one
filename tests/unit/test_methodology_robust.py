@@ -3,11 +3,11 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from omni_one.palantir_free.ontology import Ontology, ObjectTypeDef, PropertyDef, LinkTypeDef, ObjectInstance, ActionDef
-from omni_one.palantir_free.foundry import FoundryDataset, FoundryBranch, Transform, check_not_null, sql_join
-from omni_one.palantir_free.workshop import WorkshopApp
-from omni_one.palantir_free.governance import AuditLog, ingest_ontology_edits, can_access
-from omni_one.palantir_free.aip import AIPLogic, check_grounding
+from omni_one.engine.ontology import Ontology, ObjectTypeDef, PropertyDef, LinkTypeDef, ObjectInstance, ActionDef
+from omni_one.engine.foundry import FoundryDataset, FoundryBranch, Transform, check_not_null, sql_join
+from omni_one.engine.workshop import WorkshopApp
+from omni_one.engine.governance import AuditLog, ingest_ontology_edits, can_access
+from omni_one.engine.aip import AIPLogic, check_grounding
 import tempfile
 
 

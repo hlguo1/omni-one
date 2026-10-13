@@ -611,17 +611,17 @@ def setup_ai_routes(app: FastAPI):
         settings: Settings = Depends(get_settings),
     ) -> dict:
         """
-        Full Palantir-style loop for the highlight, free:
+        Full operations loop for the highlight, offline:
         briefing (Seller OS) -> ontology twin -> Workshop decision queue -> AIP grounded check -> governance audit.
-        Proves the suite surrounding core tech, not just a briefing.
+        Proves the engine surrounding core tech, not just a briefing.
         """
         with OperationTimer("seller_operations", logger):
             _bump("operations_total")
             from ..packs.seller_os import make_seller_demo_folder, ingest_seller_folder, build_seller_briefing  # type: ignore
-            from ..palantir_free.ontology import Ontology, ObjectTypeDef, PropertyDef, ActionDef  # type: ignore
-            from ..palantir_free.workshop import WorkshopApp  # type: ignore
-            from ..palantir_free.governance import AuditLog, ingest_workshop, ingest_ontology_edits  # type: ignore
-            from ..palantir_free.aip import AIPLogic  # type: ignore
+            from ..engine.ontology import Ontology, ObjectTypeDef, PropertyDef, ActionDef  # type: ignore
+            from ..engine.workshop import WorkshopApp  # type: ignore
+            from ..engine.governance import AuditLog, ingest_workshop, ingest_ontology_edits  # type: ignore
+            from ..engine.aip import AIPLogic  # type: ignore
             from pathlib import Path as _P
             import tempfile
             with tempfile.TemporaryDirectory() as tmp:
@@ -643,7 +643,7 @@ def setup_ai_routes(app: FastAPI):
                     seen.add(prod)
                     on_hand = next((r.get("on_hand", 0) for r in briefing.get("stockout_risk", []) if r.get("product") == prod), 10)
                     sold = next((b["qty"] for b in [briefing["kpis"]["best_seller"]] if b["product"] == prod), 1)
-                    from ..palantir_free.ontology import ObjectInstance as _OI  # type: ignore
+                    from ..engine.ontology import ObjectInstance as _OI  # type: ignore
                     sku = "".join(c if c.isalnum() else "" for c in prod)[:8] or f"P{len(seen)}"
                     try:
                         onto.create_object(_OI(object_type="Product", primary_key=sku, properties={"sku": sku, "name": prod, "on_hand": int(on_hand), "sold_7d": int(sold)}), lineage="seller_os:briefing")
@@ -730,15 +730,15 @@ def setup_ai_routes(app: FastAPI):
             try:
                 from ..packs.seller_os import make_seller_demo_folder, ingest_seller_folder  # type: ignore
                 from ..packs.seller_scenarios import run_all_scenarios, scenarios_to_workshop  # type: ignore
-                from ..palantir_free.ontology import Ontology, ObjectTypeDef, PropertyDef, ActionDef, ObjectInstance  # type: ignore
-                from ..palantir_free.workshop import WorkshopApp  # type: ignore
-                from ..palantir_free.governance import AuditLog, ingest_workshop  # type: ignore
+                from ..engine.ontology import Ontology, ObjectTypeDef, PropertyDef, ActionDef, ObjectInstance  # type: ignore
+                from ..engine.workshop import WorkshopApp  # type: ignore
+                from ..engine.governance import AuditLog, ingest_workshop  # type: ignore
             except ImportError:
                 from omni_one.packs.seller_os import make_seller_demo_folder, ingest_seller_folder  # type: ignore
                 from omni_one.packs.seller_scenarios import run_all_scenarios, scenarios_to_workshop  # type: ignore
-                from omni_one.palantir_free.ontology import Ontology, ObjectTypeDef, PropertyDef, ActionDef, ObjectInstance  # type: ignore
-                from omni_one.palantir_free.workshop import WorkshopApp  # type: ignore
-                from omni_one.palantir_free.governance import AuditLog, ingest_workshop  # type: ignore
+                from omni_one.engine.ontology import Ontology, ObjectTypeDef, PropertyDef, ActionDef, ObjectInstance  # type: ignore
+                from omni_one.engine.workshop import WorkshopApp  # type: ignore
+                from omni_one.engine.governance import AuditLog, ingest_workshop  # type: ignore
             folder = data.get("folder")
             use_demo = data.get("demo", False) or not folder
             if use_demo:

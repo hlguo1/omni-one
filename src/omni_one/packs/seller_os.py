@@ -5,7 +5,7 @@ Focus: 1-5 person shops on Shopify / Etsy / Amazon + Instagram DMs.
 Problem: fragmented mess — Shopify CSV, Etsy settlement, supplier photos,
 DM exports, inventory snapshots, reviews. No real profit view, no stockout warning.
 
-This is the ONLY primary pack. Revenue/micro/palantir moved to _labs.
+This is the ONLY primary pack. Other verticals moved to _labs.
 Seller OS is concrete, non-overlapping, outstanding because:
   - True profit (GMV - fees - shipping - COGS) with citations file:line
   - Stockout risk = velocity vs on-hand (from photos/CSV)

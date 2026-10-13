@@ -90,7 +90,7 @@ you forget.
 ## 3. Approval flow (human-in-the-loop)
 
 Queuing is automatic; **acting is not**. The operator works each
-decision exactly like Palantir Actions with review:
+decision with proposal + lead review before anything writes:
 
 | Step | Call | Effect |
 |------|------|--------|
