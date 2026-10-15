@@ -2,6 +2,7 @@
 
 PY ?= python3
 SRC = PYTHONPATH=src
+LOCALE ?= en
 
 install:
 	pip install -r requirements-seller.txt
