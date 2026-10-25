@@ -13,13 +13,26 @@ duckdb==0.10.0
 pillow==10.2.0
 matplotlib==3.8.2
 python-dotenv==1.0.0
+# Needed by the full test suite that CI runs against this file:
+# requests — omni_one.data.connectors (slack/salesforce import it at module level)
+# psutil — omni_one.infra.health_checks (imported via omni_one.infra package init)
+# Flask/Flask-CORS — omni_one.api and omni_one.infrastructure import flask at
+# module level, so every API test errors at setup without them (pins match
+# requirements.txt)
+requests==2.31.0
+psutil==5.9.8
+Flask==3.0.0
+Flask-CORS==4.0.0
+# pyyaml — tests/unit/test_deploy_wave2.py asserts it is importable
+# ("pyyaml required for deploy validation"; pin matches requirements-modern.txt)
+pyyaml==6.0.1
 pytest==7.4.4
 pytest-asyncio==0.21.1
 scikit-learn==1.4.2
-typer==0.9.0
+# typer 0.9.0 cannot parse the CLI's `str | None` annotations ("Type not yet
+# supported") and breaks with current click; 0.16.0 handles both
+typer==0.16.0
 click==8.1.8
 rich==13.7.0
 httpx==0.25.2
-requests==2.31.0
-pyyaml==6.0.1
 pytesseract==0.3.10
