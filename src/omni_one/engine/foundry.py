@@ -71,7 +71,16 @@ class FoundryDataset:
         if isinstance(df, list):
             df = pd.DataFrame(df)
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        version = f"v{ts}_{hashlib.sha256(lineage.encode()).hexdigest()[:6]}"
+        # Version must identify the DATA, not just the lineage + wall-clock
+        # second: two writes in the same second with the same lineage but
+        # different rows previously collided on one version id, so the
+        # Transform fingerprint (version + rows) missed the change and
+        # build_if_stale() wrongly skipped a needed rebuild.
+        try:
+            content_digest = hashlib.sha256(pd.util.hash_pandas_object(df, index=True).values.tobytes()).hexdigest()
+        except Exception:
+            content_digest = hashlib.sha256(df.to_csv(index=False).encode()).hexdigest()
+        version = f"v{ts}_{hashlib.sha256(f'{lineage}:{content_digest}'.encode()).hexdigest()[:6]}"
         # Try parquet, fallback to csv (both free, parquet preferred)
         part = self.path / f"{version}.parquet"
         try:

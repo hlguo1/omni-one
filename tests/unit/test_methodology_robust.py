@@ -78,6 +78,27 @@ def test_foundry_gate_and_incremental():
         assert tr.build_if_stale() is None
 
 
+def test_foundry_incremental_detects_rewrite():
+    # Regression: two writes with the same lineage in the same second used to
+    # collide on one version id (timestamp + lineage hash only), so the
+    # transform fingerprint missed changed data and build_if_stale() skipped
+    # a needed rebuild, leaving the output dataset stale.
+    import pandas as pd
+    with tempfile.TemporaryDirectory() as tmp:
+        br = FoundryBranch(Path(tmp), "master")
+        ds = br.dataset("t")
+        v1 = ds.write(pd.DataFrame([{"sku": "A", "gmv": 10}]), "v1")
+        out = br.dataset("out")
+        tr = Transform("t", [ds], out, lambda df: df, expectations=[lambda df: check_not_null(df, "sku")])
+        tr.build()
+        assert tr.build_if_stale() is None  # unchanged inputs: skip
+        v2 = ds.write(pd.DataFrame([{"sku": "B", "gmv": 99}]), "v1")
+        assert v2 != v1  # same lineage, new data -> new version id
+        assert tr.build_if_stale() is not None  # changed inputs: rebuild
+        assert out.read_latest()["sku"].tolist() == ["B"]
+        assert tr.build_if_stale() is None  # fresh again after rebuild
+
+
 def test_workshop_grounding_and_governance():
     o = _onto()
     o.create_object(ObjectInstance(object_type="Product", primary_key="A", properties={"sku": "A", "name": "x", "on_hand": 1}))
