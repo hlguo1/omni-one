@@ -21,6 +21,7 @@ COPY docs/ ./docs/
 
 ENV PYTHONPATH=/app/src
 ENV PORT=5003
+ENV OMNI_WEB_DIR=/app/web
 ENV DUCKDB_PATH=/app/data/omni.duckdb
 ENV AUDIT_PATH=/app/data/audit.jsonl
 ENV ALLOWED_ROOT=/app/data/inbox
@@ -34,4 +35,4 @@ ENV ENVIRONMENT=development
 VOLUME ["/app/data"]
 EXPOSE 5003
 
-CMD ["uvicorn", "omni_one.api.fastapi_app:create_omni_one_app", "--factory", "--host", "0.0.0.0", "--port", "5003"]
+CMD ["sh", "-c", "uvicorn omni_one.api.fastapi_app:create_omni_one_app --factory --host 0.0.0.0 --port ${PORT:-5003}"]

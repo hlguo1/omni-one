@@ -10,11 +10,14 @@ Demonstrates best practices for:
 - Type safety and documentation
 """
 
+import os
+from pathlib import Path
 from typing import Optional
 from uuid import UUID
 
 from fastapi import FastAPI, Depends, Query, Body, status, File, UploadFile, Form, Header, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 import base64 as _b64
 
 from ..infra.fastapi_factory import create_app
@@ -918,6 +921,19 @@ def setup_admin_routes(app: FastAPI):
 # APPLICATION FACTORY
 # ============================================================================
 
+def _resolve_web_dir() -> Optional[Path]:
+    candidates = []
+    env_dir = os.getenv("OMNI_WEB_DIR")
+    if env_dir:
+        candidates.append(Path(env_dir))
+    candidates.append(Path(__file__).resolve().parents[3] / "web")
+    candidates.append(Path.cwd() / "web")
+    for candidate in candidates:
+        if (candidate / "close" / "index.html").is_file():
+            return candidate
+    return None
+
+
 def create_omni_one_app() -> FastAPI:
     """
     Create fully configured Omni-One FastAPI application.
@@ -942,9 +958,17 @@ def create_omni_one_app() -> FastAPI:
         _ops(app)
     
     app = create_app(setup_routes=setup_routes)
-    
-    logger.info("omni_one_fastapi_app_created")
-    
+
+    web_dir = _resolve_web_dir()
+    if web_dir is not None:
+        @app.get("/", include_in_schema=False)
+        async def web_root() -> RedirectResponse:
+            return RedirectResponse(url="/close/")
+
+        app.mount("/", StaticFiles(directory=str(web_dir), html=True), name="web")
+
+    logger.info("omni_one_fastapi_app_created", web_ui=str(web_dir) if web_dir else None)
+
     return app
 
 

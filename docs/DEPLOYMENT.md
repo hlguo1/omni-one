@@ -18,6 +18,21 @@ docker compose up -d && curl -sf http://localhost:5003/health
 `docker-compose.yml`: one `api` service, `./data` volume (`DUCKDB_PATH`, `AUDIT_PATH`,
 `ALLOWED_ROOT=/app/data/inbox`), `SELLER_LLM=mock`. Drop seller files into `./data/inbox`.
 
+## Render Free Docker (public demo)
+
+`render.yaml` deploys the single Docker service on Render's free plan. The UI is served
+by FastAPI at the same URL as the API.
+
+1. Push this repository to GitHub.
+2. In Render, choose **New → Blueprint**, select the repository, and apply.
+3. Open the generated URL. `/` redirects to `/close/`; `/seller.html` is also available.
+
+The blueprint sets `ENVIRONMENT=production` and generates `SECRET_KEY` and
+`VALID_API_KEYS`. Free services sleep after 15 minutes without traffic, take about a
+minute to wake, and have no persistent disk. Treat this deployment as a demo: DuckDB,
+audit logs, and uploaded files can disappear on restart or redeploy. Use the
+Docker/VPS path below when data must survive.
+
 ## Production hardening
 
 ```bash
