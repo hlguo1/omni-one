@@ -20,6 +20,8 @@ docker compose up -d && curl -sf http://localhost:5003/health
 
 ## Render Free Docker (public demo)
 
+Live demo: <https://omni-one-dw5t.onrender.com/>
+
 `render.yaml` deploys the single Docker service on Render's free plan. The UI is served
 by FastAPI at the same URL as the API.
 
