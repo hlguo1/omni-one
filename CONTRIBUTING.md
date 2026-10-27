@@ -13,6 +13,31 @@ make test        # 31 tests, offline
 make demo        # Seller OS demo, golden KPIs
 ```
 
+## Notification email (required before your first PR)
+
+Stale-branch notices go to the branch creator's commit email. Set a real,
+deliverable address before you commit:
+
+```bash
+git config user.name "Your Name"
+git config user.email "you@example.com"
+```
+
+Then add and verify the same address at
+[github.com/settings/emails](https://github.com/settings/emails). The bot only
+emails addresses that GitHub has verified and linked to your account. Do **not**
+use an `@users.noreply.github.com` address — GitHub cannot deliver mail to it,
+and the cleanup bot will skip your branch (or route it to the maintainer
+fallback).
+
+If you already pushed with a throwaway or noreply address, rewrite your branch
+before opening the PR (`git commit --amend --reset-author --no-edit`, or
+`git rebase -i` for multiple commits). The `commit-email` CI check fails PRs
+whose human-authored commits use a noreply or unverified address.
+
+The cleanup bot emails on days 12–14 of branch inactivity and deletes on day
+15 unless you comment `/opt-out` on the tracking issue.
+
 ## How to contribute
 
 1. **Find an issue** — look for `good first issue` / `help wanted`. Seller OS scenarios (`docs/SCENARIOS.md`) are the best entry point.
@@ -30,6 +55,7 @@ make demo        # Seller OS demo, golden KPIs
 - [ ] Added/updated test
 - [ ] Updated docs if user-facing (`docs/`, `README.md`, `CHANGELOG.md` under Unreleased)
 - [ ] No secrets, no absolute paths, no `__pycache__`
+- [ ] Commit author email is real and verified (not `@users.noreply.github.com`)
 
 ## Project layout
 

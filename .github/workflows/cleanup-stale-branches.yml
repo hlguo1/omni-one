@@ -1,0 +1,175 @@
+name: branch-cleanup
+
+# Deletes inactive branches after a 3-day notice window.
+#
+#   day 12, 13, 14 of inactivity -> email the branch creator, once per day
+#   day 15 of inactivity         -> delete unless opted out
+#
+# Branches already older than 14 days when first seen get a fresh 3-day
+# notice window (today, tomorrow, the day after), then delete on day 4.
+#
+# Opt out by commenting /opt-out on the tracking issue linked from the email,
+# or by running: python scripts/branch_cleanup.py remove <branch>
+#
+# Required repository secrets for scheduled runs:
+#   SMTP_HOST, SMTP_FROM          (required)
+#   SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_REPLY_TO (optional)
+#   SMTP_TLS (default true), SMTP_SSL (default false)
+#   FALLBACK_NOTIFY_EMAIL         (optional; secret/env only, never state; receives
+#                                  notices for branches whose creator email is
+#                                  missing, unverified, or noreply)
+#
+# GitHub cron is UTC-only; PT observes DST. Trigger at both 09:00 and 10:00 UTC
+# and continue when the local PT hour is 02:00 (or 03:00 on the spring-forward
+# day, when 02:00 does not exist). The state's last_run_date prevents duplicates.
+
+on:
+  schedule:
+    - cron: "0 9 * * *"   # 02:00 PDT / 01:00 PST
+    - cron: "0 10 * * *"  # 03:00 PDT / 02:00 PST
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "run, status, add, or remove"
+        type: choice
+        options: [run, status, add, remove]
+        default: run
+      branch:
+        description: "Branch name (required for add/remove)"
+        type: string
+        required: false
+      dry_run:
+        description: "Only report; do not email or delete"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: branch-cleanup
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check 2am PT gate
+        id: gate
+        run: |
+          if [[ "${{ github.event_name }}" != "schedule" ]]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          hour=$(TZ=America/Los_Angeles date +%H)
+          if [[ "$hour" == "02" || "$hour" == "03" ]]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Local PT hour is $hour (not 02/03); skipping."
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.run == 'true'
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+
+      - name: Fetch all remote branches
+        if: steps.gate.outputs.run == 'true'
+        run: git fetch origin '+refs/heads/*:refs/remotes/origin/*' --prune
+
+      - uses: actions/setup-python@v5
+        if: steps.gate.outputs.run == 'true'
+        with:
+          python-version: "3.11"
+
+      - name: Require email secrets for scheduled runs
+        if: steps.gate.outputs.run == 'true' && github.event_name == 'schedule'
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          FALLBACK_NOTIFY_EMAIL: ${{ secrets.FALLBACK_NOTIFY_EMAIL }}
+        run: |
+          if [[ -z "$SMTP_HOST" || -z "$SMTP_FROM" ]]; then
+            echo "::error::SMTP_HOST and SMTP_FROM secrets are required for branch-cleanup"
+            exit 1
+          fi
+          if [[ -z "$FALLBACK_NOTIFY_EMAIL" ]]; then
+            echo "::warning::FALLBACK_NOTIFY_EMAIL is not set; branches whose creator email is missing, unverified, or noreply will be skipped"
+          fi
+
+      - name: Run branch cleanup
+        if: steps.gate.outputs.run == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          SMTP_REPLY_TO: ${{ secrets.SMTP_REPLY_TO }}
+          SMTP_TLS: ${{ secrets.SMTP_TLS }}
+          SMTP_SSL: ${{ secrets.SMTP_SSL }}
+          FALLBACK_NOTIFY_EMAIL: ${{ secrets.FALLBACK_NOTIFY_EMAIL }}
+          ACTION: ${{ github.event.inputs.action || 'run' }}
+          BRANCH: ${{ github.event.inputs.branch }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        run: |
+          set -euo pipefail
+          opts=(--state-file .github/branch-cleanup/state.json --repo-path .)
+
+          case "$ACTION" in
+            run)
+              if [[ "$DRY_RUN" == "true" ]]; then
+                python3 scripts/branch_cleanup.py run "${opts[@]}" --dry-run
+              elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+                python3 scripts/branch_cleanup.py run "${opts[@]}" --force
+              else
+                python3 scripts/branch_cleanup.py run "${opts[@]}"
+              fi
+              ;;
+            status)
+              python3 scripts/branch_cleanup.py status "${opts[@]}"
+              ;;
+            add|remove)
+              if [[ -z "${BRANCH:-}" ]]; then
+                echo "::error::branch input is required for $ACTION"
+                exit 1
+              fi
+              python3 scripts/branch_cleanup.py "$ACTION" "${opts[@]}" "$BRANCH"
+              ;;
+            *)
+              echo "::error::unknown action: $ACTION"
+              exit 1
+              ;;
+          esac
+
+      - name: Persist state
+        if: steps.gate.outputs.run == 'true'
+        env:
+          ACTION: ${{ github.event.inputs.action || 'run' }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          if [[ "$ACTION" == "status" ]]; then
+            exit 0
+          fi
+          if [[ "$ACTION" == "run" && "$DRY_RUN" == "true" ]]; then
+            exit 0
+          fi
+          if [[ -z "$(git status --porcelain -- .github/branch-cleanup/state.json)" ]]; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/branch-cleanup/state.json
+          git commit -m "chore(branch-cleanup): update state [skip ci]"
+          git pull --rebase origin "$DEFAULT_BRANCH"
+          git push origin "HEAD:$DEFAULT_BRANCH"
