@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: omni-one
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: VALID_API_KEYS
+        generateValue: true
+      - key: SELLER_LLM
+        value: mock
+      - key: SELLER_MAX_LLM_USD
+        value: "0.0"
+      - key: DUCKDB_PATH
+        value: /app/data/omni.duckdb
+      - key: AUDIT_PATH
+        value: /app/data/audit.jsonl
+      - key: ALLOWED_ROOT
+        value: /app/data/inbox
