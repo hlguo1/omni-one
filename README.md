@@ -6,6 +6,8 @@
 ![cost](https://img.shields.io/badge/cost-%240%20default-brightgreen)
 ![tests](https://img.shields.io/badge/tests-1350%2B%20passing-success)
 
+**Live demo:** https://omni-one-dw5t.onrender.com/ — free Render instance; may sleep when idle and resets data on restart. Do not upload real shop data.
+
 **Sellers don't live in dashboards. They close the day.** Omni-One's **Daily Close** answers the 5
 questions a 1–5 person Shopify/Etsy/Amazon shop asks every morning — in one command, offline, $0:
 
