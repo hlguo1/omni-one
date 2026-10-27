@@ -233,29 +233,37 @@ class OmniOneAPIFactory:
         except Exception:
             pass
         
-        # Only setup if not in test mode
+        # Production: external deps are optional by default (local-first MVP).
+        # They only gate readiness when the operator explicitly marks them
+        # required, matching the /readiness contract above (503 only when the
+        # local store is unwritable or a *required* dependency is down).
         if self.settings.is_production():
-            # Redis health check
+            import os
+
+            def _required(env_name: str) -> bool:
+                return os.getenv(env_name, "false").strip().lower() in {"1", "true", "yes", "on"}
+
+            # Redis health check (optional cache)
             if self.settings.cache_enabled:
                 registry.register_check(
                     name="redis",
                     check_func=lambda: check_redis(self.settings.redis_url),
-                    critical=True,
+                    critical=_required("REDIS_REQUIRED"),
                 )
-            
-            # Database health check
+
+            # Database health check (optional; local DuckDB is the default store)
             registry.register_check(
                 name="database",
                 check_func=lambda: check_database(self.settings.database_url),
-                critical=True,
+                critical=_required("DATABASE_REQUIRED"),
             )
-            
-            # Weaviate health check
+
+            # Weaviate health check (optional RAG backend)
             if self.settings.enable_rag:
                 registry.register_check(
                     name="weaviate",
                     check_func=lambda: check_weaviate(self.settings.weaviate_url),
-                    critical=False,
+                    critical=_required("WEAVIATE_REQUIRED"),
                 )
         else:
             # Non-prod (laptop/dev): optional deps are non-critical, degraded_ok

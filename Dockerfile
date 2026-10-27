@@ -26,7 +26,10 @@ ENV AUDIT_PATH=/app/data/audit.jsonl
 ENV ALLOWED_ROOT=/app/data/inbox
 ENV SELLER_LLM=mock
 ENV SELLER_MAX_LLM_USD=0.0
-ENV ENVIRONMENT=production
+# Local-first default so `docker compose up` works with zero config.
+# Production overlays (deploy/compose/docker-compose.prod.yml, Helm/K8s)
+# set ENVIRONMENT=production plus real VALID_API_KEYS/SECRET_KEY.
+ENV ENVIRONMENT=development
 
 VOLUME ["/app/data"]
 EXPOSE 5003

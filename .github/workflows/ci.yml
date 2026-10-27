@@ -111,10 +111,40 @@ jobs:
         run: docker build -t omni-one:ci .
       - name: Compose up + health
         run: |
+          set -eu
           docker compose up -d
-          sleep 8
+          cleanup() {
+            echo "--- docker compose logs ---"
+            docker compose logs --no-color || true
+            docker compose down -v || true
+          }
+          trap cleanup EXIT
+          ready=0
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:5003/health >/dev/null 2>&1 \
+               && curl -sf http://localhost:5003/readiness >/dev/null 2>&1; then
+              ready=1
+              break
+            fi
+            echo "waiting for api... ($i/30)"
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo "API did not become healthy in time"
+            exit 1
+          fi
+          echo "--- /health ---"
           curl -sf http://localhost:5003/health
-          curl -sf http://localhost:5003/readiness | head -c 500
+          echo
+          echo "--- /readiness ---"
+          curl -sf http://localhost:5003/readiness -o /tmp/readiness.json
+          cat /tmp/readiness.json
+          echo
+          echo "--- /status ---"
           curl -sf http://localhost:5003/status | grep -o '"status":"[a-z]*"'
-          curl -sf -X POST http://localhost:5003/api/v1/auto/close -H 'Content-Type: application/json' -d '{}' | head -c 300
-          docker compose down
+          echo "--- POST /api/v1/auto/close ---"
+          curl -sf -X POST http://localhost:5003/api/v1/auto/close -H 'Content-Type: application/json' -d '{}' -o /tmp/auto.json
+          head -c 300 /tmp/auto.json
+          echo
+          docker compose down -v
+          trap - EXIT
