@@ -111,7 +111,7 @@ python-jose==3.3.0            # JWT/JWE support
 # SYSTEM & MONITORING
 # ============================================================================
 psutil==5.9.8                 # System utilities
-elasticsearch==8.13.1         # Elasticsearch client
+elasticsearch==9.5.1         # Elasticsearch client
 tiktoken==0.5.2               # Token counting
 
 # ============================================================================
