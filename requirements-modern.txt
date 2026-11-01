@@ -46,7 +46,7 @@ langchain==0.1.16             # LLM orchestration framework
 langchain-community==0.0.34   # LangChain community integrations
 sentence-transformers==2.7.0  # Embedding models
 transformers==4.40.0          # Hugging Face models
-torch==2.1.1                  # PyTorch (required for embedding models)
+torch==2.14.1                  # PyTorch (required for embedding models)
 
 # ============================================================================
 # VECTOR DATABASES & RETRIEVAL
